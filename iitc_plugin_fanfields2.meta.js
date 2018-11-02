@@ -14,8 +14,6 @@
 // @match           https://*.ingress.com/mission/*
 // @match           http://*.ingress.com/mission/*
 // @grant           none
-
-// @downloadURL https://userscripts.enl.one/script/download/undefined/9eb34f67b379f2f27a3e5264c4332d69.user.js
-
-// @updateURL https://userscripts.enl.one/script/download/undefined/9eb34f67b379f2f27a3e5264c4332d69.meta.js
+// @downloadURL https://github.com/Heistergand/fanfields2/blob/master/iitc_plugin_fanfields2.user.js
+// @updateURL https://github.com/Heistergand/fanfields2/blob/master/iitc_plugin_fanfields2.meta.js
 // ==/UserScript==
