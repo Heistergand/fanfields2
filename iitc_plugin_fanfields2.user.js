@@ -19,6 +19,14 @@
 // @updateURL https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
 // ==/UserScript==
 
+/*
+
+I FINISHED PLAYING INGRESS MONTHS AGO. NO MORE CHANGES WILL BE MADE.
+
+THE PROJECT IS NOW ARCHIVED ON GITHUB. IF YOU LIKE TO GET UPDATES TO IT, 
+DEVELOPERS CAN FORK THIS PROJECT AND CONTINUE ON THEIR OWN.
+
+*/
 
 /*
 Version History:
