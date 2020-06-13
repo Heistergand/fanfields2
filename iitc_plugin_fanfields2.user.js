@@ -3,7 +3,7 @@
 // @name            IITC plugin: Fan Fields 2
 // @author          Heistergand
 // @category        Layer
-// @version         2.1.3
+// @version         2.1.4
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @include         https://*.ingress.com/intel*
 // @include         http://*.ingress.com/intel*
@@ -15,8 +15,8 @@
 // @match           http://*.ingress.com/mission/*
 // @grant           none
 
-// @downloadURL https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
-// @updateURL https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
+// @downloadURL https://github.com/seth10/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
+// @updateURL https://github.com/seth10/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
 // ==/UserScript==
 
 /*
@@ -30,6 +30,9 @@ DEVELOPERS CAN FORK THIS PROJECT AND CONTINUE ON THEIR OWN.
 
 /*
 Version History:
+2.1.4
+FIX: Make the clockwise button change its label to "Counterclockwise" when toggled
+
 2.1.3
 FIX: added id tags to menu button elements, ...just because.
 
@@ -292,12 +295,12 @@ function wrapper(plugin_info) {
     thisplugin.is_clockwise = true;
     thisplugin.toggleclockwise = function() {
         thisplugin.is_clockwise = !thisplugin.is_clockwise;
-        var clckwise="";
+        var clockwiseSymbol="", clockwiseWord="";
         if (thisplugin.is_clockwise)
-            clckwise = "&#8635;";
+            clockwiseSymbol = "&#8635;", clockwiseWord = "Clockwise";
         else
-            clckwise = "&#8634;";
-        $('#plugin_fanfields_clckwsbtn').html('Clockwise:&nbsp;('+clckwise+')');
+            clockwiseSymbol = "&#8634;", clockwiseWord = "Counterclockwise";
+        $('#plugin_fanfields_clckwsbtn').html(clockwiseWord+':&nbsp;('+clockwiseSymbol+')');
         thisplugin.delayedUpdateLayer(0.2);
     };
 
