@@ -3,7 +3,7 @@
 // @name            IITC plugin: Fan Fields 2
 // @author          Heistergand
 // @category        Layer
-// @version         2.1.4
+// @version         2.1.5
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @include         https://*.ingress.com/intel*
 // @include         http://*.ingress.com/intel*
@@ -30,6 +30,9 @@ DEVELOPERS CAN FORK THIS PROJECT AND CONTINUE ON THEIR OWN.
 
 /*
 Version History:
+2.1.5
+FIX: Minor syntax issue affecting potentially more strict runtimes
+
 2.1.4
 FIX: Make the clockwise button change its label to "Counterclockwise" when toggled
 
@@ -508,7 +511,7 @@ function wrapper(plugin_info) {
                 iconSize: [thisplugin.LABEL_WIDTH,thisplugin.LABEL_HEIGHT],
                 html: labelText
             }),
-            guid: guid,
+            guid: guid
         });
         thisplugin.labelLayers[guid] = label;
         label.addTo(thisplugin.numbersLayerGroup);
