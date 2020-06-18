@@ -401,7 +401,7 @@ function wrapper(plugin_info) {
         Change vars to meet original links
         dGuid,dLatE6,dLngE6,oGuid,oLatE6,oLngE6
         */
-        //console.log("FANPOINTS: DEBUG ");
+        var x1, y1, x2, y2, x3, y3, x4, y4;
         x1 = link1.a.x;
         y1 = link1.a.y;
         x2 = link1.b.x;
@@ -572,6 +572,7 @@ function wrapper(plugin_info) {
 
 
     thisplugin.getBearing = function (a,b) {
+        var starting_ll, other_ll;
         starting_ll = map.unproject(a, thisplugin.PROJECT_ZOOM);
         other_ll = map.unproject(b, thisplugin.PROJECT_ZOOM);
         return starting_ll.bearingToE6(other_ll);
@@ -590,6 +591,7 @@ function wrapper(plugin_info) {
         return bearingword;
     };
 
+    // find points in polygon 
     thisplugin.filterPolygon = function (points, polygon) {
         var result = [];
         var guid,i,ax,ay,bx,by,la,lb,cos,alpha,det;
@@ -598,14 +600,18 @@ function wrapper(plugin_info) {
         for (guid in points) {
             var asum = 0;
             for (i = 0, j = polygon.length-1; i < polygon.length; j = i, ++i) {
-                ax = polygon[i].x-points[guid].x;
-                ay = polygon[i].y-points[guid].y;
-                bx = polygon[j].x-points[guid].x;
-                by = polygon[j].y-points[guid].y;
-                la = Math.sqrt(ax*ax+ay*ay);
-                lb = Math.sqrt(bx*bx+by*by);
-                if (Math.abs(la) < 0.1 || Math.abs(lb) < 0.1 ) // the point is a vertex of the polygon
+	        var ax,ay,bx,by,la,lb;
+                ax = polygon[i].x - points[guid].x;
+                ay = polygon[i].y - points[guid].y;
+                bx = polygon[j].x - points[guid].x;
+                by = polygon[j].y - points[guid].y;
+                la = Math.sqrt(ax*ax + ay*ay);
+                lb = Math.sqrt(bx*bx + by*by);
+                if (Math.abs(la) < 0.1 || Math.abs(lb) < 0.1 ) { // the point is a vertex of the polygon
+		    console.log("filterPoly->vertex: " + ax + "," + ay + " - " + bx + "," + by);
+		    console.log("la= " + la + " lb= " + lb);
                     break;
+		}
                 cos = (ax*bx+ay*by)/la/lb;
                 if (cos < -1)
                     cos = -1;
@@ -669,9 +675,6 @@ function wrapper(plugin_info) {
         var ctrl = [$('.leaflet-control-layers-selector + span:contains("Fanfields links")').parent(),
                     $('.leaflet-control-layers-selector + span:contains("Fanfields fields")').parent(),
                     $('.leaflet-control-layers-selector + span:contains("Fanfields numbers")').parent()];
-
-
-
 
 
 
@@ -755,12 +758,14 @@ function wrapper(plugin_info) {
         function findFanpoints(dtLayers,locations,filter) {
             var polygon, dtLayer, result = [];
             var i, filtered;
+	    var fanLayer;
             for( dtLayer in dtLayers) {
                 fanLayer = dtLayers[dtLayer];
                 if (!(fanLayer instanceof L.GeodesicPolygon)) {
                     continue;
                 }
                 ll = fanLayer.getLatLngs();
+		
                 polygon = [];
                 for ( k = 0; k < ll.length; ++k) {
                     p = map.project(ll[k], thisplugin.PROJECT_ZOOM);
@@ -781,22 +786,17 @@ function wrapper(plugin_info) {
                                        this.locations,
                                        this.filterPolygon);
 
-        //if (this.fanpoints === undefined || this.fanpoints
-        if (Object.keys(this.fanpoints).length === 0) return;
+        if (Object.keys(this.fanpoints).length === 0)
+	    return;
 
         if (thisplugin.startingpoint === undefined || thisplugin.startingpoint.length === 0) {
             var firstfanpoint = Object.keys(this.fanpoints)[0];
-            thisplugin.startingpoint = this.fanpoints[firstfanpoint]; // didn't use a marker to select a starting point?  use a random point inside the polygon.
-            thisplugin.startingpointGUID = firstfanpoint;
+            // didn't use a marker to select a starting point?  use a random point inside the polygon.
+            thisplugin.startingpoint = this.fanpoints[firstfanpoint];
+	    thisplugin.startingpointGUID = firstfanpoint;
         }
 
         this.fanpoints[thisplugin.startingpointGUID] = thisplugin.startingpoint;
-
-        function abtest(a,b,test) {
-            // returns a if test is true, else returns b
-            if (test)  return a;
-            else return b;
-        }
 
         for (guid in this.fanpoints) {
             n++;
@@ -815,17 +815,9 @@ function wrapper(plugin_info) {
                                isFanLink: undefined
                               });
 
-
-
-
             }
         }
 
-        //fanlinks.sort(function(a, b){return a.bearing - b.bearing;});
-
-        //console.log(this.fanpoints);
-        //console.log(thisplugin.startingpoint);
-        //console.log("sorting...");
 
         // var startpointindex = -1;
         for ( guid in this.fanpoints) {
@@ -883,6 +875,7 @@ function wrapper(plugin_info) {
 
         donelinks = [];
         var outbound = 0;
+        var possibleline;
         for(pa = 0; pa < this.sortedFanpoints.length; pa++){
             bearing = this.sortedFanpoints[pa].bearing;
             //console.log("FANPOINTS: " + pa + " to 0 bearing: "+ bearing + " " + this.bearingWord(bearing));
@@ -1050,9 +1043,9 @@ function wrapper(plugin_info) {
         if (thisplugin.timer === undefined) {
             thisplugin.timer = setTimeout ( function() {
 
-
                 thisplugin.timer = undefined;
-                if (!thisplugin.is_locked) thisplugin.updateLayer();
+                if (!thisplugin.is_locked) 
+		    thisplugin.updateLayer();
             }, wait*350);
 
         }
