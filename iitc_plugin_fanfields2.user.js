@@ -3,7 +3,7 @@
 // @name            IITC plugin: Fan Fields 2
 // @author          Heistergand
 // @category        Layer
-// @version         2.1.6
+// @version         2.1.7
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @include         https://intel.ingress.com/*
 // @match           https://intel.ingress.com/*
@@ -15,15 +15,17 @@
 
 /*
 
-I FINISHED PLAYING INGRESS MONTHS AGO. NO MORE CHANGES WILL BE MADE.
-
-THE PROJECT IS NOW ARCHIVED ON GITHUB. IF YOU LIKE TO GET UPDATES TO IT, 
-DEVELOPERS CAN FORK THIS PROJECT AND CONTINUE ON THEIR OWN.
+  Forked from Heistergand
 
 */
 
 /*
 Version History:
+2.1.7
+Removed marker and random selection of starting point portal. Replaced
+with use of first outer hull portal. This ensures maximum fields will
+be generated.
+
 2.1.5
 FIX: Minor syntax issue affecting potentially more strict runtimes
 
@@ -495,9 +497,6 @@ function wrapper(plugin_info) {
             delete thisplugin.labelLayers[guid];
         }
 
-        // var d = window.portals[guid].options.data;
-        // var portalName = d.title;
-
         var label = L.marker(latLng, {
             icon: L.divIcon({
                 className: 'plugin_fanfields',
@@ -594,13 +593,12 @@ function wrapper(plugin_info) {
     // find points in polygon 
     thisplugin.filterPolygon = function (points, polygon) {
         var result = [];
-        var guid,i,ax,ay,bx,by,la,lb,cos,alpha,det;
+        var guid,i,j,ax,ay,bx,by,la,lb,cos,alpha,det;
 
 
         for (guid in points) {
             var asum = 0;
             for (i = 0, j = polygon.length-1; i < polygon.length; j = i, ++i) {
-	        var ax,ay,bx,by,la,lb;
                 ax = polygon[i].x - points[guid].x;
                 ay = polygon[i].y - points[guid].y;
                 bx = polygon[j].x - points[guid].x;
@@ -608,8 +606,6 @@ function wrapper(plugin_info) {
                 la = Math.sqrt(ax*ax + ay*ay);
                 lb = Math.sqrt(bx*bx + by*by);
                 if (Math.abs(la) < 0.1 || Math.abs(lb) < 0.1 ) { // the point is a vertex of the polygon
-		    console.log("filterPoly->vertex: " + ax + "," + ay + " - " + bx + "," + by);
-		    console.log("la= " + la + " lb= " + lb);
                     break;
 		}
                 cos = (ax*bx+ay*by)/la/lb;
@@ -671,19 +667,11 @@ function wrapper(plugin_info) {
         thisplugin.linksLayerGroup.clearLayers();
         thisplugin.fieldsLayerGroup.clearLayers();
         thisplugin.numbersLayerGroup.clearLayers();
-        //thisplugin.clearAllPortalLabels();
         var ctrl = [$('.leaflet-control-layers-selector + span:contains("Fanfields links")').parent(),
                     $('.leaflet-control-layers-selector + span:contains("Fanfields fields")').parent(),
                     $('.leaflet-control-layers-selector + span:contains("Fanfields numbers")').parent()];
 
 
-
-        for (i in plugin.drawTools.drawnItems._layers) {
-            var layer = plugin.drawTools.drawnItems._layers[i];
-            if (layer instanceof L.Marker) {
-                thisplugin.startingpoint = map.project(layer.getLatLng(), thisplugin.PROJECT_ZOOM);
-            }
-        }
         function drawStartLabel(a) {
             if (n <2) return;
             var alatlng = map.unproject(a.point, thisplugin.PROJECT_ZOOM);
@@ -725,14 +713,10 @@ function wrapper(plugin_info) {
 
         }
 
-        // var bounds = map.getBounds();
+	// Get portal locations
         $.each(window.portals, function(guid, portal) {
             var ll = portal.getLatLng();
             var p = map.project(ll, thisplugin.PROJECT_ZOOM);
-            if (thisplugin.startingpoint !== undefined ) {
-                if (p.equals(thisplugin.startingpoint))
-                    thisplugin.startingpointGUID = guid;
-            }
 
             thisplugin.locations[guid] = p;
         });
@@ -786,17 +770,68 @@ function wrapper(plugin_info) {
                                        this.locations,
                                        this.filterPolygon);
 
-        if (Object.keys(this.fanpoints).length === 0)
+        var npoints = Object.keys(this.fanpoints).length;
+        if (npoints === 0)
 	    return;
 
-        if (thisplugin.startingpoint === undefined || thisplugin.startingpoint.length === 0) {
-            var firstfanpoint = Object.keys(this.fanpoints)[0];
-            // didn't use a marker to select a starting point?  use a random point inside the polygon.
-            thisplugin.startingpoint = this.fanpoints[firstfanpoint];
-	    thisplugin.startingpointGUID = firstfanpoint;
+        // used in convexHull
+        function cross(a, b, o) {
+          return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
         }
 
-        this.fanpoints[thisplugin.startingpointGUID] = thisplugin.startingpoint;
+        // Find convex hull from fanpoints list of points
+        // Returns array : [guid, [x,y],.....]
+        function convexHull(points) {
+            // convert to array
+            var pa = Object.entries(points).map(p => [p[0], [p[1].x, p[1].y]]);
+            // sort by x then y if x the same
+            pa.sort(function(a, b) {
+                return a[1][0] == b[1][0] ? a[1][1] - b[1][1] : a[1][0] - b[1][0];
+            });
+
+            var lower = [];
+            var i;
+            for (i = 0; i < pa.length; i++) {
+                while (lower.length >= 2 && cross(lower[lower.length - 2][1], lower[lower.length - 1][1], pa[i][1]) <= 0) {
+                    lower.pop();
+                }
+                lower.push(pa[i]);
+            }
+
+            var upper = [];
+            for (i = pa.length - 1; i >= 0; i--) {
+                while (upper.length >= 2 && cross(upper[upper.length - 2][1], upper[upper.length - 1][1], pa[i][1]) <= 0) {
+                    upper.pop();
+                }
+                upper.push(pa[i]);
+            }
+
+            upper.pop();
+            lower.pop();
+            return lower.concat(upper);
+        };
+
+        var hullpoints = convexHull(this.fanpoints);
+        /*
+        console.log("convex hull :");
+        hullpoints.forEach(function(point, index) {
+            if (point[0]) {
+                var p = window.portals[point[0]];
+                var pname = p.options.data.title;
+                console.log(point[0] + "[" + point[1][0] + "," + point[1][1] + "]" + pname);
+            }
+        });
+        */
+
+        //console.log("fanpoints: ========================================================");
+        //console.log(this.fanpoints);
+
+        // Use first portal in outer hull as starting point
+        thisplugin.startingpointGUID = hullpoints[0][0];
+        thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
+        //console.log("Starting point : " + thisplugin.startingpointGUID);
+        //console.log("=> " + thisplugin.startingpoint);
+
 
         for (guid in this.fanpoints) {
             n++;
@@ -1008,11 +1043,6 @@ function wrapper(plugin_info) {
                 drawNumber(fp,idx);
 
         });
-        // if (!startLabelDrawn && thisplugin.startingpoint !== undefined ) {
-        //     drawStartLabel(thisplugin.startingpoint, {});
-        //     startLabelDrawn = true;
-        // }
-
 
         $.each(thisplugin.links, function(idx, edge) {
             drawLink(edge.a, edge.b, {
