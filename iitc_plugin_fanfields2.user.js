@@ -3,7 +3,7 @@
 // @name            IITC plugin: Fan Fields 2
 // @author          Heistergand
 // @category        Layer
-// @version         2.1.7
+// @version         2.1.8
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @include         https://intel.ingress.com/*
 // @match           https://intel.ingress.com/*
@@ -21,6 +21,10 @@
 
 /*
 Version History:
+2.1.8
+Added starting portal advance button to select among the list of
+perimeter portals.
+
 2.1.7
 Removed marker and random selection of starting point portal. Replaced
 with use of first outer hull portal. This ensures maximum fields will
@@ -129,7 +133,9 @@ function wrapper(plugin_info) {
     thisplugin.locations = [];
     thisplugin.fanpoints = [];
     thisplugin.sortedFanpoints = [];
-
+    thisplugin.perimeterpoints = [];
+    thisplugin.startingpointIndex = 0;
+	
     thisplugin.links = [];
     thisplugin.linksLayerGroup = null;
     thisplugin.fieldsLayerGroup = null;
@@ -169,10 +175,23 @@ function wrapper(plugin_info) {
             }
         });
 
-
-
-
     };
+
+    // cycle to next starting point on the convex hull list of portals
+    thisplugin.nextStartingPoint = function() {
+        // *** startingpoint handling is duplicated in updateLayer().
+        var i = thisplugin.startingpointIndex + 1;
+        if (i >= thisplugin.perimeterpoints.length) {
+            i = 0;
+        }
+        thisplugin.startingpointIndex = i;
+
+        thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
+        thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
+        //console.log("new index " + thisplugin.startingpointIndex);
+        thisplugin.updateLayer();
+    };
+   
     thisplugin.generateTasks = function() {};
     thisplugin.reset = function() {};
     thisplugin.help = function() {
@@ -811,7 +830,7 @@ function wrapper(plugin_info) {
             return lower.concat(upper);
         };
 
-        var hullpoints = convexHull(this.fanpoints);
+        thisplugin.perimeterpoints = convexHull(this.fanpoints);
         /*
         console.log("convex hull :");
         hullpoints.forEach(function(point, index) {
@@ -826,8 +845,12 @@ function wrapper(plugin_info) {
         //console.log("fanpoints: ========================================================");
         //console.log(this.fanpoints);
 
-        // Use first portal in outer hull as starting point
-        thisplugin.startingpointGUID = hullpoints[0][0];
+        // Use currently selected index in outer hull as starting point
+        if (thisplugin.startingpointIndex >= thisplugin.perimeterpoints.length) {
+          thisplugin.startingpointIndex = 0;
+        }
+        console.log("startingpointIndex = " + thisplugin.startingpointIndex);
+        thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
         thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
         //console.log("Starting point : " + thisplugin.startingpointGUID);
         //console.log("=> " + thisplugin.startingpoint);
@@ -1084,7 +1107,8 @@ function wrapper(plugin_info) {
 
 
     thisplugin.setup = function() {
-        var button2 = '<a class="plugin_fanfields_selectpolybtn plugin_fanfields_btn" id="plugin_fanfields_selectpolybtn" onclick="window.plugin.fanfields.selectPolygon(\'start\');">Select&nbsp;Polygon</a> ';
+        var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">Cycle Start</a> ';
+        //var button2 = '<a class="plugin_fanfields_selectpolybtn plugin_fanfields_btn" id="plugin_fanfields_selectpolybtn" onclick="window.plugin.fanfields.selectPolygon(\'start\');">Select&nbsp;Polygon</a> ';
         var button3 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();">Write&nbsp;Bookmarks</a> ';
         var button4 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();">Show&nbsp;as&nbsp;list</a> ';
 
@@ -1097,6 +1121,7 @@ function wrapper(plugin_info) {
         var button11 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
         var button1 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" >Help</a> ';
         var fanfields_buttons =
+            button12 + 
             //  button2 +
             button3 + button11 +
             button4 +
