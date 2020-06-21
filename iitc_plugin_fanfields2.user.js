@@ -3,7 +3,7 @@
 // @name            IITC plugin: Fan Fields 2
 // @author          Heistergand
 // @category        Layer
-// @version         2.1.8
+// @version         2.1.9
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @include         https://intel.ingress.com/*
 // @match           https://intel.ingress.com/*
@@ -21,6 +21,9 @@
 
 /*
 Version History:
+2.1.9
+Fix for missing constants in leaflet verion 1.6.0. 
+
 2.1.8
 Added starting portal advance button to select among the list of
 perimeter portals.
@@ -125,6 +128,11 @@ function wrapper(plugin_info) {
     thisplugin.LABEL_WIDTH = 100;
     thisplugin.LABEL_HEIGHT = 49;
 
+    // constants no longer present in leaflet 1.6.0
+    thisplugin.DEG_TO_RAD = Math.PI / 180;
+    thisplugin.RAD_TO_DEG = 180 / Math.PI;
+
+
     thisplugin.labelLayers = {};
 
     thisplugin.startingpoint = undefined;
@@ -196,20 +204,14 @@ function wrapper(plugin_info) {
     thisplugin.reset = function() {};
     thisplugin.help = function() {
         dialog({
-            html: '<p>Draw a polygon with Drawtools.<br>If you like, place a marker on a portal to enforce it to be the anchor. The marker can be outside the polygon. '+
+            html: '<p>Draw a polygon with Drawtools. '+
 
-
-
-
-            'Let Fanfields make the magic.</p>'+
             '<p>Use the Lock function to prevent the script from recalculating anything. This is useful if you have a large area and want to zoom into details.</p>  '+
             '<p>Try to switch your plan to counterclockwise direction. Your route might be easier or harder if you change directions. Also try different anchors to get one more field out of some portal constellations.</p> '+
             '<p>Export your fanfield portals to bookmarks to extend your possibilites to work with the information.</p>'+
             '<p>There are some known issues you should be aware of:<br>This script uses a simple method to check for crosslinks. '+
             'It may suggest links that are not possible in dense areas because <i>that last portal</i> is in the way. It means they have flipped order. '+
             'If you\'re not sure, link to the center for both portals first and see what you can link. You\'ll get the same amount of fields, but need to farm other keys.</p>'+
-            '<p>When you choose an anchor in the middle of the fields, the script may try to close fields around the center too early, resulting in covered portals you did'+
-            ' not link from yet. Be aware.<br>(It\'s on the todo-list though...) </p>'+
             '',
             id: 'plugin_fanfields_alert_help',
             title: 'Fan Fields - Help',
@@ -556,8 +558,8 @@ function wrapper(plugin_info) {
  */
 
     L.LatLng.prototype.bearingToE6 = function(other) {
-        var d2r  = L.LatLng.DEG_TO_RAD;
-        var r2d  = L.LatLng.RAD_TO_DEG;
+        var d2r  = thisplugin.DEG_TO_RAD;
+        var r2d  = thisplugin.RAD_TO_DEG;
         var lat1 = this.lat * d2r;
         var lat2 = other.lat * d2r;
         var dLon = (other.lng-this.lng) * d2r;
@@ -761,14 +763,14 @@ function wrapper(plugin_info) {
         function findFanpoints(dtLayers,locations,filter) {
             var polygon, dtLayer, result = [];
             var i, filtered;
-	    var fanLayer;
+            var fanLayer;
             for( dtLayer in dtLayers) {
                 fanLayer = dtLayers[dtLayer];
                 if (!(fanLayer instanceof L.GeodesicPolygon)) {
                     continue;
                 }
                 ll = fanLayer.getLatLngs();
-		
+
                 polygon = [];
                 for ( k = 0; k < ll.length; ++k) {
                     p = map.project(ll[k], thisplugin.PROJECT_ZOOM);
@@ -855,7 +857,6 @@ function wrapper(plugin_info) {
         //console.log("Starting point : " + thisplugin.startingpointGUID);
         //console.log("=> " + thisplugin.startingpoint);
 
-
         for (guid in this.fanpoints) {
             n++;
             if (this.fanpoints[guid].equals(thisplugin.startingpoint)) {
@@ -876,15 +877,12 @@ function wrapper(plugin_info) {
             }
         }
 
-
-        // var startpointindex = -1;
         for ( guid in this.fanpoints) {
             fp = this.fanpoints[guid];
             this.sortedFanpoints.push({point: fp,
                                        bearing: this.getBearing(thisplugin.startingpoint,fp),
                                        guid: guid,
                                        incoming: [] ,
-
                                        outgoing: [],
                                        is_startpoint: this.fanpoints[guid].equals(thisplugin.startingpoint)
                                       });
@@ -1156,10 +1154,6 @@ function wrapper(plugin_info) {
 
             return;
         }
-
-
-
-
 
         $('#plugin_fanfields_toolbox').append(fanfields_buttons);
         thisplugin.setupCSS();

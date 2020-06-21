@@ -1,6 +1,7 @@
 # fanfields2
 Fanfields 2 - An INGRESS Fanfield planner plugin for IITC
 
-I FINISHED PLAYING INGRESS MONTHS AGO. NO MORE CHANGES WILL BE MADE.
-THE PROJECT IS NOW ARCHIVED ON GITHUB. IF YOU LIKE TO GET UPDATES TO IT, 
-DEVELOPERS CAN FORK THIS PROJECT AND CONTINUE ON THEIR OWN.
+Forked from Heistergand/fanfields2.
+Changed starting portal selection to ensure maximum fields are generated. Now allows
+only perimeter portals to be used for the starting point.
+
