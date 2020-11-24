@@ -3,43 +3,43 @@
 // @name            IITC plugin: Fan Fields 2
 // @author          Heistergand
 // @category        Layer
-// @version         2.1.9
+// @version         2.1.9.1
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @include         https://intel.ingress.com/*
 // @match           https://intel.ingress.com/*
 // @grant           none
-
-// @downloadURL https://github.com/bryane50/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
-// @updateURL https://github.com/bryane50/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
+// @downloadURL https://github.com/zysfryar/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
+// @updateURL https://github.com/zysfryar/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
 // ==/UserScript==
 
 /*
-
-  Forked from Heistergand
-
+  Forked from Heistergand, with contributions from Seth10 and bryane50
 */
 
 /*
 Version History:
-2.1.9
+2.1.9.1 (zysfryar)
+Fixed blank in header for compatibility with IITC-CE Button.
+
+2.1.9 (bryane50)
 Fix for missing constants in leaflet verion 1.6.0. 
 
-2.1.8
+2.1.8 (bryane50)
 Added starting portal advance button to select among the list of
 perimeter portals.
 
-2.1.7
+2.1.7 (bryane50)
 Removed marker and random selection of starting point portal. Replaced
 with use of first outer hull portal. This ensures maximum fields will
 be generated.
 
-2.1.5
+2.1.5 (Seth10)
 FIX: Minor syntax issue affecting potentially more strict runtimes
 
-2.1.4
+2.1.4 (Seth10)
 FIX: Make the clockwise button change its label to "Counterclockwise" when toggled
 
-2.1.3
+2.1.3 (Heistergand)
 FIX: added id tags to menu button elements, ...just because.
 
 2.1.2
