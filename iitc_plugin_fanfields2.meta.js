@@ -8,6 +8,6 @@
 // @include         https://intel.ingress.com/*
 // @match           https://intel.ingress.com/*
 // @grant           none
-// @downloadURL https://github.com/bryane50/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
-// @updateURL https://github.com/bryane50/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
+// @downloadURL https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
+// @updateURL https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
 // ==/UserScript==
