@@ -1,10 +1,11 @@
 # Fan Fields 2
 An INGRESS fan field planner plugin for IITC
 
-I finished playing INGRESS a long time ago. No more changes will be mad in this repository.
-If you like to get updates to it, developers can FORK THIS PROJECT and continue with it.
+I finished playing INGRESS a long time ago. No changes have been made in this repository for a long time, but 
+some contributors picked the challenge to improve this script. I finally merged the changes.
 
-## ...and meanwhile some really did that. 
+## forks
+If you like to get updates to it, developers can FORK THIS PROJECT and continue with it.
 
 Get a glympse at the forks and what they added and fixed to make it even better:
 https://github.com/Heistergand/fanfields2/network
