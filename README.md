@@ -15,3 +15,4 @@ Don't miss this awesome youtube review by Ingress Agent 57Cell aka Michael Hartl
 https://www.youtube.com/watch?v=Z9TPlpnMYyI
 
 Thank you, 57Cell for making awesome ingress videos. This script wouldn't exist without your fanfields videos.
+

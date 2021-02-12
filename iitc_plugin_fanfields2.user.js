@@ -3,34 +3,43 @@
 // @name            IITC plugin: Fan Fields 2
 // @author          Heistergand
 // @category        Layer
-// @version         2.1.3
+// @version         2.1.9.1
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
-// @include         https://*.ingress.com/intel*
-// @include         http://*.ingress.com/intel*
-// @include         https://*.ingress.com/mission/*
-// @include         http://*.ingress.com/mission/*
-// @match           https://*.ingress.com/intel*
-// @match           http://*.ingress.com/intel*
-// @match           https://*.ingress.com/mission/*
-// @match           http://*.ingress.com/mission/*
+// @include         https://intel.ingress.com/*
+// @match           https://intel.ingress.com/*
 // @grant           none
-
-// @downloadURL https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
-// @updateURL https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
+// @downloadURL https://github.com/zysfryar/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
+// @updateURL https://github.com/zysfryar/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
 // ==/UserScript==
 
 /*
-
-I FINISHED PLAYING INGRESS MONTHS AGO. NO MORE CHANGES WILL BE MADE.
-
-THE PROJECT IS NOW ARCHIVED ON GITHUB. IF YOU LIKE TO GET UPDATES TO IT, 
-DEVELOPERS CAN FORK THIS PROJECT AND CONTINUE ON THEIR OWN.
-
+  Forked from Heistergand, with contributions from Seth10 and bryane50
 */
 
 /*
 Version History:
-2.1.3
+2.1.9.1 (zysfryar)
+Fixed blank in header for compatibility with IITC-CE Button.
+
+2.1.9 (bryane50)
+Fix for missing constants in leaflet verion 1.6.0. 
+
+2.1.8 (bryane50)
+Added starting portal advance button to select among the list of
+perimeter portals.
+
+2.1.7 (bryane50)
+Removed marker and random selection of starting point portal. Replaced
+with use of first outer hull portal. This ensures maximum fields will
+be generated.
+
+2.1.5 (Seth10)
+FIX: Minor syntax issue affecting potentially more strict runtimes
+
+2.1.4 (Seth10)
+FIX: Make the clockwise button change its label to "Counterclockwise" when toggled
+
+2.1.3 (Heistergand)
 FIX: added id tags to menu button elements, ...just because.
 
 2.1.2
@@ -119,6 +128,11 @@ function wrapper(plugin_info) {
     thisplugin.LABEL_WIDTH = 100;
     thisplugin.LABEL_HEIGHT = 49;
 
+    // constants no longer present in leaflet 1.6.0
+    thisplugin.DEG_TO_RAD = Math.PI / 180;
+    thisplugin.RAD_TO_DEG = 180 / Math.PI;
+
+
     thisplugin.labelLayers = {};
 
     thisplugin.startingpoint = undefined;
@@ -127,7 +141,9 @@ function wrapper(plugin_info) {
     thisplugin.locations = [];
     thisplugin.fanpoints = [];
     thisplugin.sortedFanpoints = [];
-
+    thisplugin.perimeterpoints = [];
+    thisplugin.startingpointIndex = 0;
+	
     thisplugin.links = [];
     thisplugin.linksLayerGroup = null;
     thisplugin.fieldsLayerGroup = null;
@@ -167,28 +183,35 @@ function wrapper(plugin_info) {
             }
         });
 
-
-
-
     };
+
+    // cycle to next starting point on the convex hull list of portals
+    thisplugin.nextStartingPoint = function() {
+        // *** startingpoint handling is duplicated in updateLayer().
+        var i = thisplugin.startingpointIndex + 1;
+        if (i >= thisplugin.perimeterpoints.length) {
+            i = 0;
+        }
+        thisplugin.startingpointIndex = i;
+
+        thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
+        thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
+        //console.log("new index " + thisplugin.startingpointIndex);
+        thisplugin.updateLayer();
+    };
+   
     thisplugin.generateTasks = function() {};
     thisplugin.reset = function() {};
     thisplugin.help = function() {
         dialog({
-            html: '<p>Draw a polygon with Drawtools.<br>If you like, place a marker on a portal to enforce it to be the anchor. The marker can be outside the polygon. '+
+            html: '<p>Draw a polygon with Drawtools. '+
 
-
-
-
-            'Let Fanfields make the magic.</p>'+
             '<p>Use the Lock function to prevent the script from recalculating anything. This is useful if you have a large area and want to zoom into details.</p>  '+
             '<p>Try to switch your plan to counterclockwise direction. Your route might be easier or harder if you change directions. Also try different anchors to get one more field out of some portal constellations.</p> '+
             '<p>Export your fanfield portals to bookmarks to extend your possibilites to work with the information.</p>'+
             '<p>There are some known issues you should be aware of:<br>This script uses a simple method to check for crosslinks. '+
             'It may suggest links that are not possible in dense areas because <i>that last portal</i> is in the way. It means they have flipped order. '+
             'If you\'re not sure, link to the center for both portals first and see what you can link. You\'ll get the same amount of fields, but need to farm other keys.</p>'+
-            '<p>When you choose an anchor in the middle of the fields, the script may try to close fields around the center too early, resulting in covered portals you did'+
-            ' not link from yet. Be aware.<br>(It\'s on the todo-list though...) </p>'+
             '',
             id: 'plugin_fanfields_alert_help',
             title: 'Fan Fields - Help',
@@ -292,12 +315,12 @@ function wrapper(plugin_info) {
     thisplugin.is_clockwise = true;
     thisplugin.toggleclockwise = function() {
         thisplugin.is_clockwise = !thisplugin.is_clockwise;
-        var clckwise="";
+        var clockwiseSymbol="", clockwiseWord="";
         if (thisplugin.is_clockwise)
-            clckwise = "&#8635;";
+            clockwiseSymbol = "&#8635;", clockwiseWord = "Clockwise";
         else
-            clckwise = "&#8634;";
-        $('#plugin_fanfields_clckwsbtn').html('Clockwise:&nbsp;('+clckwise+')');
+            clockwiseSymbol = "&#8634;", clockwiseWord = "Counterclockwise";
+        $('#plugin_fanfields_clckwsbtn').html(clockwiseWord+':&nbsp;('+clockwiseSymbol+')');
         thisplugin.delayedUpdateLayer(0.2);
     };
 
@@ -401,7 +424,7 @@ function wrapper(plugin_info) {
         Change vars to meet original links
         dGuid,dLatE6,dLngE6,oGuid,oLatE6,oLngE6
         */
-        //console.log("FANPOINTS: DEBUG ");
+        var x1, y1, x2, y2, x3, y3, x4, y4;
         x1 = link1.a.x;
         y1 = link1.a.y;
         x2 = link1.b.x;
@@ -495,9 +518,6 @@ function wrapper(plugin_info) {
             delete thisplugin.labelLayers[guid];
         }
 
-        // var d = window.portals[guid].options.data;
-        // var portalName = d.title;
-
         var label = L.marker(latLng, {
             icon: L.divIcon({
                 className: 'plugin_fanfields',
@@ -505,7 +525,7 @@ function wrapper(plugin_info) {
                 iconSize: [thisplugin.LABEL_WIDTH,thisplugin.LABEL_HEIGHT],
                 html: labelText
             }),
-            guid: guid,
+            guid: guid
         });
         thisplugin.labelLayers[guid] = label;
         label.addTo(thisplugin.numbersLayerGroup);
@@ -538,8 +558,8 @@ function wrapper(plugin_info) {
  */
 
     L.LatLng.prototype.bearingToE6 = function(other) {
-        var d2r  = L.LatLng.DEG_TO_RAD;
-        var r2d  = L.LatLng.RAD_TO_DEG;
+        var d2r  = thisplugin.DEG_TO_RAD;
+        var r2d  = thisplugin.RAD_TO_DEG;
         var lat1 = this.lat * d2r;
         var lat2 = other.lat * d2r;
         var dLon = (other.lng-this.lng) * d2r;
@@ -572,6 +592,7 @@ function wrapper(plugin_info) {
 
 
     thisplugin.getBearing = function (a,b) {
+        var starting_ll, other_ll;
         starting_ll = map.unproject(a, thisplugin.PROJECT_ZOOM);
         other_ll = map.unproject(b, thisplugin.PROJECT_ZOOM);
         return starting_ll.bearingToE6(other_ll);
@@ -590,22 +611,24 @@ function wrapper(plugin_info) {
         return bearingword;
     };
 
+    // find points in polygon 
     thisplugin.filterPolygon = function (points, polygon) {
         var result = [];
-        var guid,i,ax,ay,bx,by,la,lb,cos,alpha,det;
+        var guid,i,j,ax,ay,bx,by,la,lb,cos,alpha,det;
 
 
         for (guid in points) {
             var asum = 0;
             for (i = 0, j = polygon.length-1; i < polygon.length; j = i, ++i) {
-                ax = polygon[i].x-points[guid].x;
-                ay = polygon[i].y-points[guid].y;
-                bx = polygon[j].x-points[guid].x;
-                by = polygon[j].y-points[guid].y;
-                la = Math.sqrt(ax*ax+ay*ay);
-                lb = Math.sqrt(bx*bx+by*by);
-                if (Math.abs(la) < 0.1 || Math.abs(lb) < 0.1 ) // the point is a vertex of the polygon
+                ax = polygon[i].x - points[guid].x;
+                ay = polygon[i].y - points[guid].y;
+                bx = polygon[j].x - points[guid].x;
+                by = polygon[j].y - points[guid].y;
+                la = Math.sqrt(ax*ax + ay*ay);
+                lb = Math.sqrt(bx*bx + by*by);
+                if (Math.abs(la) < 0.1 || Math.abs(lb) < 0.1 ) { // the point is a vertex of the polygon
                     break;
+		}
                 cos = (ax*bx+ay*by)/la/lb;
                 if (cos < -1)
                     cos = -1;
@@ -665,22 +688,11 @@ function wrapper(plugin_info) {
         thisplugin.linksLayerGroup.clearLayers();
         thisplugin.fieldsLayerGroup.clearLayers();
         thisplugin.numbersLayerGroup.clearLayers();
-        //thisplugin.clearAllPortalLabels();
         var ctrl = [$('.leaflet-control-layers-selector + span:contains("Fanfields links")').parent(),
                     $('.leaflet-control-layers-selector + span:contains("Fanfields fields")').parent(),
                     $('.leaflet-control-layers-selector + span:contains("Fanfields numbers")').parent()];
 
 
-
-
-
-
-        for (i in plugin.drawTools.drawnItems._layers) {
-            var layer = plugin.drawTools.drawnItems._layers[i];
-            if (layer instanceof L.Marker) {
-                thisplugin.startingpoint = map.project(layer.getLatLng(), thisplugin.PROJECT_ZOOM);
-            }
-        }
         function drawStartLabel(a) {
             if (n <2) return;
             var alatlng = map.unproject(a.point, thisplugin.PROJECT_ZOOM);
@@ -722,14 +734,10 @@ function wrapper(plugin_info) {
 
         }
 
-        // var bounds = map.getBounds();
+	// Get portal locations
         $.each(window.portals, function(guid, portal) {
             var ll = portal.getLatLng();
             var p = map.project(ll, thisplugin.PROJECT_ZOOM);
-            if (thisplugin.startingpoint !== undefined ) {
-                if (p.equals(thisplugin.startingpoint))
-                    thisplugin.startingpointGUID = guid;
-            }
 
             thisplugin.locations[guid] = p;
         });
@@ -755,12 +763,14 @@ function wrapper(plugin_info) {
         function findFanpoints(dtLayers,locations,filter) {
             var polygon, dtLayer, result = [];
             var i, filtered;
+            var fanLayer;
             for( dtLayer in dtLayers) {
                 fanLayer = dtLayers[dtLayer];
                 if (!(fanLayer instanceof L.GeodesicPolygon)) {
                     continue;
                 }
                 ll = fanLayer.getLatLngs();
+
                 polygon = [];
                 for ( k = 0; k < ll.length; ++k) {
                     p = map.project(ll[k], thisplugin.PROJECT_ZOOM);
@@ -781,22 +791,71 @@ function wrapper(plugin_info) {
                                        this.locations,
                                        this.filterPolygon);
 
-        //if (this.fanpoints === undefined || this.fanpoints
-        if (Object.keys(this.fanpoints).length === 0) return;
+        var npoints = Object.keys(this.fanpoints).length;
+        if (npoints === 0)
+	    return;
 
-        if (thisplugin.startingpoint === undefined || thisplugin.startingpoint.length === 0) {
-            var firstfanpoint = Object.keys(this.fanpoints)[0];
-            thisplugin.startingpoint = this.fanpoints[firstfanpoint]; // didn't use a marker to select a starting point?  use a random point inside the polygon.
-            thisplugin.startingpointGUID = firstfanpoint;
+        // used in convexHull
+        function cross(a, b, o) {
+          return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
         }
 
-        this.fanpoints[thisplugin.startingpointGUID] = thisplugin.startingpoint;
+        // Find convex hull from fanpoints list of points
+        // Returns array : [guid, [x,y],.....]
+        function convexHull(points) {
+            // convert to array
+            var pa = Object.entries(points).map(p => [p[0], [p[1].x, p[1].y]]);
+            // sort by x then y if x the same
+            pa.sort(function(a, b) {
+                return a[1][0] == b[1][0] ? a[1][1] - b[1][1] : a[1][0] - b[1][0];
+            });
 
-        function abtest(a,b,test) {
-            // returns a if test is true, else returns b
-            if (test)  return a;
-            else return b;
+            var lower = [];
+            var i;
+            for (i = 0; i < pa.length; i++) {
+                while (lower.length >= 2 && cross(lower[lower.length - 2][1], lower[lower.length - 1][1], pa[i][1]) <= 0) {
+                    lower.pop();
+                }
+                lower.push(pa[i]);
+            }
+
+            var upper = [];
+            for (i = pa.length - 1; i >= 0; i--) {
+                while (upper.length >= 2 && cross(upper[upper.length - 2][1], upper[upper.length - 1][1], pa[i][1]) <= 0) {
+                    upper.pop();
+                }
+                upper.push(pa[i]);
+            }
+
+            upper.pop();
+            lower.pop();
+            return lower.concat(upper);
+        };
+
+        thisplugin.perimeterpoints = convexHull(this.fanpoints);
+        /*
+        console.log("convex hull :");
+        hullpoints.forEach(function(point, index) {
+            if (point[0]) {
+                var p = window.portals[point[0]];
+                var pname = p.options.data.title;
+                console.log(point[0] + "[" + point[1][0] + "," + point[1][1] + "]" + pname);
+            }
+        });
+        */
+
+        //console.log("fanpoints: ========================================================");
+        //console.log(this.fanpoints);
+
+        // Use currently selected index in outer hull as starting point
+        if (thisplugin.startingpointIndex >= thisplugin.perimeterpoints.length) {
+          thisplugin.startingpointIndex = 0;
         }
+        console.log("startingpointIndex = " + thisplugin.startingpointIndex);
+        thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
+        thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
+        //console.log("Starting point : " + thisplugin.startingpointGUID);
+        //console.log("=> " + thisplugin.startingpoint);
 
         for (guid in this.fanpoints) {
             n++;
@@ -815,26 +874,15 @@ function wrapper(plugin_info) {
                                isFanLink: undefined
                               });
 
-
-
-
             }
         }
 
-        //fanlinks.sort(function(a, b){return a.bearing - b.bearing;});
-
-        //console.log(this.fanpoints);
-        //console.log(thisplugin.startingpoint);
-        //console.log("sorting...");
-
-        // var startpointindex = -1;
         for ( guid in this.fanpoints) {
             fp = this.fanpoints[guid];
             this.sortedFanpoints.push({point: fp,
                                        bearing: this.getBearing(thisplugin.startingpoint,fp),
                                        guid: guid,
                                        incoming: [] ,
-
                                        outgoing: [],
                                        is_startpoint: this.fanpoints[guid].equals(thisplugin.startingpoint)
                                       });
@@ -883,6 +931,7 @@ function wrapper(plugin_info) {
 
         donelinks = [];
         var outbound = 0;
+        var possibleline;
         for(pa = 0; pa < this.sortedFanpoints.length; pa++){
             bearing = this.sortedFanpoints[pa].bearing;
             //console.log("FANPOINTS: " + pa + " to 0 bearing: "+ bearing + " " + this.bearingWord(bearing));
@@ -1015,11 +1064,6 @@ function wrapper(plugin_info) {
                 drawNumber(fp,idx);
 
         });
-        // if (!startLabelDrawn && thisplugin.startingpoint !== undefined ) {
-        //     drawStartLabel(thisplugin.startingpoint, {});
-        //     startLabelDrawn = true;
-        // }
-
 
         $.each(thisplugin.links, function(idx, edge) {
             drawLink(edge.a, edge.b, {
@@ -1050,9 +1094,9 @@ function wrapper(plugin_info) {
         if (thisplugin.timer === undefined) {
             thisplugin.timer = setTimeout ( function() {
 
-
                 thisplugin.timer = undefined;
-                if (!thisplugin.is_locked) thisplugin.updateLayer();
+                if (!thisplugin.is_locked) 
+		    thisplugin.updateLayer();
             }, wait*350);
 
         }
@@ -1061,7 +1105,8 @@ function wrapper(plugin_info) {
 
 
     thisplugin.setup = function() {
-        var button2 = '<a class="plugin_fanfields_selectpolybtn plugin_fanfields_btn" id="plugin_fanfields_selectpolybtn" onclick="window.plugin.fanfields.selectPolygon(\'start\');">Select&nbsp;Polygon</a> ';
+        var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">Cycle Start</a> ';
+        //var button2 = '<a class="plugin_fanfields_selectpolybtn plugin_fanfields_btn" id="plugin_fanfields_selectpolybtn" onclick="window.plugin.fanfields.selectPolygon(\'start\');">Select&nbsp;Polygon</a> ';
         var button3 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();">Write&nbsp;Bookmarks</a> ';
         var button4 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();">Show&nbsp;as&nbsp;list</a> ';
 
@@ -1074,6 +1119,7 @@ function wrapper(plugin_info) {
         var button11 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
         var button1 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" >Help</a> ';
         var fanfields_buttons =
+            button12 + 
             //  button2 +
             button3 + button11 +
             button4 +
@@ -1108,10 +1154,6 @@ function wrapper(plugin_info) {
 
             return;
         }
-
-
-
-
 
         $('#plugin_fanfields_toolbox').append(fanfields_buttons);
         thisplugin.setupCSS();
