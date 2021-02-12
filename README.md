@@ -1,4 +1,4 @@
-# fanfields2
+# Fan Fields 2
 Fanfields 2 - An INGRESS Fanfield planner plugin for IITC
 
 I finished playing INGRESS a long time ago. No more changes will be mad in this repository.
