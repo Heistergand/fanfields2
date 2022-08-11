@@ -1144,7 +1144,8 @@ function wrapper(plugin_info) {
         if (!window.plugin.drawTools || !window.plugin.bookmarks) {
 
             dialog({
-                html: '<b>Fan Fields</b><p>Fan Fields requires IITC drawtools and bookmarks plugins</p><a href="https://iitc.me/desktop/">Download here</a>',
+                html: '<b>Fan Fields</b><p>Fan Fields requires IITC drawtools and bookmarks plugins</p><a href="https://iitc.me/desktop/">Download here</a>' +
+		    '<p>If you are new to IITC and you''ve just installed drawtools and bookmarks but they do not load, try to edit all ingress scripts headers, remove all @include and @match tags and replace them with ony the @match tag "// @match           https://intel.ingress.com/*".</p>',
                 id: 'plugin_fanfields_alert_dependencies',
                 title: 'Fan Fields - Missing dependency'
             });
