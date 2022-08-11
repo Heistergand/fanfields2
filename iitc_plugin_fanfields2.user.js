@@ -11,12 +11,14 @@
 // @updateURL https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
 // ==/UserScript==
 
-/*
-  Forked from Heistergand, with contributions from Seth10 and bryane50
-*/
 
 /*
+
 Version History:
+
+2.1.9.2 (Heistergand)
+minor fixes
+
 2.1.9.1 (zysfryar)
 Fixed blank in header for compatibility with IITC-CE Button.
 
