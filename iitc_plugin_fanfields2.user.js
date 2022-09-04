@@ -3,37 +3,44 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.1.10
+// @version         2.2.0
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
 // @grant           none
-// @downloadURL https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
-// @updateURL https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
+// @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
+// @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
+// @icon            https://www.google.com/s2/favicons?sz=64&domain=intel.ingress.com
 // ==/UserScript==
 /*
 
 Version History:
-2.1.10 (Heistergand
-minor fixes
+
+2.2.0 (Heistergand)
+FIX: Reintroducing the marker function which was removed in 2.1.7 
+     so that a Drawtools Marker can be used to force a portal 
+     inside (or outside) the hull to be the anchor.
+
+2.1.10 (Heistergand)
+FIX: minor fixes
 
 2.1.9.2 (Heistergand)
-minor fixes
+FIX: minor fixes
 
 2.1.9.1 (zysfryar)
-Fixed blank in header for compatibility with IITC-CE Button.
+FIX: Fixed blank in header for compatibility with IITC-CE Button.
 
 2.1.9 (bryane50)
-Fix for missing constants in leaflet verion 1.6.0. 
+FIX: Fix for missing constants in leaflet verion 1.6.0.
 
 2.1.8 (bryane50)
-Added starting portal advance button to select among the list of
-perimeter portals.
+NEW: Added starting portal advance button to select 
+     among the list of perimeter portals.
 
 2.1.7 (bryane50)
-Removed marker and random selection of starting point portal. Replaced
-with use of first outer hull portal. This ensures maximum fields will
-be generated.
+DEL: Removed marker and random selection of starting point portal. 
+NEW: Replaced with use of first outer hull portal. This ensures 
+     maximum fields will be generated.
 
 2.1.5 (Seth10)
 FIX: Minor syntax issue affecting potentially more strict runtimes
@@ -145,7 +152,7 @@ function wrapper(plugin_info) {
     thisplugin.sortedFanpoints = [];
     thisplugin.perimeterpoints = [];
     thisplugin.startingpointIndex = 0;
-	
+
     thisplugin.links = [];
     thisplugin.linksLayerGroup = null;
     thisplugin.fieldsLayerGroup = null;
@@ -201,7 +208,7 @@ function wrapper(plugin_info) {
         //console.log("new index " + thisplugin.startingpointIndex);
         thisplugin.updateLayer();
     };
-   
+
     thisplugin.generateTasks = function() {};
     thisplugin.reset = function() {};
     thisplugin.help = function() {
@@ -613,7 +620,7 @@ function wrapper(plugin_info) {
         return bearingword;
     };
 
-    // find points in polygon 
+    // find points in polygon
     thisplugin.filterPolygon = function (points, polygon) {
         var result = [];
         var guid,i,j,ax,ay,bx,by,la,lb,cos,alpha,det;
@@ -672,6 +679,8 @@ function wrapper(plugin_info) {
         var fp_index, fp, bearing, sublinkCount;
         thisplugin.startingpoint = undefined;
         thisplugin.startingpointGUID = "";
+        thisplugin.startingMarker = undefined;
+        thisplugin.startingMarkerGUID = undefined;
         thisplugin.centerKeys = 0;
 
 
@@ -694,6 +703,16 @@ function wrapper(plugin_info) {
                     $('.leaflet-control-layers-selector + span:contains("Fanfields fields")').parent(),
                     $('.leaflet-control-layers-selector + span:contains("Fanfields numbers")').parent()];
 
+
+        // using marker as starting point, if option enabled
+        for (i in plugin.drawTools.drawnItems._layers) {
+            var layer = plugin.drawTools.drawnItems._layers[i];
+            if (layer instanceof L.Marker) {
+                console.log("Marker found")
+                thisplugin.startingMarker = map.project(layer.getLatLng(), thisplugin.PROJECT_ZOOM);
+                console.log("Marker set to " + thisplugin.startingMarker)
+            }
+        }
 
         function drawStartLabel(a) {
             if (n <2) return;
@@ -740,7 +759,12 @@ function wrapper(plugin_info) {
         $.each(window.portals, function(guid, portal) {
             var ll = portal.getLatLng();
             var p = map.project(ll, thisplugin.PROJECT_ZOOM);
-
+            if (thisplugin.startingMarker !== undefined ) {
+                if (p.equals(thisplugin.startingMarker)) {
+                    thisplugin.startingMarkerGUID = guid;
+                    console.log("Marker GUID = " + thisplugin.startingMarkerGUID)
+                }
+            }
             thisplugin.locations[guid] = p;
         });
 
@@ -834,7 +858,42 @@ function wrapper(plugin_info) {
             return lower.concat(upper);
         };
 
+        // Add Marker Point to list of Fanpoints
+        if (thisplugin.startingMarker !== undefined) {
+            this.fanpoints[thisplugin.startingMarkerGUID] = thisplugin.startingMarker;
+
+        }
+
+        function extendperimeter(perimeter, GUID, point) {
+            var i;
+            var done = false;
+            debugger;
+            for (i = 0; i < perimeter.length; i++) {
+                if (perimeter[i] == GUID) {
+                    //already in
+                    done=true;
+                    break;
+                }
+                if (done) break;
+            }
+            if (!done) {
+                perimeter.push([GUID,[point.x, point.y]])
+            }
+            return perimeter;
+        }
+
         thisplugin.perimeterpoints = convexHull(this.fanpoints);
+
+
+        if (thisplugin.startingMarker !== undefined) {
+            // extend perimeter by Marker.
+            // You might ask: "why? It's inside the hull?" - Well, yes.
+            // But givegiving the player as much freedom as possible is key.
+            // Maybe it's a home portal or they already have tons of keys for it.
+            // therefore you can force a starting point portal by adding a marker.
+            thisplugin.perimeterpoints = extendperimeter(thisplugin.perimeterpoints, thisplugin.startingMarkerGUID, thisplugin.startingMarker)
+        }
+
         /*
         console.log("convex hull :");
         hullpoints.forEach(function(point, index) {
@@ -1097,7 +1156,7 @@ function wrapper(plugin_info) {
             thisplugin.timer = setTimeout ( function() {
 
                 thisplugin.timer = undefined;
-                if (!thisplugin.is_locked) 
+                if (!thisplugin.is_locked)
 		    thisplugin.updateLayer();
             }, wait*350);
 
@@ -1121,7 +1180,7 @@ function wrapper(plugin_info) {
         var button11 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
         var button1 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" >Help</a> ';
         var fanfields_buttons =
-            button12 + 
+            button12 +
             //  button2 +
             button3 + button11 +
             button4 +
@@ -1148,7 +1207,8 @@ function wrapper(plugin_info) {
 
             dialog({
                 html: '<b>Fan Fields</b><p>Fan Fields requires IITC drawtools and bookmarks plugins</p><a href="https://iitc.me/desktop/">Download here</a>' +
-		    '<p>If you are new to IITC and you''ve just installed drawtools and bookmarks but they do not load, try to edit all ingress scripts headers, remove all @include and @match tags and replace them with ony the @match tag "// @match           https://intel.ingress.com/*".</p>',
+                "<p>If you are new to IITC and you've just installed drawtools and bookmarks but they do not load, try to edit all ingress scripts " +
+                'headers, remove all @include and @match tags and replace them with ony the @match tag "// @match           https://intel.ingress.com/*".</p>',
                 id: 'plugin_fanfields_alert_dependencies',
                 title: 'Fan Fields - Missing dependency'
             });
