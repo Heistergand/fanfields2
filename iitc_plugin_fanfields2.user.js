@@ -11,7 +11,7 @@
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
 // @icon            https://www.google.com/s2/favicons?sz=64&domain=intel.ingress.com
-// @support         https://github.com/Heistergand/fanfields2/issues
+// @supportURL      https://github.com/Heistergand/fanfields2/issues
 // @namespace       https://github.com/Heistergand/fanfields2
 // ==/UserScript==
 /*
