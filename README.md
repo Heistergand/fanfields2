@@ -12,7 +12,7 @@ Get a glympse at the forks and what they added and fixed to make it even better:
 https://github.com/Heistergand/fanfields2/network
 
 ## Review on Youtube
-Don't miss this awesome youtube review by Ingress Agent 57Cell aka Michael Hartley:
+Don't miss this review by Ingress Agent 57Cell aka Michael Hartley:
 
 https://www.youtube.com/watch?v=Z9TPlpnMYyI
 
