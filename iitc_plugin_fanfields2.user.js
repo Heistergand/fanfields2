@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.2.2
+// @version         2.2.3
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -19,8 +19,9 @@
 Version History:
 
 2.2.3 (Heistergand)
-FIX: Minor fixes
-===== TODO: collect changes in branch patch-1 and merge the patch to Version 2.2.3 =====
+FIX: Made Bookmark Plugin optional
+NEW: Anchor shifting ("Cycle Start") is now bidirectional.
+FIX: Some minor fixes and code formatting.
 
 2.2.2 (Heistergand)
 NEW: Added favicon.ico to script header.
