@@ -1,9 +1,10 @@
+
 // ==UserScript==
 // @name            IITC plugin: Fan Fields 2
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.2.2
+// @version         2.2.3
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
