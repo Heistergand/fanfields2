@@ -20,7 +20,8 @@ Version History:
 
 2.2.3 (Heistergand)
 FIX: Minor fixes
-===== TODO: collect changes in branch patch-1 and merge the patch to Version 2.2.3 ===== 
+===== TODO: collect changes in branch patch-1 and merge the patch to Version 2.2.3 =====
+
 2.2.2 (Heistergand)
 NEW: Added favicon.ico to script header.
 
@@ -215,10 +216,19 @@ function wrapper(plugin_info) {
             i = 0;
         }
         thisplugin.startingpointIndex = i;
-
         thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
         thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
-        //console.log("new index " + thisplugin.startingpointIndex);
+        thisplugin.updateLayer();
+    };
+
+    thisplugin.previousStartingPoint = function() {
+        var i = thisplugin.startingpointIndex - 1;
+        if (i < 0) {
+            i = thisplugin.perimeterpoints.length -1;
+        }
+        thisplugin.startingpointIndex = i;
+        thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
+        thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
         thisplugin.updateLayer();
     };
 
@@ -585,54 +595,54 @@ function wrapper(plugin_info) {
         }
     };
 
-	thisplugin.initLatLng = function() {
-		// https://github.com/gregallensworth/Leaflet/
-		/*
-		 * extend Leaflet's LatLng class
-		 * giving it the ability to calculate the bearing to another LatLng
-		 * Usage example:
-		 *     here  = map.getCenter();   / some latlng
-		 *     there = L.latlng([37.7833,-122.4167]);
-		 *     var whichway = here.bearingWordTo(there);
-		 *     var howfar   = (here.distanceTo(there) / 1609.34).toFixed(2);
-		 *     alert("San Francisco is " + howfar + " miles, to the " + whichway );
-		 *
-		 * Greg Allensworth   <greg.allensworth@gmail.com>
-		 * No license, use as you will, kudos welcome but not required, etc.
-		 */
+    thisplugin.initLatLng = function() {
+        // https://github.com/gregallensworth/Leaflet/
+        /*
+         * extend Leaflet's LatLng class
+         * giving it the ability to calculate the bearing to another LatLng
+         * Usage example:
+         *     here  = map.getCenter();   / some latlng
+         *     there = L.latlng([37.7833,-122.4167]);
+         *     var whichway = here.bearingWordTo(there);
+         *     var howfar   = (here.distanceTo(there) / 1609.34).toFixed(2);
+         *     alert("San Francisco is " + howfar + " miles, to the " + whichway );
+         *
+         * Greg Allensworth   <greg.allensworth@gmail.com>
+         * No license, use as you will, kudos welcome but not required, etc.
+         */
 
-		L.LatLng.prototype.bearingToE6 = function(other) {
-			var d2r  = thisplugin.DEG_TO_RAD;
-			var r2d  = thisplugin.RAD_TO_DEG;
-			var lat1 = this.lat * d2r;
-			var lat2 = other.lat * d2r;
-			var dLon = (other.lng-this.lng) * d2r;
-			var y    = Math.sin(dLon) * Math.cos(lat2);
-			var x    = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
-			var brng = Math.atan2(y, x);
-			brng = parseInt( brng * r2d * 1E6 );
-			brng = ((brng + 360 * 1E6) % (360 * 1E6) / 1E6);
-			return brng;
-		};
+        L.LatLng.prototype.bearingToE6 = function(other) {
+            var d2r  = thisplugin.DEG_TO_RAD;
+            var r2d  = thisplugin.RAD_TO_DEG;
+            var lat1 = this.lat * d2r;
+            var lat2 = other.lat * d2r;
+            var dLon = (other.lng-this.lng) * d2r;
+            var y    = Math.sin(dLon) * Math.cos(lat2);
+            var x    = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+            var brng = Math.atan2(y, x);
+            brng = parseInt( brng * r2d * 1E6 );
+            brng = ((brng + 360 * 1E6) % (360 * 1E6) / 1E6);
+            return brng;
+        };
 
-		L.LatLng.prototype.bearingWord = function(bearing) {
-			var bearingword = '';
-			if      (bearing >=  22 && bearing <=  67) bearingword = 'NE';
-			else if (bearing >=  67 && bearing <= 112) bearingword =  'E';
-			else if (bearing >= 112 && bearing <= 157) bearingword = 'SE';
-			else if (bearing >= 157 && bearing <= 202) bearingword =  'S';
-			else if (bearing >= 202 && bearing <= 247) bearingword = 'SW';
-			else if (bearing >= 247 && bearing <= 292) bearingword =  'W';
-			else if (bearing >= 292 && bearing <= 337) bearingword = 'NW';
-			else if (bearing >= 337 || bearing <=  22) bearingword =  'N';
-			return bearingword;
-		};
+        L.LatLng.prototype.bearingWord = function(bearing) {
+            var bearingword = '';
+            if      (bearing >=  22 && bearing <=  67) bearingword = 'NE';
+            else if (bearing >=  67 && bearing <= 112) bearingword =  'E';
+            else if (bearing >= 112 && bearing <= 157) bearingword = 'SE';
+            else if (bearing >= 157 && bearing <= 202) bearingword =  'S';
+            else if (bearing >= 202 && bearing <= 247) bearingword = 'SW';
+            else if (bearing >= 247 && bearing <= 292) bearingword =  'W';
+            else if (bearing >= 292 && bearing <= 337) bearingword = 'NW';
+            else if (bearing >= 337 || bearing <=  22) bearingword =  'N';
+            return bearingword;
+        };
 
-		L.LatLng.prototype.bearingWordTo = function(other) {
-			var bearing = this.bearingToE6(other) ;
-			return this.bearingWord(bearing);
-		};
-	}
+        L.LatLng.prototype.bearingWordTo = function(other) {
+            var bearing = this.bearingToE6(other) ;
+            return this.bearingWord(bearing);
+        };
+    }
 
     thisplugin.getBearing = function (a,b) {
         var starting_ll, other_ll;
@@ -671,7 +681,7 @@ function wrapper(plugin_info) {
                 lb = Math.sqrt(bx*bx + by*by);
                 if (Math.abs(la) < 0.1 || Math.abs(lb) < 0.1 ) { // the point is a vertex of the polygon
                     break;
-		}
+                }
                 cos = (ax*bx+ay*by)/la/lb;
                 if (cos < -1)
                     cos = -1;
@@ -791,7 +801,7 @@ function wrapper(plugin_info) {
 
         }
 
-	// Get portal locations
+        // Get portal locations
         $.each(window.portals, function(guid, portal) {
             var ll = portal.getLatLng();
             var p = map.project(ll, thisplugin.PROJECT_ZOOM);
@@ -855,11 +865,11 @@ function wrapper(plugin_info) {
 
         var npoints = Object.keys(this.fanpoints).length;
         if (npoints === 0)
-	    return;
+            return;
 
         // used in convexHull
         function cross(a, b, o) {
-          return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+            return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
 
         }
 
@@ -947,7 +957,7 @@ function wrapper(plugin_info) {
 
         // Use currently selected index in outer hull as starting point
         if (thisplugin.startingpointIndex >= thisplugin.perimeterpoints.length) {
-          thisplugin.startingpointIndex = 0;
+            thisplugin.startingpointIndex = 0;
         }
         console.log("startingpointIndex = " + thisplugin.startingpointIndex);
         thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
@@ -1198,7 +1208,7 @@ function wrapper(plugin_info) {
 
                 thisplugin.timer = undefined;
                 if (!thisplugin.is_locked)
-		    thisplugin.updateLayer();
+                    thisplugin.updateLayer();
             }, wait*350);
 
         }
@@ -1207,36 +1217,37 @@ function wrapper(plugin_info) {
 
 
     thisplugin.setup = function() {
-		//Extend LatLng here to ensure it was created before
-		thisplugin.initLatLng();
+        //Extend LatLng here to ensure it was created before
+        thisplugin.initLatLng();
         if(typeof window.plugin.bookmarks != 'undefined') {
-			var button3 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();">Write&nbsp;Bookmarks</a> ';
-		}
+            var button3 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();">Write&nbsp;Bookmarks</a> ';
+        }
         var button4 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();">Show&nbsp;as&nbsp;list</a> ';
 
         //var button5 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_resetbtn" onclick="window.plugin.fanfields.reset();">Reset</a> ';
-        var button6 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise:(&#8635;)</a> ';
+        var button6 = '<br><a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise:(&#8635;)</a> ';
         var button7 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();">unlocked</a> ';
         var button8 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();">inbounding</a> ';
         var button9 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
-        var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">Cycle&nbsp;Start</a> ';
+        var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();">Shift&nbsp;Anchor:&nbsp;&#11207;</a><a '+
+            'class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">&#11208;</a>';
         var button10 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();">Stats</a> ';
         var button11 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
         var button1 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" >Help</a> ';
 
         var fanfields_buttons = '';
-		if(typeof window.plugin.bookmarks != 'undefined') {
-			fanfields_buttons += button3;
-		}
-		fanfields_buttons +=
+        if(typeof window.plugin.bookmarks != 'undefined') {
+            fanfields_buttons += button3;
+        }
+        fanfields_buttons +=
             button11 +
             button4 +
             // button5 +
             button6 +
             button7 +
             button8 +
-            button9 +
             button12 +
+            button9 +
             button10 +
             button1
         ;
