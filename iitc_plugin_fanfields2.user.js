@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.2.2
+// @version         2.2.3
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -17,6 +17,11 @@
 /*
 
 Version History:
+
+2.2.3 (Heistergand)
+FIX: Made Bookmark Plugin optional
+NEW: Anchor shifting ("Cycle Start") is now bidirectional.
+FIX: Some minor fixes and code formatting.
 
 2.2.2 (Heistergand)
 NEW: Added favicon.ico to script header.
@@ -129,7 +134,6 @@ Click on a link to flip it's direction
 */
 
 
-
 function wrapper(plugin_info) {
     // ensure plugin framework is there, even if iitc is not yet loaded
     if(typeof window.plugin !== 'function') window.plugin = function() {};
@@ -213,10 +217,19 @@ function wrapper(plugin_info) {
             i = 0;
         }
         thisplugin.startingpointIndex = i;
-
         thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
         thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
-        //console.log("new index " + thisplugin.startingpointIndex);
+        thisplugin.updateLayer();
+    };
+
+    thisplugin.previousStartingPoint = function() {
+        var i = thisplugin.startingpointIndex - 1;
+        if (i < 0) {
+            i = thisplugin.perimeterpoints.length -1;
+        }
+        thisplugin.startingpointIndex = i;
+        thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
+        thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
         thisplugin.updateLayer();
     };
 
@@ -340,7 +353,7 @@ function wrapper(plugin_info) {
 
     };
     thisplugin.respectCurrentLinks = false;
-    thisplugin.togglecRespectCurrentLinks = function() {
+    thisplugin.toggleRespectCurrentLinks = function() {
         thisplugin.respectCurrentLinks = !thisplugin.respectCurrentLinks;
         if (thisplugin.respectCurrentLinks) {
             $('#plugin_fanfields_respectbtn').html('Respect&nbsp;Intel:&nbsp;ON');
@@ -464,8 +477,6 @@ function wrapper(plugin_info) {
     };
 
 
-
-
     thisplugin.intersects = function(link1, link2) {
         /* Todo:
         Change vars to meet original links
@@ -565,9 +576,6 @@ function wrapper(plugin_info) {
             delete thisplugin.labelLayers[guid];
         }
 
-
-
-
         var label = L.marker(latLng, {
             icon: L.divIcon({
                 className: 'plugin_fanfields',
@@ -588,58 +596,54 @@ function wrapper(plugin_info) {
         }
     };
 
-	thisplugin.initLatLng = function() {
+    thisplugin.initLatLng = function() {
+        // https://github.com/gregallensworth/Leaflet/
+        /*
+         * extend Leaflet's LatLng class
+         * giving it the ability to calculate the bearing to another LatLng
+         * Usage example:
+         *     here  = map.getCenter();   / some latlng
+         *     there = L.latlng([37.7833,-122.4167]);
+         *     var whichway = here.bearingWordTo(there);
+         *     var howfar   = (here.distanceTo(there) / 1609.34).toFixed(2);
+         *     alert("San Francisco is " + howfar + " miles, to the " + whichway );
+         *
+         * Greg Allensworth   <greg.allensworth@gmail.com>
+         * No license, use as you will, kudos welcome but not required, etc.
+         */
 
+        L.LatLng.prototype.bearingToE6 = function(other) {
+            var d2r  = thisplugin.DEG_TO_RAD;
+            var r2d  = thisplugin.RAD_TO_DEG;
+            var lat1 = this.lat * d2r;
+            var lat2 = other.lat * d2r;
+            var dLon = (other.lng-this.lng) * d2r;
+            var y    = Math.sin(dLon) * Math.cos(lat2);
+            var x    = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+            var brng = Math.atan2(y, x);
+            brng = parseInt( brng * r2d * 1E6 );
+            brng = ((brng + 360 * 1E6) % (360 * 1E6) / 1E6);
+            return brng;
+        };
 
+        L.LatLng.prototype.bearingWord = function(bearing) {
+            var bearingword = '';
+            if      (bearing >=  22 && bearing <=  67) bearingword = 'NE';
+            else if (bearing >=  67 && bearing <= 112) bearingword =  'E';
+            else if (bearing >= 112 && bearing <= 157) bearingword = 'SE';
+            else if (bearing >= 157 && bearing <= 202) bearingword =  'S';
+            else if (bearing >= 202 && bearing <= 247) bearingword = 'SW';
+            else if (bearing >= 247 && bearing <= 292) bearingword =  'W';
+            else if (bearing >= 292 && bearing <= 337) bearingword = 'NW';
+            else if (bearing >= 337 || bearing <=  22) bearingword =  'N';
+            return bearingword;
+        };
 
-		// https://github.com/gregallensworth/Leaflet/
-		/*
-		 * extend Leaflet's LatLng class
-		 * giving it the ability to calculate the bearing to another LatLng
-		 * Usage example:
-		 *     here  = map.getCenter();   / some latlng
-		 *     there = L.latlng([37.7833,-122.4167]);
-		 *     var whichway = here.bearingWordTo(there);
-		 *     var howfar   = (here.distanceTo(there) / 1609.34).toFixed(2);
-		 *     alert("San Francisco is " + howfar + " miles, to the " + whichway );
-		 *
-		 * Greg Allensworth   <greg.allensworth@gmail.com>
-		 * No license, use as you will, kudos welcome but not required, etc.
-		 */
-
-		L.LatLng.prototype.bearingToE6 = function(other) {
-			var d2r  = thisplugin.DEG_TO_RAD;
-			var r2d  = thisplugin.RAD_TO_DEG;
-			var lat1 = this.lat * d2r;
-			var lat2 = other.lat * d2r;
-			var dLon = (other.lng-this.lng) * d2r;
-			var y    = Math.sin(dLon) * Math.cos(lat2);
-			var x    = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
-			var brng = Math.atan2(y, x);
-			brng = parseInt( brng * r2d * 1E6 );
-			brng = ((brng + 360 * 1E6) % (360 * 1E6) / 1E6);
-			return brng;
-		};
-
-		L.LatLng.prototype.bearingWord = function(bearing) {
-			var bearingword = '';
-			if      (bearing >=  22 && bearing <=  67) bearingword = 'NE';
-			else if (bearing >=  67 && bearing <= 112) bearingword =  'E';
-			else if (bearing >= 112 && bearing <= 157) bearingword = 'SE';
-			else if (bearing >= 157 && bearing <= 202) bearingword =  'S';
-			else if (bearing >= 202 && bearing <= 247) bearingword = 'SW';
-			else if (bearing >= 247 && bearing <= 292) bearingword =  'W';
-			else if (bearing >= 292 && bearing <= 337) bearingword = 'NW';
-			else if (bearing >= 337 || bearing <=  22) bearingword =  'N';
-			return bearingword;
-		};
-
-		L.LatLng.prototype.bearingWordTo = function(other) {
-			var bearing = this.bearingToE6(other) ;
-			return this.bearingWord(bearing);
-		};
-
-	}
+        L.LatLng.prototype.bearingWordTo = function(other) {
+            var bearing = this.bearingToE6(other) ;
+            return this.bearingWord(bearing);
+        };
+    }
 
     thisplugin.getBearing = function (a,b) {
         var starting_ll, other_ll;
@@ -678,7 +682,7 @@ function wrapper(plugin_info) {
                 lb = Math.sqrt(bx*bx + by*by);
                 if (Math.abs(la) < 0.1 || Math.abs(lb) < 0.1 ) { // the point is a vertex of the polygon
                     break;
-		}
+                }
                 cos = (ax*bx+ay*by)/la/lb;
                 if (cos < -1)
                     cos = -1;
@@ -748,8 +752,6 @@ function wrapper(plugin_info) {
 
         // using marker as starting point, if option enabled
 
-
-
         for (i in plugin.drawTools.drawnItems._layers) {
             var layer = plugin.drawTools.drawnItems._layers[i];
             if (layer instanceof L.Marker) {
@@ -800,7 +802,7 @@ function wrapper(plugin_info) {
 
         }
 
-	// Get portal locations
+        // Get portal locations
         $.each(window.portals, function(guid, portal) {
             var ll = portal.getLatLng();
             var p = map.project(ll, thisplugin.PROJECT_ZOOM);
@@ -855,7 +857,6 @@ function wrapper(plugin_info) {
             return result;
         }
 
-
         this.sortedFanpoints = [];
 
         this.fanpoints = findFanpoints(plugin.drawTools.drawnItems._layers,
@@ -865,11 +866,11 @@ function wrapper(plugin_info) {
 
         var npoints = Object.keys(this.fanpoints).length;
         if (npoints === 0)
-	    return;
+            return;
 
         // used in convexHull
         function cross(a, b, o) {
-          return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+            return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
 
         }
 
@@ -957,7 +958,7 @@ function wrapper(plugin_info) {
 
         // Use currently selected index in outer hull as starting point
         if (thisplugin.startingpointIndex >= thisplugin.perimeterpoints.length) {
-          thisplugin.startingpointIndex = 0;
+            thisplugin.startingpointIndex = 0;
         }
         console.log("startingpointIndex = " + thisplugin.startingpointIndex);
         thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
@@ -987,13 +988,6 @@ function wrapper(plugin_info) {
 
             }
         }
-
-
-
-
-
-
-
 
         for ( guid in this.fanpoints) {
             fp = this.fanpoints[guid];
@@ -1046,7 +1040,6 @@ function wrapper(plugin_info) {
             this.sortedFanpoints = this.sortedFanpoints.concat(this.sortedFanpoints.splice(1,this.sortedFanpoints.length-1).reverse());
             //lines.sort(function(a, b){return b.bearing - a.bearing;});
         }
-
 
         donelinks = [];
         var outbound = 0;
@@ -1184,11 +1177,6 @@ function wrapper(plugin_info) {
 
         });
 
-
-
-
-
-
         $.each(thisplugin.links, function(idx, edge) {
             drawLink(edge.a, edge.b, {
                 color: '#FF0000',
@@ -1221,7 +1209,7 @@ function wrapper(plugin_info) {
 
                 thisplugin.timer = undefined;
                 if (!thisplugin.is_locked)
-		    thisplugin.updateLayer();
+                    thisplugin.updateLayer();
             }, wait*350);
 
         }
@@ -1230,84 +1218,37 @@ function wrapper(plugin_info) {
 
 
     thisplugin.setup = function() {
-		//Extend LatLng here to ensure it was created before
-		thisplugin.initLatLng();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        var button3 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();">Write&nbsp;Bookmarks</a> ';
-
+        //Extend LatLng here to ensure it was created before
+        thisplugin.initLatLng();
+        if(typeof window.plugin.bookmarks != 'undefined') {
+            var button3 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();">Write&nbsp;Bookmarks</a> ';
+        }
         var button4 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();">Show&nbsp;as&nbsp;list</a> ';
 
         //var button5 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_resetbtn" onclick="window.plugin.fanfields.reset();">Reset</a> ';
-        var button6 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise:(&#8635;)</a> ';
+        var button6 = '<br><a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise:(&#8635;)</a> ';
         var button7 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();">unlocked</a> ';
         var button8 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();">inbounding</a> ';
-        var button9 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.togglecRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
-        var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">Cycle&nbsp;Start</a> ';
+        var button9 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
+        var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();">Shift&nbsp;Anchor:&nbsp;&#11207;</a><a '+
+            'class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">&#11208;</a>';
         var button10 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();">Stats</a> ';
         var button11 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
         var button1 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" >Help</a> ';
-        var fanfields_buttons =
 
-
-
-
-            //  button2 +
-            button3 + button11 +
+        var fanfields_buttons = '';
+        if(typeof window.plugin.bookmarks != 'undefined') {
+            fanfields_buttons += button3;
+        }
+        fanfields_buttons +=
+            button11 +
             button4 +
             // button5 +
             button6 +
             button7 +
             button8 +
-            button9 +
             button12 +
+            button9 +
             button10 +
             button1
         ;
@@ -1322,24 +1263,18 @@ function wrapper(plugin_info) {
                              '"><legend >Fan Fields</legend></fieldset>');
         //$('#plugin_fanfields_toolbox').append('<div id="plugin_fanfields_toolbox_title">Fan Fields 2</div>');
 
-        if (!window.plugin.drawTools || !window.plugin.bookmarks) {
+        if (!window.plugin.drawTools) {
 
             dialog({
-                html: '<b>Fan Fields</b><p>Fan Fields requires IITC drawtools and bookmarks plugins</p><a href="https://iitc.me/desktop/">Download here</a>' +
-                "<p>If you are new to IITC and you've just installed drawtools and bookmarks but they do not load, try to edit all ingress scripts " +
-                'headers, remove all @include and @match tags and replace them with ony the @match tag "// @match           https://intel.ingress.com/*".</p>',
+                html: '<b>Fan Fields 2</b><p>Fan Fields 2 requires the IITC Drawtools plugin</p><a href="https://iitc.me/desktop/">Download here</a>',
                 id: 'plugin_fanfields_alert_dependencies',
                 title: 'Fan Fields - Missing dependency'
             });
             $('#plugin_fanfields_toolbox').empty();
-            $('#plugin_fanfields_toolbox').append("<i>Fan Fields requires IITC drawtools and bookmarks plugins.</i>");
+            $('#plugin_fanfields_toolbox').append("<i>Fan Fields requires IITC drawtools plugin.</i>");
 
             return;
         }
-
-
-
-
 
         $('#plugin_fanfields_toolbox').append(fanfields_buttons);
         thisplugin.setupCSS();
