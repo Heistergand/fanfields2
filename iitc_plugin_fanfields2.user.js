@@ -340,7 +340,7 @@ function wrapper(plugin_info) {
 
     };
     thisplugin.respectCurrentLinks = false;
-    thisplugin.togglecRespectCurrentLinks = function() {
+    thisplugin.toggleRespectCurrentLinks = function() {
         thisplugin.respectCurrentLinks = !thisplugin.respectCurrentLinks;
         if (thisplugin.respectCurrentLinks) {
             $('#plugin_fanfields_respectbtn').html('Respect&nbsp;Intel:&nbsp;ON');
@@ -1289,7 +1289,7 @@ function wrapper(plugin_info) {
         var button6 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise:(&#8635;)</a> ';
         var button7 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();">unlocked</a> ';
         var button8 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();">inbounding</a> ';
-        var button9 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.togglecRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
+        var button9 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
         var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">Cycle&nbsp;Start</a> ';
         var button10 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();">Stats</a> ';
         var button11 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
