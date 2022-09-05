@@ -18,6 +18,10 @@
 
 Version History:
 
+2.2.3 (Heistergand)
+FIX: Minor fixes
+===== TODO: collect changes in branch patch-1 and merge the patch to Version 2.2.3 ===== 
+
 2.2.2 (Heistergand)
 NEW: Added favicon.ico to script header.
 
