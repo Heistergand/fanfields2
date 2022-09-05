@@ -18,10 +18,6 @@
 
 Version History:
 
-2.2.3 (Heistergand)
-FIX: Minor fixes
-===== TODO: collect changes in branch patch-1 and merge the patch to Version 2.2.3 ===== 
-
 2.2.2 (Heistergand)
 NEW: Added favicon.ico to script header.
 
@@ -344,7 +340,7 @@ function wrapper(plugin_info) {
 
     };
     thisplugin.respectCurrentLinks = false;
-    thisplugin.toggleRespectCurrentLinks = function() {
+    thisplugin.togglecRespectCurrentLinks = function() {
         thisplugin.respectCurrentLinks = !thisplugin.respectCurrentLinks;
         if (thisplugin.respectCurrentLinks) {
             $('#plugin_fanfields_respectbtn').html('Respect&nbsp;Intel:&nbsp;ON');
@@ -1236,75 +1232,27 @@ function wrapper(plugin_info) {
     thisplugin.setup = function() {
 		//Extend LatLng here to ensure it was created before
 		thisplugin.initLatLng();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        var button3 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();">Write&nbsp;Bookmarks</a> ';
-
+        if(typeof window.plugin.bookmarks != 'undefined') {
+			var button3 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();">Write&nbsp;Bookmarks</a> ';
+		}
         var button4 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();">Show&nbsp;as&nbsp;list</a> ';
 
         //var button5 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_resetbtn" onclick="window.plugin.fanfields.reset();">Reset</a> ';
         var button6 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise:(&#8635;)</a> ';
         var button7 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();">unlocked</a> ';
         var button8 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();">inbounding</a> ';
-        var button9 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
+        var button9 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.togglecRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
         var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">Cycle&nbsp;Start</a> ';
         var button10 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();">Stats</a> ';
         var button11 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
         var button1 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" >Help</a> ';
-        var fanfields_buttons =
 
-
-
-
-            //  button2 +
-            button3 + button11 +
+        var fanfields_buttons = '';
+		if(typeof window.plugin.bookmarks != 'undefined') {
+			fanfields_buttons += button3;
+		}
+		fanfields_buttons +=
+            button11 +
             button4 +
             // button5 +
             button6 +
@@ -1326,17 +1274,15 @@ function wrapper(plugin_info) {
                              '"><legend >Fan Fields</legend></fieldset>');
         //$('#plugin_fanfields_toolbox').append('<div id="plugin_fanfields_toolbox_title">Fan Fields 2</div>');
 
-        if (!window.plugin.drawTools || !window.plugin.bookmarks) {
+        if (!window.plugin.drawTools) {
 
             dialog({
-                html: '<b>Fan Fields</b><p>Fan Fields requires IITC drawtools and bookmarks plugins</p><a href="https://iitc.me/desktop/">Download here</a>' +
-                "<p>If you are new to IITC and you've just installed drawtools and bookmarks but they do not load, try to edit all ingress scripts " +
-                'headers, remove all @include and @match tags and replace them with ony the @match tag "// @match           https://intel.ingress.com/*".</p>',
+                html: '<b>Fan Fields 2</b><p>Fan Fields 2 requires the IITC Drawtools plugin</p><a href="https://iitc.me/desktop/">Download here</a>',
                 id: 'plugin_fanfields_alert_dependencies',
                 title: 'Fan Fields - Missing dependency'
             });
             $('#plugin_fanfields_toolbox').empty();
-            $('#plugin_fanfields_toolbox').append("<i>Fan Fields requires IITC drawtools and bookmarks plugins.</i>");
+            $('#plugin_fanfields_toolbox').append("<i>Fan Fields requires IITC drawtools plugin.</i>");
 
             return;
         }
