@@ -18,6 +18,9 @@
 
 Version History:
 
+2.2.3 (Heistergand)
+FIX: Minor fixes
+===== TODO: collect changes in branch patch-1 and merge the patch to Version 2.2.3 ===== 
 2.2.2 (Heistergand)
 NEW: Added favicon.ico to script header.
 
@@ -127,7 +130,6 @@ Calculate amount of possible rebuilds after flippinig the center portal
 Click on a link to flip it's direction
 
 */
-
 
 
 function wrapper(plugin_info) {
@@ -340,7 +342,7 @@ function wrapper(plugin_info) {
 
     };
     thisplugin.respectCurrentLinks = false;
-    thisplugin.togglecRespectCurrentLinks = function() {
+    thisplugin.toggleRespectCurrentLinks = function() {
         thisplugin.respectCurrentLinks = !thisplugin.respectCurrentLinks;
         if (thisplugin.respectCurrentLinks) {
             $('#plugin_fanfields_respectbtn').html('Respect&nbsp;Intel:&nbsp;ON');
@@ -464,8 +466,6 @@ function wrapper(plugin_info) {
     };
 
 
-
-
     thisplugin.intersects = function(link1, link2) {
         /* Todo:
         Change vars to meet original links
@@ -565,9 +565,6 @@ function wrapper(plugin_info) {
             delete thisplugin.labelLayers[guid];
         }
 
-
-
-
         var label = L.marker(latLng, {
             icon: L.divIcon({
                 className: 'plugin_fanfields',
@@ -589,9 +586,6 @@ function wrapper(plugin_info) {
     };
 
 	thisplugin.initLatLng = function() {
-
-
-
 		// https://github.com/gregallensworth/Leaflet/
 		/*
 		 * extend Leaflet's LatLng class
@@ -638,7 +632,6 @@ function wrapper(plugin_info) {
 			var bearing = this.bearingToE6(other) ;
 			return this.bearingWord(bearing);
 		};
-
 	}
 
     thisplugin.getBearing = function (a,b) {
@@ -748,8 +741,6 @@ function wrapper(plugin_info) {
 
         // using marker as starting point, if option enabled
 
-
-
         for (i in plugin.drawTools.drawnItems._layers) {
             var layer = plugin.drawTools.drawnItems._layers[i];
             if (layer instanceof L.Marker) {
@@ -854,7 +845,6 @@ function wrapper(plugin_info) {
             }
             return result;
         }
-
 
         this.sortedFanpoints = [];
 
@@ -988,13 +978,6 @@ function wrapper(plugin_info) {
             }
         }
 
-
-
-
-
-
-
-
         for ( guid in this.fanpoints) {
             fp = this.fanpoints[guid];
             this.sortedFanpoints.push({point: fp,
@@ -1046,7 +1029,6 @@ function wrapper(plugin_info) {
             this.sortedFanpoints = this.sortedFanpoints.concat(this.sortedFanpoints.splice(1,this.sortedFanpoints.length-1).reverse());
             //lines.sort(function(a, b){return b.bearing - a.bearing;});
         }
-
 
         donelinks = [];
         var outbound = 0;
@@ -1184,11 +1166,6 @@ function wrapper(plugin_info) {
 
         });
 
-
-
-
-
-
         $.each(thisplugin.links, function(idx, edge) {
             drawLink(edge.a, edge.b, {
                 color: '#FF0000',
@@ -1241,7 +1218,7 @@ function wrapper(plugin_info) {
         var button6 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise:(&#8635;)</a> ';
         var button7 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();">unlocked</a> ';
         var button8 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();">inbounding</a> ';
-        var button9 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.togglecRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
+        var button9 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
         var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">Cycle&nbsp;Start</a> ';
         var button10 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();">Stats</a> ';
         var button11 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
@@ -1286,10 +1263,6 @@ function wrapper(plugin_info) {
 
             return;
         }
-
-
-
-
 
         $('#plugin_fanfields_toolbox').append(fanfields_buttons);
         thisplugin.setupCSS();
