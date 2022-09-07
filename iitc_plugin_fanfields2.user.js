@@ -1322,10 +1322,10 @@ function wrapper(plugin_info) {
 
 
         $('#plugin_fanfields_toolbox').append(fanfields_buttons);
-        if (L.Browser.mobile) {
-            $('#toolbox').append('<fieldset id="plugin_fanfields_debug"><legend >Debugging</legend>Window Width: '+$(window).width()+'<br>toolbox width: '+$('#plugin_fanfields_toolbox').width()+'</fieldset>');
-            //thisplugin.MaxDialogWidth = $(window).width() - 2;
-        }
+        // if (L.Browser.mobile) {
+        //     $('#toolbox').append('<fieldset id="plugin_fanfields_debug"><legend >Debugging</legend>Window Width: '+$(window).width()+'<br>toolbox width: '+$('#plugin_fanfields_toolbox').width()+'</fieldset>');
+        //     //thisplugin.MaxDialogWidth = $(window).width() - 2;
+        // }
 
         window.pluginCreateHook('pluginDrawTools');
 
