@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.2.3
+// @version         2.2.4
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -17,6 +17,9 @@
 /*
 
 Version History:
+
+2.2.4
+FIX: Width of dialog boxes did extend screen size 
 
 2.2.3 (Heistergand)
 FIX: Made Bookmark Plugin optional
@@ -235,7 +238,15 @@ function wrapper(plugin_info) {
 
     thisplugin.generateTasks = function() {};
     thisplugin.reset = function() {};
+
+
+    thisplugin.helpDialogWidth = 650;
+
     thisplugin.help = function() {
+        var width = thisplugin.helpDialogWidth;
+        if ($(window).width() < thisplugin.helpDialogWidth) {
+            width = $(window).width() -2;
+        }
         dialog({
             html: '<p>Using Drawtools, draw one or more polygons around the portals you want to work with. '+
             'The Polygons can overlap each other or be completely seperated. All portals within the polygons '+
@@ -275,9 +286,10 @@ function wrapper(plugin_info) {
             '',
             id: 'plugin_fanfields_alert_help',
             title: 'Fan Fields - Help',
-            width: 650,
+            width: width,
             closeOnEscape: true
         });
+
 
     };
 
@@ -291,11 +303,17 @@ function wrapper(plugin_info) {
                 "<tr><td>Build AP (links and fields):</td><td>" + (thisplugin.donelinks.length*313 + thisplugin.triangles.length*1250).toString() +"</td><tr>" +
                 //"<tr><td>Destroy AP (links and fields):</td><td>" + (thisplugin.sortedFanpoints.length*187 + thisplugin.triangles.length*750).toString() + "</td><tr>" +
                 "</table>";
+
+            var width = 400;
+            if ($(window).width() < width) {
+                width = $(window).width() -2;
+            }
+
             dialog({
                 html: text,
                 id: 'plugin_fanfields_alert_statistics',
                 title: '== Fan Field Statistics == ',
-                // width: 500,
+                width: width,
                 closeOnEscape: true
             });
         }
@@ -343,11 +361,20 @@ function wrapper(plugin_info) {
             text+='<tr><td>' + (index) + '</td><td>'+ title + '</td><td>' + point.incoming.length+ '</td><td>' + point.outgoing.length + '</td></tr>';
         });
         text+='</tbody></table>';
+
+
+        thisplugin.exportDialogWidth = 500;
+
+        var width = thisplugin.exportDialogWidth;
+        if ($(window).width() < thisplugin.exportDialogWidth) {
+            width = $(window).width() -2;
+        }
+
         dialog({
             html: text,
             id: 'plugin_fanfields_alert_textExport',
             title: 'Fan Fields',
-            width: 500,
+            width: width,
             closeOnEscape: true
         });
 
@@ -1264,17 +1291,25 @@ function wrapper(plugin_info) {
         //$('#plugin_fanfields_toolbox').append('<div id="plugin_fanfields_toolbox_title">Fan Fields 2</div>');
 
         if (!window.plugin.drawTools) {
+            var width = 400;
+            if ($(window).width() < width) {
+                width = $(window).width() -2;
+            }
 
             dialog({
                 html: '<b>Fan Fields 2</b><p>Fan Fields 2 requires the IITC Drawtools plugin</p><a href="https://iitc.me/desktop/">Download here</a>',
                 id: 'plugin_fanfields_alert_dependencies',
-                title: 'Fan Fields - Missing dependency'
+                title: 'Fan Fields - Missing dependency',
+                width: width
             });
+
             $('#plugin_fanfields_toolbox').empty();
             $('#plugin_fanfields_toolbox').append("<i>Fan Fields requires IITC drawtools plugin.</i>");
 
             return;
         }
+
+
 
         $('#plugin_fanfields_toolbox').append(fanfields_buttons);
         thisplugin.setupCSS();
