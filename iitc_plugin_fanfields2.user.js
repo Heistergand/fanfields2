@@ -19,7 +19,7 @@
 Version History:
 
 2.2.4
-FIX: Width of dialog boxes did extend screen size 
+FIX: Width of dialog boxes did extend screen size
 
 2.2.3 (Heistergand)
 FIX: Made Bookmark Plugin optional
@@ -244,8 +244,8 @@ function wrapper(plugin_info) {
 
     thisplugin.help = function() {
         var width = thisplugin.helpDialogWidth;
-        if ($(window).width() < thisplugin.helpDialogWidth) {
-            width = $(window).width() -2;
+        if (thisplugin.MaxDialogWidth < thisplugin.helpDialogWidth) {
+            width = thisplugin.MaxDialogWidth;
         }
         dialog({
             html: '<p>Using Drawtools, draw one or more polygons around the portals you want to work with. '+
@@ -305,8 +305,8 @@ function wrapper(plugin_info) {
                 "</table>";
 
             var width = 400;
-            if ($(window).width() < width) {
-                width = $(window).width() -2;
+            if (thisplugin.MaxDialogWidth < width) {
+                width = thisplugin.MaxDialogWidth;
             }
 
             dialog({
@@ -366,8 +366,8 @@ function wrapper(plugin_info) {
         thisplugin.exportDialogWidth = 500;
 
         var width = thisplugin.exportDialogWidth;
-        if ($(window).width() < thisplugin.exportDialogWidth) {
-            width = $(window).width() -2;
+        if (thisplugin.MaxDialogWidth < thisplugin.exportDialogWidth) {
+            width = thisplugin.MaxDialogWidth;
         }
 
         dialog({
@@ -1245,6 +1245,12 @@ function wrapper(plugin_info) {
 
 
     thisplugin.setup = function() {
+        thisplugin.setupCSS();
+        thisplugin.linksLayerGroup = new L.LayerGroup();
+        thisplugin.fieldsLayerGroup = new L.LayerGroup();
+        thisplugin.numbersLayerGroup = new L.LayerGroup();
+        thisplugin.MaxDialogWidth = $(window).width() - 2;
+
         //Extend LatLng here to ensure it was created before
         thisplugin.initLatLng();
         if(typeof window.plugin.bookmarks != 'undefined') {
@@ -1290,10 +1296,11 @@ function wrapper(plugin_info) {
                              '"><legend >Fan Fields</legend></fieldset>');
         //$('#plugin_fanfields_toolbox').append('<div id="plugin_fanfields_toolbox_title">Fan Fields 2</div>');
 
+
         if (!window.plugin.drawTools) {
             var width = 400;
-            if ($(window).width() < width) {
-                width = $(window).width() -2;
+            if (thisplugin.MaxDialogWidth < width) {
+                width = thisplugin.MaxDialogWidth;
             }
 
             dialog({
@@ -1312,11 +1319,10 @@ function wrapper(plugin_info) {
 
 
         $('#plugin_fanfields_toolbox').append(fanfields_buttons);
-        thisplugin.setupCSS();
-        thisplugin.linksLayerGroup = new L.LayerGroup();
-        thisplugin.fieldsLayerGroup = new L.LayerGroup();
-        thisplugin.numbersLayerGroup = new L.LayerGroup();
-
+        if (L.Browser.mobile) {
+            $('#toolbox').append('<fieldset id="plugin_fanfields_debug"><legend >Debugging</legend>Window Width: '+$(window).width()+'<br>toolbox width: '+$('#plugin_fanfields_toolbox').width()+'</fieldset>');
+            //thisplugin.MaxDialogWidth = $(window).width() - 2;
+        }
 
         window.pluginCreateHook('pluginDrawTools');
 
