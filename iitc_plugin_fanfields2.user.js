@@ -18,6 +18,9 @@
 
 Version History:
 
+2.2.4.1
+FIX: Fixed what should have been fixed in 2.2.4
+
 2.2.4
 FIX: Width of dialog boxes did extend screen size
 
