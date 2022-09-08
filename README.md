@@ -6,7 +6,7 @@ some contributors picked the challenge to improve this script. I finally merged 
 
 I'm back in.
 
-## forks
+## Forks
 ~~If you like to get updates to it, developers can FORK THIS PROJECT and continue with it.~~
 
 Don't hesitate to send pull requests.
