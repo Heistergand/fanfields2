@@ -1,7 +1,7 @@
 # Fan Fields 2
-An INGRESS fan field planner plugin for IITC
+An INGRESS fan field planner plugin for IITC and IITCm.
 
-~~I finished playing INGRESS a long time ago. [...]
+~~I finished playing INGRESS a long time ago. [...]~~
 
 I'm back in.
 
