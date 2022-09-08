@@ -2,10 +2,13 @@
 An INGRESS fan field planner plugin for IITC
 
 ~~I finished playing INGRESS a long time ago. No changes have been made in this repository for a long time, but 
-some contributors picked the challenge to improve this script. I finally merged the changes.~~  I'm back in.
+some contributors picked the challenge to improve this script. I finally merged the changes.~~  
+
+I'm back in.
 
 ## forks
 ~~If you like to get updates to it, developers can FORK THIS PROJECT and continue with it.~~
+
 Don't hesitate to send pull requests.
 
 Get a glympse at the forks and what they added and fixed to make it even better:
@@ -18,3 +21,5 @@ https://www.youtube.com/watch?v=Z9TPlpnMYyI
 
 Thank you, 57Cell for making awesome ingress videos. This script wouldn't exist without your fanfields videos.
 
+## Donations
+If you think this is great and would like to make a donation: the world is not what it seems, so head out and donate blood in your area, register as a bone marrow donor or donate to other charities. It will change lives.
