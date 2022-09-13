@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.2.4.1
+// @version         2.2.5
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -17,6 +17,9 @@
 /*
 
 Version History:
+2.2.5
+NEW: Set how many SBUL you plan to use.
+FIX: Anchor shift button design changed
 
 2.2.4.1
 FIX: Fixed what should have been fixed in 2.2.4
@@ -165,7 +168,7 @@ function wrapper(plugin_info) {
     thisplugin.labelLayers = {};
 
     thisplugin.startingpoint = undefined;
-
+    thisplugin.availableSBUL = 4;
 
     thisplugin.locations = [];
     thisplugin.fanpoints = [];
@@ -396,9 +399,9 @@ function wrapper(plugin_info) {
     thisplugin.lock = function() {
         thisplugin.is_locked = !thisplugin.is_locked;
         if (thisplugin.is_locked) {
-            $('#plugin_fanfields_lockbtn').html('locked'); // &#128274;
+            $('#plugin_fanfields_lockbtn').html('&#128274;&nbsp;locked'); // &#128274;
         } else {
-            $('#plugin_fanfields_lockbtn').html('unlocked'); // &#128275;
+            $('#plugin_fanfields_lockbtn').html('&#128275;&nbsp;unlocked'); // &#128275;
         }
     };
 
@@ -423,12 +426,33 @@ function wrapper(plugin_info) {
 
         if (thisplugin.stardirection == thisplugin.starDirENUM.CENTRALIZING) {
             html = "inbounding";
+            $('#plugin_fanfields_availablesbul_label').hide();
         }
+        else {
+            $('#plugin_fanfields_availablesbul_label').show();
+        }
+
 
         $('#plugin_fanfields_stardirbtn').html(html);
         thisplugin.delayedUpdateLayer(0.2);
     };
 
+
+
+    thisplugin.increaseSBUL = function() {
+        if (thisplugin.availableSBUL < 4) {
+            thisplugin.availableSBUL++;
+            $('#plugin_fanfields_availablesbul_count').html(''+(thisplugin.availableSBUL)+'');
+            thisplugin.delayedUpdateLayer(0.2);
+        }
+    }
+    thisplugin.decreaseSBUL = function() {
+        if (thisplugin.availableSBUL > 0) {
+            thisplugin.availableSBUL--;
+            $('#plugin_fanfields_availablesbul_count').html(''+(thisplugin.availableSBUL)+'');
+            thisplugin.delayedUpdateLayer(0.2);
+        }
+    }
 
 
     thisplugin.setupCSS = function() {
@@ -739,6 +763,7 @@ function wrapper(plugin_info) {
     thisplugin.n = 0;
     thisplugin.triangles = [];
     thisplugin.donelinks = [];
+
     thisplugin.updateLayer = function() {
         var a,b,c;
         var fanlinks = [], donelinks = [], maplinks = [];
@@ -757,6 +782,7 @@ function wrapper(plugin_info) {
         thisplugin.startingMarker = undefined;
         thisplugin.startingMarkerGUID = undefined;
         thisplugin.centerKeys = 0;
+
 
 
         thisplugin.locations = [];
@@ -838,6 +864,7 @@ function wrapper(plugin_info) {
             var p = map.project(ll, thisplugin.PROJECT_ZOOM);
             if (thisplugin.startingMarker !== undefined ) {
                 if (p.equals(thisplugin.startingMarker)) {
+                    debugger;
                     thisplugin.startingMarkerGUID = guid;
                     console.log("Marker GUID = " + thisplugin.startingMarkerGUID)
                 }
@@ -945,17 +972,19 @@ function wrapper(plugin_info) {
         function extendperimeter(perimeter, GUID, point) {
             var i;
             var done = false;
-            debugger;
-            for (i = 0; i < perimeter.length; i++) {
-                if (perimeter[i] == GUID) {
-                    //already in
-                    done=true;
-                    break;
+            if (GUID !== undefined) {
+                debugger;
+                for (i = 0; i < perimeter.length; i++) {
+                    if (perimeter[i] == GUID) {
+                        //already in
+                        done=true;
+                        break;
+                    }
+                    if (done) break;
                 }
-                if (done) break;
-            }
-            if (!done) {
-                perimeter.push([GUID,[point.x, point.y]])
+                if (!done) {
+                    perimeter.push([GUID,[point.x, point.y]])
+                }
             }
             return perimeter;
         }
@@ -1074,6 +1103,7 @@ function wrapper(plugin_info) {
         donelinks = [];
         var outbound = 0;
         var possibleline;
+        debugger;
         for(pa = 0; pa < this.sortedFanpoints.length; pa++){
             bearing = this.sortedFanpoints[pa].bearing;
             //console.log("FANPOINTS: " + pa + " to 0 bearing: "+ bearing + " " + this.bearingWord(bearing));
@@ -1086,7 +1116,8 @@ function wrapper(plugin_info) {
                 bearing =  this.getBearing(a,b);
 
                 if (pb===0) {
-                    if (thisplugin.stardirection == thisplugin.starDirENUM.RADIATING && centerOutgoings < 40 ) {
+                    var maxLinks = 8 + thisplugin.availableSBUL * 8
+                    if (thisplugin.stardirection == thisplugin.starDirENUM.RADIATING && centerOutgoings < maxLinks ) {
                         a = this.sortedFanpoints[pb].point;
                         b = this.sortedFanpoints[pa].point;
                         console.log("outbound");
@@ -1257,36 +1288,62 @@ function wrapper(plugin_info) {
         //Extend LatLng here to ensure it was created before
         thisplugin.initLatLng();
         if(typeof window.plugin.bookmarks != 'undefined') {
-            var button3 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();">Write&nbsp;Bookmarks</a> ';
+            var buttonBookmarks = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();">Write&nbsp;Bookmarks</a> ';
         }
-        var button4 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();">Show&nbsp;as&nbsp;list</a> ';
+        var buttonPortalList = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();">Show&nbsp;as&nbsp;list</a> ';
+
+        // clockwise &#8635; ↻
+        // counterclockwise &#8634; ↺
+        // &#5123; ᐃ
+        // &#5121; ᐁ
+        // &#5130; ᐊ
+        // &#5125; ᐅ
+
+        var symbol_clockwise = '&#8635;';
+        var symbol_counterclockwise = '&#8634;';
+
+        var symbol_up = '&#5123;';
+        var symbol_down = '&#5121;';
+        var symbol_left = '&#5130;';
+        var symbol_right = '&#5125;';
+
+        var symbol_inc = symbol_right;
+        var symbol_dec = symbol_left;
 
         //var button5 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_resetbtn" onclick="window.plugin.fanfields.reset();">Reset</a> ';
-        var button6 = '<br><a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise:(&#8635;)</a> ';
-        var button7 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();">unlocked</a> ';
-        var button8 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();">inbounding</a> ';
-        var button9 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
-        var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();">Shift&nbsp;Anchor:&nbsp;&#11207;</a><a '+
-            'class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">&#11208;</a>';
-        var button10 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();">Stats</a> ';
-        var button11 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
-        var button1 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" >Help</a> ';
+        var buttonClockwise = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise:('+symbol_clockwise+')</a> ';
+        var buttonLock = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();">&#128275;&nbsp;unlocked</a> ';
+
+        var buttonStarDirection = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();">inbounding</a> ';
+
+        var buttonSBUL = '<div class="plugin_fanfields_btn" id="plugin_fanfields_availablesbul_label" style="display: none;">Available&nbsp;SBUL:&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_inscsbulbtn" onclick="window.plugin.fanfields.decreaseSBUL();" >'+symbol_dec+'</a>'+
+            '<span class="plugin_fanfields_btn" id="plugin_fanfields_availablesbul_count">'+(thisplugin.availableSBUL)+'</span>&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_decsbulbtn" onclick="window.plugin.fanfields.increaseSBUL();" >'+symbol_inc+'</a></div>';
+
+        var buttonRespect = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
+
+        var buttonShiftAnchor = '<div class="plugin_fanfields_btn">Shift&nbsp;anchor: <a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();">left&nbsp;'+symbol_counterclockwise+'</a>&nbsp;<a '+ // clockwise &#8635;
+            'class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">right&nbsp;'+symbol_clockwise+'</a></div>';
+
+        var buttonStats = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();">Stats</a> ';
+        var buttonDrawTools = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
+        var buttonHelp = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" >Help</a> ';
 
         var fanfields_buttons = '';
         if(typeof window.plugin.bookmarks != 'undefined') {
-            fanfields_buttons += button3;
+            fanfields_buttons += buttonBookmarks;
         }
         fanfields_buttons +=
-            button11 +
-            button4 +
+            buttonDrawTools +
+            buttonPortalList +
             // button5 +
-            button6 +
-            button7 +
-            button8 +
-            button12 +
-            button9 +
-            button10 +
-            button1
+            buttonClockwise +
+            '<br>' + buttonLock +
+            buttonStarDirection +
+            buttonSBUL +
+            buttonShiftAnchor +
+            buttonRespect +
+            buttonStats +
+            buttonHelp
         ;
         $('#toolbox').append('<fieldset '+
                              'id="plugin_fanfields_toolbox"'+
