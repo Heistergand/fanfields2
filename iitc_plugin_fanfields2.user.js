@@ -1297,13 +1297,13 @@ function wrapper(plugin_info) {
         var button7 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();">&#128275;&nbsp;unlocked</a> ';
         var buttonStarDirection = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();">inbounding</a> ';
         var button9 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
-        var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();">Shift&nbsp;Anchor:&nbsp;&#129172;&nbsp;left</a><a '+
-            'class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">right&nbsp;&#129174;</a>';
+        var button12 = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();">Shift&nbsp;Anchor:&nbsp;&#5130;&nbsp;left</a><a '+
+            'class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">right&nbsp;&#5125;</a><br>';
         var button10 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();">Stats</a> ';
         var button11 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
         var button1 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" >Help</a> ';
-        var buttonSBUL = '<span class="plugin_fanfields_btn" id="plugin_fanfields_availablesbul_label">Available&nbsp;SBUL:&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_inscsbulbtn" onclick="window.plugin.fanfields.decreaseSBUL();" >&#5121;</a>'+
-            '<span class="plugin_fanfields_btn" id="plugin_fanfields_availablesbul_count">'+(thisplugin.availableSBUL)+'</span>&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_decsbulbtn" onclick="window.plugin.fanfields.increaseSBUL();" >&#5123;</a></span>';
+        var buttonSBUL = '<div class="plugin_fanfields_btn" id="plugin_fanfields_availablesbul_label" style="display: none;">Available&nbsp;SBUL:&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_inscsbulbtn" onclick="window.plugin.fanfields.decreaseSBUL();" >&#5121;</a>'+
+            '<span class="plugin_fanfields_btn" id="plugin_fanfields_availablesbul_count">'+(thisplugin.availableSBUL)+'</span>&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_decsbulbtn" onclick="window.plugin.fanfields.increaseSBUL();" >&#5123;</a></div>';
         var fanfields_buttons = '';
         if(typeof window.plugin.bookmarks != 'undefined') {
             fanfields_buttons += button3;
