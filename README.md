@@ -6,12 +6,16 @@ Use this plugin to easily plan you fanfields. It tells you how many keys you nee
 ## Forks
 Don't hesitate to send pull requests.
 
-## Review on Youtube
+## Youtube
+### Review
 Don't miss this review by Ingress Agent 57Cell aka Michael Hartley:
-
 https://www.youtube.com/watch?v=Z9TPlpnMYyI
 
-Thank you, 57Cell for making awesome ingress videos. This script wouldn't exist without your fanfields videos.
+ _Thank you, 57Cell for making awesome Ingress videos. This script wouldn't exist without your fanfields videos._
+
+### Tutorial Video 
+It's in german, sorry for that.
+https://youtu.be/IFgYGUdHNcs
 
 ## Donations
 If you think this is great and would like to make a donation: the world is not what it seems, so head out and donate blood in your area, register as a bone marrow donor or donate to other charities. It will change lives.
