@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.2.5
+// @version         2.2.6
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -17,6 +17,9 @@
 /*
 
 Version History:
+2.2.6
+NEW: Google Maps Portal Routing
+
 2.2.5
 NEW: Set how many SBUL you plan to use.
 FIX: Anchor shift button design changed
@@ -332,11 +335,11 @@ function wrapper(plugin_info) {
         // drawn links and how about just exporting the json without saving it to the current draw?
 
         var alatlng, blatlng, layer;
-        $.each(thisplugin.sortedFanpoints, function(index, point) {
-            $.each(point.outgoing, function(targetIndex, targetPoint) {
+        $.each(thisplugin.sortedFanpoints, function(index, portal) {
+            $.each(portal.outgoing, function(targetIndex, targetPortal) {
 
-                alatlng = map.unproject(point.point, thisplugin.PROJECT_ZOOM);
-                blatlng = map.unproject(targetPoint.point, thisplugin.PROJECT_ZOOM);
+                alatlng = map.unproject(portal.point, thisplugin.PROJECT_ZOOM);
+                blatlng = map.unproject(targetPortal.point, thisplugin.PROJECT_ZOOM);
                 layer = L.geodesicPolyline([alatlng, blatlng], window.plugin.drawTools.lineOptions);
                 window.plugin.drawTools.drawnItems.addLayer(layer);
                 window.plugin.drawTools.save();
@@ -355,18 +358,25 @@ function wrapper(plugin_info) {
 
     thisplugin.exportText = function() {
         var text = "<table><thead><tr><th style='text-align:right'>Pos.</th><th style='text-align:left'>Portal Name</th><th>Keys</th><th>Links</th></tr></thead><tbody>";
-
-        thisplugin.sortedFanpoints.forEach(function(point, index) {
-            var p, title;
-
-            p = window.portals[point.guid];
+        var gmnav='http://maps.google.com/maps/dir/'
+        thisplugin.sortedFanpoints.forEach(function(portal, index) {
+            //debugger;
+            var p, title, lat, lng;
+            var latlng = map.unproject(portal.point, thisplugin.PROJECT_ZOOM);
+            lat = Math.round(latlng.lat * 10000000) / 10000000
+            lng = Math.round(latlng.lng * 10000000) / 10000000
+            gmnav+=`${lat},${lng}/`;
+            p = window.portals[portal.guid];
             title = "unknown title";
             if (p !== undefined) {
                 title = p.options.data.title;
             }
-            text+='<tr><td>' + (index) + '</td><td>'+ title + '</td><td>' + point.incoming.length+ '</td><td>' + point.outgoing.length + '</td></tr>';
+            text+='<tr><td>' + (index) + '</td><td>'+ title + '</td><td>' + portal.incoming.length+ '</td><td>' + portal.outgoing.length + '</td></tr>';
         });
         text+='</tbody></table>';
+        text+='<hr noshade>';
+        gmnav+='&nav=1';
+        text+='<a target="_blank" href="'+ gmnav +'">Navigate with Google Maps</a>';
 
 
         thisplugin.exportDialogWidth = 500;
@@ -385,6 +395,8 @@ function wrapper(plugin_info) {
         });
 
     };
+
+
     thisplugin.respectCurrentLinks = false;
     thisplugin.toggleRespectCurrentLinks = function() {
         thisplugin.respectCurrentLinks = !thisplugin.respectCurrentLinks;
@@ -1103,7 +1115,7 @@ function wrapper(plugin_info) {
         donelinks = [];
         var outbound = 0;
         var possibleline;
-        debugger;
+        // debugger;
         for(pa = 0; pa < this.sortedFanpoints.length; pa++){
             bearing = this.sortedFanpoints[pa].bearing;
             //console.log("FANPOINTS: " + pa + " to 0 bearing: "+ bearing + " " + this.bearingWord(bearing));
