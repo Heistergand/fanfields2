@@ -1,5 +1,5 @@
 # Fan Fields 2
-An INGRESS fan field planner plugin for IITC and IITCm.
+An INGRESS fan field planner plugin for IITC Desktop and Mobile. It is recommended to go for [IITC CE](https://iitc.app).
 
 Use this plugin to easily plan you fanfields. It tells you how many keys you need for each portal, shows the total amount of fields and calculates the AP you will gain just for the links and fields. Works also for star fields and classic multilayer. Does not estimate MU, sorry for that.
 
