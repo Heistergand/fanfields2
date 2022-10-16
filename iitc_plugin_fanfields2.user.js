@@ -3,13 +3,13 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.2.6
+// @version         2.2.7
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
 // @grant           none
-// @downloadURL     https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.user.js
-// @updateURL       https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.meta.js
+// @downloadURL     https://github.com/Heistergand/fanfields2/beta/master/iitc_plugin_fanfields2.user.js
+// @updateURL       https://github.com/Heistergand/fanfields2/beta/master/iitc_plugin_fanfields2.meta.js
 // @icon            https://raw.githubusercontent.com/Heistergand/fanfields2/master/favicon.ico
 // @supportURL      https://github.com/Heistergand/fanfields2/issues
 // @namespace       https://github.com/Heistergand/fanfields2
@@ -17,6 +17,10 @@
 /*
 
 Version History:
+
+2.2.7
+FIX: Menue Buttons in Mobile version are now actually buttons.
+
 2.2.6
 NEW: Google Maps Portal Routing
 
@@ -425,7 +429,7 @@ function wrapper(plugin_info) {
             clockwiseSymbol = "&#8635;", clockwiseWord = "Clockwise";
         else
             clockwiseSymbol = "&#8634;", clockwiseWord = "Counterclockwise";
-        $('#plugin_fanfields_clckwsbtn').html(clockwiseWord+':&nbsp;('+clockwiseSymbol+')');
+        $('#plugin_fanfields_clckwsbtn').html(clockwiseWord+'&nbsp;'+clockwiseSymbol+'');
         thisplugin.delayedUpdateLayer(0.2);
     };
 
@@ -468,29 +472,120 @@ function wrapper(plugin_info) {
 
 
     thisplugin.setupCSS = function() {
-        $("<style>").prop("type", "text/css").html('.plugin_fanfields_btn {margin-left:2px;margin-right:6px;}' +
+        if (L.Browser.mobile) {
+            alert('this is mobile')
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_btn {\n' +
+                                                       '   margin: 2px;\n' +
+                                                       '   padding: 5px;\n' +
+                                                       '   border: 2px outset #20A8B1;\n' +
+                                                       '}\n'
+                                                      ).appendTo("head");
 
-                                                   '.plugin_fanfields{' +
-                                                   'color: #FFFFBB;' +
-                                                   'font-size: 11px;'+
-                                                   'line-height: 13px;' +
-                                                   'text-align: left;'+
-                                                   'vertical-align: bottom;'+
-                                                   'padding: 2px;' +
-                                                   'padding-top: 15px;' +
-                                                   'overflow: hidden;' +
-                                                   'text-shadow: 1px 1px #000, 1px -1px #000, -1px 1px #000, -1px -1px #000, 0 0 5px #000;' +
-                                                   'pointer-events: none;' +
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_multibtn {\n' +
+                                                       '   margin-left: 5px;\n' +
+                                                       '   padding: 0px; \n' +
+                                                       '   border: none;\n' +
+                                                       '   display: flex;\n' +
+                                                       '   justify-content: center;\n' +
+                                                       '   align-items: center;\n' +
+                                                       '   flex-direction: row;\n' +
+                                                       '}\n'
+                                                      ).appendTo("head");
 
 
-                                                   'width: ' + thisplugin.LABEL_WIDTH + 'px;'+
-                                                   'height: '+ thisplugin.LABEL_HEIGHT + 'px;'+
-                                                   'border-left-color:red; border-left-style: dotted; border-left-width: thin;'+
-                                                   //                                                   'border-bottom-color:red; border-bottom-style: dashed; border-bottom-width: thin;'+
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_toolbox {\n' +
+                                                       '   margin: 7px 1px;\n' +
+                                                       '   padding: 15px 5px;\n' +
+                                                       '   border: 1px solid #ffce00;\n' +
+                                                       '   box-shadow: 3px 3px 5px black;\n' +
+                                                       '   color: #ffce00;\n' +
+                                                       '   display: flex;\n' +
+                                                       '   flex-direction: column;\n' +
+                                                       '   flex-basis: 50%;\n' +
+                                                       '}\n'
+                                                      ).appendTo("head");
 
-                                                   '}' +
-                                                   '#plugin_fanfields_toolbox a.highlight { background-color:#ffce00; color:black; font-Weight:bold }'
+//             $("<style>").prop("type", "text/css").html('\n' +
+//                                                        '.plugin_fanfields_toolbox > span {\n' +
+//                                                        '   float: left;\n' +
+//                                                        '}\n'
+//                                                       ).appendTo("head");
+
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '#plugin_fanfields_toolbox a.highlight {\n' +
+                                                       '   background-color: #ffce00;\n' +
+                                                       '   color: black;\n' +
+                                                       '   font-Weight: bold\n' +
+                                                       '}\n'
+                                                      ).appendTo("head");
+
+
+        }
+        else {
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_btn {\n' +
+                                                       '   margin-left:2px;\n' +
+                                                       '   margin-right:6px;\n' +
+                                                       '}'
+                                                      ).appendTo("head");
+
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_multibtn {\n' +
+                                                       '   margin-left:2px;\n' +
+                                                       '   margin-right:6px;\n' +
+                                                       '   padding: 0px;\n' +
+                                                       '   border: none;\n' +
+                                                       '}\n'
+                                                      ).appendTo("head");
+
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_toolbox {\n' +
+                                                       '   margin: 5px;\n' +
+                                                       '   padding: 3px;\n' +
+                                                       '   border: 1px solid #ffce00;\n' +
+                                                       '   box-shadow: 3px 3px 5px black;\n' +
+                                                       '   color: #ffce00;' +
+  //                                                     '   flex: 0 0 50%;' +
+                                                       '}\n'
+                                                      ).appendTo("head");
+
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_toolbox > span {\n' +
+                                                       '   float: left;\n' +
+                                                       '}\n'
+                                                      ).appendTo("head");
+
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '#plugin_fanfields_toolbox a.highlight {\n' +
+                                                       '   background-color: #ffce00;\n' +
+                                                       '   color: black;\n' +
+                                                       '   font-Weight: bold\n' +
+                                                       '}\n'
+                                                      ).appendTo("head");
+        }
+
+        $("<style>").prop("type", "text/css").html('\n' +
+                                                   '.plugin_fanfields {\n' +
+                                                   '   color: #FFFFBB;\n' +
+                                                   '   font-size: 11px;\n'+
+                                                   '   line-height: 13px;\n' +
+                                                   '   text-align: left;\n'+
+                                                   '   vertical-align: bottom;\n'+
+                                                   '   padding: 2px;\n' +
+                                                   '   padding-top: 15px;\n' +
+                                                   '   overflow: hidden;\n' +
+                                                   '   text-shadow: 1px 1px #000, 1px -1px #000, -1px 1px #000, -1px -1px #000, 0 0 5px #000;\n' +
+                                                   '   pointer-events: none;\n' +
+                                                   '   width: ' + thisplugin.LABEL_WIDTH + 'px;\n'+
+                                                   '   height: '+ thisplugin.LABEL_HEIGHT + 'px;\n'+
+                                                   '   border-left-color:red; border-left-style: dotted; border-left-width: thin;\n'+
+                                                   '}\n'
                                                   ).appendTo("head");
+
+
 
 
     };
@@ -1323,18 +1418,18 @@ function wrapper(plugin_info) {
         var symbol_dec = symbol_left;
 
         //var button5 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_resetbtn" onclick="window.plugin.fanfields.reset();">Reset</a> ';
-        var buttonClockwise = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise:('+symbol_clockwise+')</a> ';
+        var buttonClockwise = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise&nbsp;'+symbol_clockwise+'</a> ';
         var buttonLock = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();">&#128275;&nbsp;unlocked</a> ';
 
         var buttonStarDirection = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();">inbounding</a> ';
 
-        var buttonSBUL = '<div class="plugin_fanfields_btn" id="plugin_fanfields_availablesbul_label" style="display: none;">Available&nbsp;SBUL:&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_inscsbulbtn" onclick="window.plugin.fanfields.decreaseSBUL();" >'+symbol_dec+'</a>'+
-            '<span class="plugin_fanfields_btn" id="plugin_fanfields_availablesbul_count">'+(thisplugin.availableSBUL)+'</span>&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_decsbulbtn" onclick="window.plugin.fanfields.increaseSBUL();" >'+symbol_inc+'</a></div>';
+        var buttonSBUL = '<span class="plugin_fanfields_multibtn" id="plugin_fanfields_availablesbul_label" style="display: none;">Available&nbsp;SBUL:&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_inscsbulbtn" onclick="window.plugin.fanfields.decreaseSBUL();" >'+symbol_dec+'</a>'+
+            '<span class="" id="plugin_fanfields_availablesbul_count">'+(thisplugin.availableSBUL)+'</span>&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_decsbulbtn" onclick="window.plugin.fanfields.increaseSBUL();" >'+symbol_inc+'</a></span>';
 
         var buttonRespect = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
 
-        var buttonShiftAnchor = '<div class="plugin_fanfields_btn">Shift&nbsp;anchor: <a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();">left&nbsp;'+symbol_counterclockwise+'</a>&nbsp;<a '+ // clockwise &#8635;
-            'class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">right&nbsp;'+symbol_clockwise+'</a></div>';
+        var buttonShiftAnchor = '<span class="plugin_fanfields_multibtn">Shift&nbsp;anchor: <a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();">left&nbsp;'+symbol_counterclockwise+'</a>&nbsp;<a '+ // clockwise &#8635;
+            'class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">right&nbsp;'+symbol_clockwise+'</a></span>';
 
         var buttonStats = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();">Stats</a> ';
         var buttonDrawTools = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
@@ -1349,7 +1444,7 @@ function wrapper(plugin_info) {
             buttonPortalList +
             // button5 +
             buttonClockwise +
-            '<br>' + buttonLock +
+            buttonLock +
             buttonStarDirection +
             buttonSBUL +
             buttonShiftAnchor +
@@ -1358,14 +1453,9 @@ function wrapper(plugin_info) {
             buttonHelp
         ;
         $('#toolbox').append('<fieldset '+
-                             'id="plugin_fanfields_toolbox"'+
-                             'style="' +
-                             'margin: 5px;' +
-                             'padding: 3px;' +
-                             'border: 1px solid #ffce00;' +
-                             'box-shadow: 3px 3px 5px black;' +
-                             'color: #ffce00;' +
-                             '"><legend >Fan Fields</legend></fieldset>');
+                             'id="plugin_fanfields_toolbox" '+
+                             'class="plugin_fanfields_toolbox">'+
+                             '<legend>Fan Fields</legend></fieldset>');
         //$('#plugin_fanfields_toolbox').append('<div id="plugin_fanfields_toolbox_title">Fan Fields 2</div>');
 
 
