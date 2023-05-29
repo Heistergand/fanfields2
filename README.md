@@ -19,3 +19,6 @@ https://youtu.be/IFgYGUdHNcs
 
 ## Donations
 If you think this is great and would like to make a donation: the world is not what it seems, so head out and donate blood in your area, register as a bone marrow donor or donate to other charities. It will change lives.
+
+## How it looks (on desktop)
+![preview image](FanFields2.png)
