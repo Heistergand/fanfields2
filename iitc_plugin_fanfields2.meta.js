@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name            IITC plugin: Fan Fields 2 (dev/beta)
+// @name            IITC plugin: Fan Fields 2
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
