@@ -473,7 +473,7 @@ function wrapper(plugin_info) {
 
     thisplugin.setupCSS = function() {
         if (L.Browser.mobile) {
-            alert('this is mobile')
+            // alert('this is mobile')
             $("<style>").prop("type", "text/css").html('\n' +
                                                        '.plugin_fanfields_btn {\n' +
                                                        '   margin: 2px;\n' +
