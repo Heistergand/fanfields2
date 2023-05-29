@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.2.7
+// @version         2.2.8
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -17,6 +17,9 @@
 /*
 
 Version History:
+
+2.2.8
+FIX: minor changes
 
 2.2.7
 FIX: Menue Buttons in Mobile version are now actually buttons.
@@ -290,7 +293,7 @@ function wrapper(plugin_info) {
             'if you change directions. Also try different anchors to get one more field out of some portal '+
             'constellations.</p> '+
 
-            '<p>Export your fanfield portals to bookmarks and drawtools to extend your possibilites to work '+
+            '<p>Copy your fanfield portals to bookmarks or drawtools to extend your possibilites to work '+
             'with the information.</p>'+
 
             '<hr noshade>'+
