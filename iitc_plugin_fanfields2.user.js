@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.2.8
+// @version         2.2.9
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -18,23 +18,26 @@
 
 Version History:
 
-2.2.8
+2.2.9 (Heistergand)
+FIX: Link direction indicator did not work anymore. 
+
+2.2.8 (Heistergand)
 FIX: minor changes
 
-2.2.7
+2.2.7 (Heistergand)
 FIX: Menue Buttons in Mobile version are now actually buttons.
 
-2.2.6
+2.2.6 (Heistergand)
 NEW: Google Maps Portal Routing
 
-2.2.5
+2.2.5 (Heistergand)
 NEW: Set how many SBUL you plan to use.
 FIX: Anchor shift button design changed
 
-2.2.4.1
+2.2.4.1 (Heistergand)
 FIX: Fixed what should have been fixed in 2.2.4
 
-2.2.4
+2.2.4 (Heistergand)
 FIX: Width of dialog boxes did extend screen size
 
 2.2.3 (Heistergand)
@@ -1355,7 +1358,7 @@ function wrapper(plugin_info) {
                 weight: 1.5,
                 clickable: false,
                 smoothFactor: 10,
-                dashArray: [10, 5, 5, 5, 5, 5, 5, 5, "100%" ],
+                dashArray: [10, 5, 5, 5, 5, 5, 5, 5, "100000" ],
             });
         });
 
