@@ -417,6 +417,18 @@ function wrapper(plugin_info) {
         }
         thisplugin.delayedUpdateLayer(0.2);
     };
+
+    thisplugin.indicateLinkDirection = true;
+    thisplugin.toggleLinkDirIndicator = function() {
+        thisplugin.indicateLinkDirection = !thisplugin.indicateLinkDirection;
+        if (thisplugin.indicateLinkDirection) {
+            $('#plugin_fanfields_direction_indicator_btn').html('Indicate&nbsp;link&nbsp;direction:&nbsp;ON');
+        } else {
+            $('#plugin_fanfields_direction_indicator_btn').html('Indicate&nbsp;link&nbsp;direction:&nbsp;OFF');
+        }
+        thisplugin.delayedUpdateLayer(0.2);
+    };
+
     thisplugin.is_locked = false;
     thisplugin.lock = function() {
         thisplugin.is_locked = !thisplugin.is_locked;
@@ -1352,13 +1364,18 @@ function wrapper(plugin_info) {
         });
 
         $.each(thisplugin.links, function(idx, edge) {
+            if (thisplugin.indicateLinkDirection) {
+                thisplugin.linkDashArray = [10, 5, 5, 5, 5, 5, 5, 5, "100000" ];
+            } else {
+                thisplugin.linkDashArray = null;
+            }
             drawLink(edge.a, edge.b, {
                 color: '#FF0000',
                 opacity: 1,
                 weight: 1.5,
                 clickable: false,
                 smoothFactor: 10,
-                dashArray: [10, 5, 5, 5, 5, 5, 5, 5, "100000" ],
+                dashArray: thisplugin.linkDashArray,
             });
         });
 
@@ -1401,9 +1418,9 @@ function wrapper(plugin_info) {
         //Extend LatLng here to ensure it was created before
         thisplugin.initLatLng();
         if(typeof window.plugin.bookmarks != 'undefined') {
-            var buttonBookmarks = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();">Write&nbsp;Bookmarks</a> ';
+            var buttonBookmarks = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();" title="Create New Portal Potential Future">Write&nbsp;Bookmarks</a> ';
         }
-        var buttonPortalList = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();">Show&nbsp;as&nbsp;list</a> ';
+        var buttonPortalList = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();" title="OpenAll Link Create Star">Show&nbsp;as&nbsp;list</a> ';
 
         // clockwise &#8635; ↻
         // counterclockwise &#8634; ↺
@@ -1411,6 +1428,9 @@ function wrapper(plugin_info) {
         // &#5121; ᐁ
         // &#5130; ᐊ
         // &#5125; ᐅ
+
+
+
 
         var symbol_clockwise = '&#8635;';
         var symbol_counterclockwise = '&#8634;';
@@ -1424,22 +1444,25 @@ function wrapper(plugin_info) {
         var symbol_dec = symbol_left;
 
         //var button5 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_resetbtn" onclick="window.plugin.fanfields.reset();">Reset</a> ';
-        var buttonClockwise = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();">Clockwise&nbsp;'+symbol_clockwise+'</a> ';
-        var buttonLock = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();">&#128275;&nbsp;unlocked</a> ';
+        var buttonClockwise = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();" title="Begin Journey Breathe XM ">Clockwise&nbsp;'+symbol_clockwise+'</a> ';
+        var buttonLock = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();" title="Avoid XM Message Lie">&#128275;&nbsp;unlocked</a> ';
 
-        var buttonStarDirection = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();">inbounding</a> ';
+        var buttonStarDirection = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();" title="Change Perspective Technology">inbounding</a> ';
 
         var buttonSBUL = '<span class="plugin_fanfields_multibtn" id="plugin_fanfields_availablesbul_label" style="display: none;">Available&nbsp;SBUL:&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_inscsbulbtn" onclick="window.plugin.fanfields.decreaseSBUL();" >'+symbol_dec+'</a>'+
-            '<span class="" id="plugin_fanfields_availablesbul_count">'+(thisplugin.availableSBUL)+'</span>&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_decsbulbtn" onclick="window.plugin.fanfields.increaseSBUL();" >'+symbol_inc+'</a></span>';
+            '<span class="" id="plugin_fanfields_availablesbul_count">'+(thisplugin.availableSBUL)+'</span>&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_decsbulbtn" onclick="window.plugin.fanfields.increaseSBUL();">'+symbol_inc+'</a></span>';
+        // non tile on the SBUL html link. It's little too annoying here.
+        // WOuld have been title="Star Courage Difficult"
 
-        var buttonRespect = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();">Respect&nbsp;Intel:&nbsp;OFF</a> ';
+        var buttonRespect = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();" title="Question Conflict Data">Respect&nbsp;Intel:&nbsp;OFF</a> ';
+        var buttonLinkDirectionIndicator = '<a class="plugin_fanfields_btn" id="plugin_fanfields_direction_indicator_btn" onclick="window.plugin.fanfields.toggleLinkDirIndicator();" title="Technology Intelligence See All">Indicate&nbsp;link&nbsp;direction:&nbsp;ON</a> ';
 
-        var buttonShiftAnchor = '<span class="plugin_fanfields_multibtn">Shift&nbsp;anchor: <a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();">left&nbsp;'+symbol_counterclockwise+'</a>&nbsp;<a '+ // clockwise &#8635;
-            'class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();">right&nbsp;'+symbol_clockwise+'</a></span>';
+        var buttonShiftAnchor = '<span class="plugin_fanfields_multibtn">Shift&nbsp;anchor: <a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();" title="Less Chaos More Stability">left&nbsp;'+symbol_counterclockwise+'</a>&nbsp;<a '+ // clockwise &#8635;
+            'class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();" title="Restraint Path Gain Harmony">right&nbsp;'+symbol_clockwise+'</a></span>';
 
-        var buttonStats = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();">Stats</a> ';
-        var buttonDrawTools = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();">Write&nbsp;DrawTools</a> ';
-        var buttonHelp = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" >Help</a> ';
+        var buttonStats = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();" title="See Truth Now">Stats</a> ';
+        var buttonDrawTools = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();" title="Help Shapers Create Future">Write&nbsp;DrawTools</a> ';
+        var buttonHelp = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" title="Help" >Help</a> ';
 
         var fanfields_buttons = '';
         if(typeof window.plugin.bookmarks != 'undefined') {
@@ -1455,6 +1478,7 @@ function wrapper(plugin_info) {
             buttonSBUL +
             buttonShiftAnchor +
             buttonRespect +
+            buttonLinkDirectionIndicator +
             buttonStats +
             buttonHelp
         ;
