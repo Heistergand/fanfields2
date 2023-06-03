@@ -20,6 +20,7 @@ Version History:
 
 2.2.9 (Heistergand)
 FIX: Link direction indicator did not work anymore. 
+NEW: Link direction indicator is now optional.
 
 2.2.8 (Heistergand)
 FIX: minor changes
