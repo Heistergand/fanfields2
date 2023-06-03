@@ -10,7 +10,8 @@
 // @grant           none
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.meta.js
-// @icon            https://raw.githubusercontent.com/Heistergand/fanfields2/master/favicon.ico
+// @icon            https://github.com/Heistergand/fanfields2/blob/bf2af2fe3cb49e0777226c07777e82aad4368ce3/fanfields2-16.png
+// @icon64          https://github.com/Heistergand/fanfields2/blob/bf2af2fe3cb49e0777226c07777e82aad4368ce3/fanfields2-64.png
 // @supportURL      https://github.com/Heistergand/fanfields2/issues
 // @namespace       https://github.com/Heistergand/fanfields2
 // ==/UserScript==
@@ -21,6 +22,7 @@ Version History:
 2.2.9 (Heistergand)
 FIX: Link direction indicator did not work anymore. 
 NEW: Link direction indicator is now optional.
+NEW: New plugin icon showing a hand fan.
 
 2.2.8 (Heistergand)
 FIX: minor changes
