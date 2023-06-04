@@ -3,15 +3,15 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.2.9
+// @version         2.3.0
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
 // @grant           none
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.meta.js
-// @icon            https://github.com/Heistergand/fanfields2/raw/master/fanfields2-16.png
-// @icon64          https://github.com/Heistergand/fanfields2/raw/master/fanfields2-64.png
+// @icon            https://github.com/Heistergand/fanfields2/raw/beta/fanfields2-16.png
+// @icon64          https://github.com/Heistergand/fanfields2/raw/beta/fanfields2-64.png
 // @supportURL      https://github.com/Heistergand/fanfields2/issues
 // @namespace       https://github.com/Heistergand/fanfields2
 // ==/UserScript==
@@ -19,8 +19,11 @@
 
 Version History:
 
+2.3.0 (Heistergand)
+NEW: Added Arc support.
+
 2.2.9 (Heistergand)
-FIX: Link direction indicator did not work anymore. 
+FIX: Link direction indicator did not work anymore.
 NEW: Link direction indicator is now optional.
 NEW: New plugin icon showing a hand fan.
 
@@ -361,7 +364,17 @@ function wrapper(plugin_info) {
     }
 
     thisplugin.exportArcs = function() {
-        //todo...
+
+        var alatlng, blatlng, layer;
+        $.each(thisplugin.sortedFanpoints, function(index, portal) {
+            $.each(portal.outgoing, function(targetIndex, targetPortal) {
+                window.selectedPortal = portal.guid;
+                window.plugin.arcs.draw();
+                window.selectedPortal = targetPortal.guid;
+                window.plugin.arcs.draw();
+            });
+        });
+        window.plugin.arcs.list();
     }
 
     thisplugin.exportTasks = function() {
@@ -1465,12 +1478,17 @@ function wrapper(plugin_info) {
 
         var buttonStats = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();" title="See Truth Now">Stats</a> ';
         var buttonDrawTools = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();" title="Help Shapers Create Future">Write&nbsp;DrawTools</a> ';
+        var buttonArcs = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportArcsBtn" onclick="window.plugin.fanfields.exportArcs();" title="Field Together Improve Human Mind">Write&nbsp;Arcs</a> ';
         var buttonHelp = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" title="Help" >Help</a> ';
 
         var fanfields_buttons = '';
         if(typeof window.plugin.bookmarks != 'undefined') {
             fanfields_buttons += buttonBookmarks;
         }
+        if(typeof window.plugin.arcs != 'undefined') {
+            fanfields_buttons += buttonArcs;
+        }
+
         fanfields_buttons +=
             buttonDrawTools +
             buttonPortalList +
