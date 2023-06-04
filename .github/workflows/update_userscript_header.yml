@@ -41,7 +41,12 @@ jobs:
           sed -i "s|^// @name.*|// @name     IITC plugin: Fan Fields 2|" $filename
           sed -i "s|^// @downloadURL.*|// @downloadURL     https://github.com/$GITHUB_REPOSITORY/raw/$GITHUB_BASE_REF/$filename|" $filename
           sed -i "s|^// @updateURL.*|// @updateURL       https://github.com/$GITHUB_REPOSITORY/raw/$GITHUB_BASE_REF/${filename%.user.js}.meta.js|" $filename
-
+      
+      - name: Debug message 2
+        run: |
+          filename=${{ env.filename }}
+          head -18 $filename
+          
       - name: Commit changes
         env:
           EMAIL: ${{ secrets.EMAIL_ADDRESS }}
