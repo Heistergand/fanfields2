@@ -19,4 +19,4 @@ jobs:
           git config user.email ${{ secrets.EMAIL }}
           git add *.user.js *.meta.js
           git commit -m "Update script header URLs (generated)"
-          git push
+          git push origin HEAD:main
