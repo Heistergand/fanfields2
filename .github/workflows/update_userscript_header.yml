@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          node-version: 16.13.x
+          node-version: 16
 
       - name: Update header lines
         if: steps.check_extension.outputs.update_header == 'true'
