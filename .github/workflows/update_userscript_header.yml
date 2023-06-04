@@ -49,7 +49,7 @@ jobs:
           
       - name: Commit changes
         env:
-          EMAIL: ${{ secrets.EMAIL_ADDRESS }}
+          EMAIL: ${{ secrets.EMAIL }}
         run: |
           git config --global user.name "Heistergand"
           git config --global user.email $EMAIL
