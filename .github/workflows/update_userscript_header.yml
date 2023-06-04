@@ -39,8 +39,8 @@ jobs:
           filename=${{ env.filename }}
           sed -i "s|^// @id.*|// @id     fanfields@heistergand|" $filename
           sed -i "s|^// @name.*|// @name     IITC plugin: Fan Fields 2|" $filename
-          sed -i "s|^// @downloadURL.*|// @downloadURL     https://github.com/$GITHUB_REPOSITORY/raw/$GITHUB_BASE_REF/$filename|" $filename
-          sed -i "s|^// @updateURL.*|// @updateURL       https://github.com/$GITHUB_REPOSITORY/raw/$GITHUB_BASE_REF/${filename%.user.js}.meta.js|" $filename
+          sed -ri "s|^// @([a-zA-Z0-9_]+)(\s+)https://github.com/$GITHUB_REPOSITORY/raw/([^/]+)/|// @\1\2https://github.com/$GITHUB_REPOSITORY/raw/$GITHUB_BASE_REF/|g" $filename
+          
       
       - name: Debug message 2
         run: |
