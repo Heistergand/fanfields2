@@ -3,7 +3,7 @@ name: Update Script Header
 on:
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   update_header:
