@@ -46,7 +46,7 @@ jobs:
         env:
           EMAIL: ${{ secrets.EMAIL_ADDRESS }}
         run: |
-          git config --global user.name "Your Name"
+          git config --global user.name "Heistergand"
           git config --global user.email $EMAIL
           git add ${{ env.filename }}
           git commit -m "Update script header URLs"
