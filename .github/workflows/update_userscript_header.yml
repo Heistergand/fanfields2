@@ -30,5 +30,6 @@ jobs:
           # git config --global user.name "Heistergand"
           # git config --global user.email $EMAIL
           # git add ${{ env.filename }}
-          git commit -m "Update script header URLs"
+          # git commit -m "Update script header URLs"
           # git push
+          echo skip
