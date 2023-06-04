@@ -1,0 +1,37 @@
+name: Update Script Header
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  update_header:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Determine file name
+        id: determine_filename
+        run: |
+          filename=$(ls *.user.js || ls *.meta.js)
+          echo "::set-output name=filename::$filename"
+
+      - name: Update header lines
+        run: |
+          sed -i "s|^// @id.*|// @id     fanfields@heistergand|" $filename
+          sed -i "s|^// @name.*|// @name     IITC plugin: Fan Fields 2|" $filename
+          sed -i "s|^// @downloadURL.*|// @downloadURL     https://github.com/$GITHUB_REPOSITORY/raw/$GITHUB_BASE_REF/$filename|" $filename
+          sed -i "s|^// @updateURL.*|// @updateURL       https://github.com/$GITHUB_REPOSITORY/raw/$GITHUB_BASE_REF/${filename%.user.js}.meta.js|" $filename
+
+      - name: Commit changes
+        env:
+          EMAIL: ${{ secrets.EMAIL_ADDRESS }}
+        run: |
+          git config --global user.name "Heistergand"
+          git config --global user.email $EMAIL
+          git add $filename
+          git commit -m "Update script header URLs"
+          git push
