@@ -8,10 +8,12 @@ on:
 jobs:
   update_header:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          node-version: 16.13.x
 
       - name: Update header lines
         if: steps.check_extension.outputs.update_header == 'true'
@@ -20,7 +22,7 @@ jobs:
           sed -ri "s|^// @name(.*)|// @name\1IITC plugin: Fan Fields 2|" *.user.js *.meta.js
           sed -ri "s|^// @([a-zA-Z0-9_]+)(\s+)https://github.com/$GITHUB_REPOSITORY/raw/([^/]+)/|// @\1\2https://github.com/$GITHUB_REPOSITORY/raw/$GITHUB_BASE_REF/|g" *.user.js *.meta.js
       
-      - name: Debug message 2
+      - name: Debug message 
         run: |
           head -18 *.user.js *.meta.js
           
