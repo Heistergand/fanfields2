@@ -1,11 +1,43 @@
 # Fan Fields 2
-An INGRESS fan field planner plugin for IITC Desktop and Mobile. It is recommended to go for [IITC CE](https://iitc.app).
+An INGRESS fan field planner plugin for IITC Desktop and Mobile. 
 
 Use this plugin to easily plan your fanfields. It tells you how many keys you need for each portal, shows the total amount of fields and calculates the AP you will gain just for the links and fields. Works also for star fields and classic multilayer. Does not estimate MU, sorry for that.
 
+## Prerequisites
+### Required
+- [IITC CE](https://iitc.app)
+- IITC plugin: draw tools 
 
-## Forks
-Don't hesitate to send pull requests.
+### Supported
+- IITC plugin: Bookmarks for maps and portals
+- IITC plugin: Arc
+
+## Features
+- Select portals in your area by drawing a polygon around them with DrawTools. 
+- Let the magic happen: A fanfiled Plan will instantly be shown as overlay.
+- Add more portals to your plan by just adding more polygons around them.
+- Toggle three layers:
+  - Fanfield Links
+  - Fanfield Fields
+  - Fanfield Numbers _(Show statistics on each portal)_
+- Show the list of portals and keys you need. 
+- Open the path along the Portals in google maps.
+- Tweak your plan:
+  - Move the anchor portal along the hull of the area.
+  - Set a marker to a portal inside the hull to make it a possible anchor. _(Yes, you can actually make a 360° fan field. Still has issues though.)_
+  - Toggle the build order clockwise or anticlockwise.
+  - Toggle the main direction of the fan links: inbounding or outbounding at the anchor portal?
+    - Set how many SBUL you plan to use
+  - Toggle the link direction indicator.
+  - Show respect to the current intel and avoid throwing crosslinks. _(In some cases useful, in others not at all...)_
+- Copy your plan to Drawtools Plugin.
+- Copy your plan to Bookmarks Plugin.
+- Copy your plan to Arcs Plugin.
+- Gather Stats including Build AP. _(Currently only for links and fields, not for destroying, capturing or deploying resos and mods)_
+
+
+## Contribute
+Don't hesitate to send pull requests to the beta branch.
 
 
 ## Reviews
