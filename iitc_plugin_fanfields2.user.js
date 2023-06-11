@@ -22,6 +22,7 @@ Version History:
 2.3.2 (Heistergand)
 NEW: Introducing code for upcoming multiple fanfields by Drawtools Colors
 FIX: minor code refactorings
+PAIN: it's so messy...
 
 2.3.1 (Heistergand)
 FIX: Portals were difficult to select underneath the fanfileds plan.
@@ -545,11 +546,11 @@ function wrapper(plugin_info) {
                                                        '}\n'
                                                       ).appendTo("head");
 
-//             $("<style>").prop("type", "text/css").html('\n' +
-//                                                        '.plugin_fanfields_toolbox > span {\n' +
-//                                                        '   float: left;\n' +
-//                                                        '}\n'
-//                                                       ).appendTo("head");
+            //             $("<style>").prop("type", "text/css").html('\n' +
+            //                                                        '.plugin_fanfields_toolbox > span {\n' +
+            //                                                        '   float: left;\n' +
+            //                                                        '}\n'
+            //                                                       ).appendTo("head");
 
             $("<style>").prop("type", "text/css").html('\n' +
                                                        '#plugin_fanfields_toolbox a.highlight {\n' +
@@ -585,7 +586,7 @@ function wrapper(plugin_info) {
                                                        '   border: 1px solid #ffce00;\n' +
                                                        '   box-shadow: 3px 3px 5px black;\n' +
                                                        '   color: #ffce00;' +
-  //                                                     '   flex: 0 0 50%;' +
+                                                       //                                                     '   flex: 0 0 50%;' +
                                                        '}\n'
                                                       ).appendTo("head");
 
@@ -960,6 +961,7 @@ function wrapper(plugin_info) {
             var layer = plugin.drawTools.drawnItems._layers[i];
             if (layer instanceof L.Marker) {
                 console.log("Marker found")
+                // Todo: make this an array by color
                 thisplugin.startingMarker = map.project(layer.getLatLng(), thisplugin.PROJECT_ZOOM);
                 console.log("Marker set to " + thisplugin.startingMarker)
             }
@@ -1016,6 +1018,7 @@ function wrapper(plugin_info) {
                     console.log("Marker GUID = " + thisplugin.startingMarkerGUID)
                 }
             }
+            // toto: fix? This line could be the reason for the markers act like portals even if they're not docked onto a portal.
             thisplugin.locations[guid] = p;
         });
 
@@ -1105,7 +1108,19 @@ function wrapper(plugin_info) {
         this.layersByColor = thisplugin.dtLayersByColor(thisplugin.dtLayers);
 
 
-        this.fanpoints = findFanpoints(plugin.drawTools.drawnItems.getLayers(),
+        // TODO: loop through layers by color to make the fanfields for each color of draws in drawtools.
+        // The problem is that it's not as capsuled as it should be. We need to refactor some stuff to
+        // ged rid of global vars and objects.
+
+        // for (let dtLayerByColor of this.layersByColor) {
+        //     this.fanpoints = findFanpoints(dtLayerByColor,
+        //                                    this.locations,
+        //                                    this.filterPolygon);
+        // }
+
+
+        // TODO: replace following with uncommented above.
+        this.fanpoints = findFanpoints(thisplugin.dtLayers,
                                        this.locations,
                                        this.filterPolygon);
 
@@ -1154,6 +1169,7 @@ function wrapper(plugin_info) {
         };
 
         // Add Marker Point to list of Fanpoints
+        // Todo: get color magic to the startingMarker
         if (thisplugin.startingMarker !== undefined) {
             this.fanpoints[thisplugin.startingMarkerGUID] = thisplugin.startingMarker;
 
@@ -1209,6 +1225,7 @@ function wrapper(plugin_info) {
         if (thisplugin.startingpointIndex >= thisplugin.perimeterpoints.length) {
             thisplugin.startingpointIndex = 0;
         }
+        // TODO: add color magic to log line
         console.log("startingpointIndex = " + thisplugin.startingpointIndex);
         thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
         thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
