@@ -10,8 +10,8 @@
 // @grant           none
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.meta.js
-// @icon            https://github.com/Heistergand/fanfields2/raw/beta/fanfields2-16.png
-// @icon64          https://github.com/Heistergand/fanfields2/raw/beta/fanfields2-64.png
+// @icon            https://raw.githubusercontent.com/Heistergand/fanfields2/beta/fanfields2-32.png
+// @icon64          https://raw.githubusercontent.com/Heistergand/fanfields2/beta/fanfields2-64.png
 // @supportURL      https://github.com/Heistergand/fanfields2/issues
 // @namespace       https://github.com/Heistergand/fanfields2
 // ==/UserScript==
@@ -164,10 +164,16 @@ Click on a link to flip it's direction
 
 */
 
-
 function wrapper(plugin_info) {
     // ensure plugin framework is there, even if iitc is not yet loaded
     if(typeof window.plugin !== 'function') window.plugin = function() {};
+
+    //PLUGIN AUTHORS: writing a plugin outside of the IITC build environment? if so, delete these lines!!
+//(leaving them in place might break the 'About IITC' page or break update checks)
+plugin_info.buildName = 'iitc';
+plugin_info.dateTimeVersion = '20170108.21732';
+plugin_info.pluginId = 'bookmarks-by-zaso';
+//END PLUGIN AUTHORS NOTE
 
     // PLUGIN START ////////////////////////////////////////////////////////
 
@@ -239,6 +245,12 @@ function wrapper(plugin_info) {
 
     };
 
+    thisplugin.updateStartingPoint = function(i) {
+        thisplugin.startingpointIndex = i;
+        thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
+        thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
+        thisplugin.updateLayer();
+    }
 
     // cycle to next starting point on the convex hull list of portals
     thisplugin.nextStartingPoint = function() {
@@ -247,10 +259,7 @@ function wrapper(plugin_info) {
         if (i >= thisplugin.perimeterpoints.length) {
             i = 0;
         }
-        thisplugin.startingpointIndex = i;
-        thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
-        thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
-        thisplugin.updateLayer();
+        thisplugin.updateStartingPoint(i);
     };
 
     thisplugin.previousStartingPoint = function() {
@@ -258,10 +267,7 @@ function wrapper(plugin_info) {
         if (i < 0) {
             i = thisplugin.perimeterpoints.length -1;
         }
-        thisplugin.startingpointIndex = i;
-        thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
-        thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
-        thisplugin.updateLayer();
+        thisplugin.updateStartingPoint(i);
     };
 
     thisplugin.generateTasks = function() {};
@@ -350,9 +356,6 @@ function wrapper(plugin_info) {
     }
 
     thisplugin.exportDrawtools = function() {
-        // todo: currently the link plan added to the DrawTools Layer. We need to replace existing
-        // drawn links and how about just exporting the json without saving it to the current draw?
-
         var alatlng, blatlng, layer;
         $.each(thisplugin.sortedFanpoints, function(index, portal) {
             $.each(portal.outgoing, function(targetIndex, targetPortal) {
@@ -954,6 +957,8 @@ function wrapper(plugin_info) {
 
         // using marker as starting point, if option enabled
 
+        // TODO: possible loop start for layers by color?
+
         for (i in plugin.drawTools.drawnItems._layers) {
             var layer = plugin.drawTools.drawnItems._layers[i];
             if (layer instanceof L.Marker) {
@@ -1010,7 +1015,6 @@ function wrapper(plugin_info) {
             var p = map.project(ll, thisplugin.PROJECT_ZOOM);
             if (thisplugin.startingMarker !== undefined ) {
                 if (p.equals(thisplugin.startingMarker)) {
-                    debugger;
                     thisplugin.startingMarkerGUID = guid;
                     console.log("Marker GUID = " + thisplugin.startingMarkerGUID)
                 }
@@ -1046,15 +1050,19 @@ function wrapper(plugin_info) {
                     continue;
                 }
                 ll = fanLayer.getLatLngs();
-
+                debugger;
                 polygon = [];
                 for ( k = 0; k < ll.length; ++k) {
                     p = map.project(ll[k], thisplugin.PROJECT_ZOOM);
                     polygon.push(p);
                 }
                 filtered = filter(locations, polygon);
+                // todo:
+                // add fanLayer._leaflet_id as information to the fanpoint
                 for (i in filtered) {
-                    result[i] = filtered[i];
+                    p = filtered[i];
+                    p.dtLayerColor = fanLayer.options.color;
+                    result[i] = p;
                 }
             }
             return result;
@@ -1062,24 +1070,63 @@ function wrapper(plugin_info) {
 
         this.sortedFanpoints = [];
 
-        this.fanpoints = findFanpoints(plugin.drawTools.drawnItems._layers,
+        thisplugin.dtLayers = plugin.drawTools.drawnItems.getLayers();
+
+        thisplugin.dtLayersByColor = function(dtLayers) {
+            debugger;
+            var colors = [];
+            var color;
+            var result = [];
+            function checkColor(layer) {
+                return layer.color == this;
+            }
+            // get all colors
+            for(i in dtLayers) {
+                if (dtLayers[i] instanceof L.GeodesicPolygon) {
+                    color = dtLayers[i].options.color;
+
+                    // introducing a flattened color proprty to the layer, because
+                    // there is none at same object level across different dtLayer types.
+                    dtLayers[i].color = color;
+
+                    if (colors.indexOf(color) === -1) colors.push(color);
+                }
+                else if (dtLayers[i] instanceof L.Marker) {
+                    color = dtLayers[i].options.icon.options.color;
+                    dtLayers[i].color = color;
+                    if (colors.indexOf(color) === -1) colors.push(color);
+                }
+            }
+
+            for (i in colors) {
+                result.push(dtLayers.filter(checkColor, colors[i]));
+            }
+            // should return a multidimentional array of colors of layers.
+            return result;
+        };
+
+        this.layersByColor = thisplugin.dtLayersByColor(thisplugin.dtLayers);
+
+
+        this.fanpoints = findFanpoints(plugin.drawTools.drawnItems.getLayers(),
                                        this.locations,
                                        this.filterPolygon);
 
 
         var npoints = Object.keys(this.fanpoints).length;
-        if (npoints === 0)
+        if (npoints === 0) {
             return;
-
-        // used in convexHull
-        function cross(a, b, o) {
-            return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
-
         }
 
         // Find convex hull from fanpoints list of points
         // Returns array : [guid, [x,y],.....]
         function convexHull(points) {
+
+            // nested function
+            function cross(a, b, o) {
+                return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+            }
+
             // convert to array
             var pa = Object.entries(points).map(p => [p[0], [p[1].x, p[1].y]]);
             // sort by x then y if x the same
@@ -1287,6 +1334,8 @@ function wrapper(plugin_info) {
                                };
                 intersection = 0;
                 maplinks = [];
+
+                // "Respect Intel" stuff
                 if (thisplugin.respectCurrentLinks) {
                     $.each(thisplugin.intelLinks, function(guid,link){
                         maplinks.push(link);
@@ -1350,8 +1399,8 @@ function wrapper(plugin_info) {
             }
         }
 
-        $.each(donelinks, function(i,elem) {
-            thisplugin.links[i] = elem;
+        $.each(donelinks, function(i, link) {
+            thisplugin.links[i] = link;
         });
 
         if (this.sortedFanpoints.length > 3) {
