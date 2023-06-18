@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.3.1
+// @version         2.3.2
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -21,7 +21,10 @@ Version History:
 
 2.3.2 (Heistergand)
 NEW: Introducing code for upcoming multiple fanfields by Drawtools Colors
-FIX: minor code refactorings
+FIX: some code refactorings
+FIX: SBUL defaults to 2 now, assuming most fields are done solo.
+FIX: If a marker is not actually snapped onto a portal it does not act as fan point anymore.
+FIX: When adding a marker, it's now selected as start portal.
 PAIN: it's so messy...
 
 2.3.1 (Heistergand)
@@ -194,7 +197,7 @@ function wrapper(plugin_info) {
     thisplugin.labelLayers = {};
 
     thisplugin.startingpoint = undefined;
-    thisplugin.availableSBUL = 4;
+    thisplugin.availableSBUL = 2;
 
     thisplugin.locations = [];
     thisplugin.fanpoints = [];
@@ -253,6 +256,7 @@ function wrapper(plugin_info) {
     // cycle to next starting point on the convex hull list of portals
     thisplugin.nextStartingPoint = function() {
         // *** startingpoint handling is duplicated in updateLayer().
+        // debugger
         var i = thisplugin.startingpointIndex + 1;
         if (i >= thisplugin.perimeterpoints.length) {
             i = 0;
@@ -853,6 +857,13 @@ function wrapper(plugin_info) {
         return starting_ll.bearingToE6(other_ll);
     };
 
+    thisplugin.distanceTo = function (a, b) {
+        var starting_ll, other_ll;
+        starting_ll = map.unproject(a, thisplugin.PROJECT_ZOOM);
+        other_ll = map.unproject(b, thisplugin.PROJECT_ZOOM);
+        return starting_ll.distanceTo(other_ll);
+    }
+
     thisplugin.bearingWord = function(bearing) {
         var bearingword = '';
         if      (bearing >=  22 && bearing <=  67) bearingword = 'NE';
@@ -960,6 +971,7 @@ function wrapper(plugin_info) {
         for (i in plugin.drawTools.drawnItems._layers) {
             var layer = plugin.drawTools.drawnItems._layers[i];
             if (layer instanceof L.Marker) {
+                //debugger;
                 console.log("Marker found")
                 // Todo: make this an array by color
                 thisplugin.startingMarker = map.project(layer.getLatLng(), thisplugin.PROJECT_ZOOM);
@@ -1018,7 +1030,6 @@ function wrapper(plugin_info) {
                     console.log("Marker GUID = " + thisplugin.startingMarkerGUID)
                 }
             }
-            // toto: fix? This line could be the reason for the markers act like portals even if they're not docked onto a portal.
             thisplugin.locations[guid] = p;
         });
 
@@ -1050,7 +1061,7 @@ function wrapper(plugin_info) {
                     continue;
                 }
                 ll = fanLayer.getLatLngs();
-                debugger;
+                // debugger;
                 polygon = [];
                 for ( k = 0; k < ll.length; ++k) {
                     p = map.project(ll[k], thisplugin.PROJECT_ZOOM);
@@ -1073,7 +1084,7 @@ function wrapper(plugin_info) {
         thisplugin.dtLayers = plugin.drawTools.drawnItems.getLayers();
 
         thisplugin.dtLayersByColor = function(dtLayers) {
-            debugger;
+            // debugger;
             var colors = [];
             var color;
             var result = [];
@@ -1133,17 +1144,22 @@ function wrapper(plugin_info) {
         // Find convex hull from fanpoints list of points
         // Returns array : [guid, [x,y],.....]
         function convexHull(points) {
-
+            // debugger;
             // nested function
             function cross(a, b, o) {
-                return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+                //return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+                return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
             }
 
             // convert to array
-            var pa = Object.entries(points).map(p => [p[0], [p[1].x, p[1].y]]);
+            //var pa = Object.entries(points).map(p => Point [p[0], [p[1].x, p[1].y]]);
+            var pa = Object.entries(points).map(p => [p[0], p[1]]);
+
+
             // sort by x then y if x the same
             pa.sort(function(a, b) {
-                return a[1][0] == b[1][0] ? a[1][1] - b[1][1] : a[1][0] - b[1][0];
+                //return a[1][0] == b[1][0] ? a[1][1] - b[1][1] : a[1][0] - b[1][0];
+                return a[1].x == b[1].x ? a[1].y - b[1].y : a[1].x - b[1].x;
             });
 
             var lower = [];
@@ -1171,8 +1187,10 @@ function wrapper(plugin_info) {
         // Add Marker Point to list of Fanpoints
         // Todo: get color magic to the startingMarker
         if (thisplugin.startingMarker !== undefined) {
-            this.fanpoints[thisplugin.startingMarkerGUID] = thisplugin.startingMarker;
-
+            // debugger;
+            if (thisplugin.startingMarkerGUID in window.portals ) {
+                this.fanpoints[thisplugin.startingMarkerGUID] = thisplugin.startingMarker;
+            }
         }
 
         function extendperimeter(perimeter, GUID, point) {
@@ -1181,7 +1199,7 @@ function wrapper(plugin_info) {
             if (GUID !== undefined) {
                 debugger;
                 for (i = 0; i < perimeter.length; i++) {
-                    if (perimeter[i] == GUID) {
+                    if (perimeter[i] === GUID) {
                         //already in
                         done=true;
                         break;
@@ -1189,7 +1207,12 @@ function wrapper(plugin_info) {
                     if (done) break;
                 }
                 if (!done) {
-                    perimeter.push([GUID,[point.x, point.y]])
+                    // add the marker to the perimeter
+                    perimeter.unshift([GUID,[point.x, point.y]]);
+
+                    // tried to sort the list here to put the point at a position in the list so it's between it's
+                    // nearest points, but it has no effect if done here, it sorts itself new somewhere.
+                    // Quite confusing. Made me mad. Spaghetti code.
                 }
             }
             return perimeter;
@@ -1476,6 +1499,7 @@ function wrapper(plugin_info) {
             });
         });
     };
+
 
     // as calculating portal marker visibility can take some time when there's lots of portals shown, we'll do it on
     // a short timer. this way it doesn't get repeated so much
