@@ -10,7 +10,7 @@
 // @grant           none
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
-// @icon            https://github.com/Heistergand/fanfields2/raw/master/fanfields2-16.png
+// @icon            https://github.com/Heistergand/fanfields2/raw/master/fanfields2-32.png
 // @icon64          https://github.com/Heistergand/fanfields2/raw/master/fanfields2-64.png
 // @supportURL      https://github.com/Heistergand/fanfields2/issues
 // @namespace       https://github.com/Heistergand/fanfields2
