@@ -508,10 +508,10 @@ function wrapper(plugin_info) {
 
         if (thisplugin.stardirection == thisplugin.starDirENUM.CENTRALIZING) {
             html = "Inbounding";
-            $('#plugin_fanfields_availablesbul_label').hide();
+            $('#plugin_fanfields_availablesbul').hide();
         }
         else {
-            $('#plugin_fanfields_availablesbul_label').show();
+            $('#plugin_fanfields_availablesbul').show();
         }
 
 
@@ -569,7 +569,6 @@ function wrapper(plugin_info) {
                                                        '   padding: 0px; \n' +
                                                        '   border: none;\n' +
                                                        '   display: flex;\n' +
-                                                       '   ' +
                                                        '   justify-content: center;\n' +
                                                        '   align-items: center;\n' +
                                                        '   flex-direction: row;\n' +
@@ -597,48 +596,20 @@ function wrapper(plugin_info) {
                                                        '  flex-direction: row;\n' +
                                                        '  flex-wrap: wrap;\n' +
                                                        '  padding: 5px;' +
-                                                       //                                                     '   flex: 0 0 50%;' +
                                                        '}\n'
                                                       ).appendTo("head");
 
             $("<style>").prop("type", "text/css").html('\n' +
                                                        '.plugin_fanfields_titlebar {\n' +
                                                        '  background-color: rgba(8, 60, 78, 0.9);\n' +
-                                                       '  margin-bottom: 7px;\n' +
+                                                       '  margin-right: 7px;\n' +
                                                        '  text-align: center;\n' +
                                                        '}\n'
                                           ).appendTo("head");
 
-            /*
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '#plugin_fanfields_toolbox a.highlight {\n' +
-                                                       '   background-color: #ffce00;\n' +
-                                                       '   color: black;\n' +
-                                                       '   font-Weight: bold\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
-            */
-
-
         }
         else {
 
-            /* $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_btn {\n' +
-                                                       '   margin-left:2px;\n' +
-                                                       '   margin-right:6px;\n' +
-                                                       '}'
-                                                      ).appendTo("head");
-
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_multibtn {\n' +
-                                                       '   margin-left:2px;\n' +
-                                                       '   margin-right:6px;\n' +
-                                                       '   padding: 0px;\n' +
-                                                       '   border: none;\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
-                                                      */
             $("<style>").prop("type", "text/css").html('\n' +
                                                        '.plugin_fanfields_btn {\n' +
                                                        '   margin-left:0;\n' +
@@ -655,6 +626,9 @@ function wrapper(plugin_info) {
                                                        '   margin-right:0;\n' +
                                                        '   overflow: hidden;\n' +
                                                        '   text-overflow: ellipsis;\n' +
+                                                       '   display: flex;\n' +
+                                                       '   justify-content: center;\n' +
+                                                       '   align-items: center;\n' +
                                                        '}\n'
                                                       ).appendTo("head");
 
@@ -663,9 +637,8 @@ function wrapper(plugin_info) {
                                                        '.plugin_fanfields_multibtn {\n' +
                                                        '   margin-left:0;\n' +
                                                        '   margin-right:0;\n' +
-                                                       // '   padding: 0px;\n' +
-                                                       // '   border: none;\n' +
                                                        '   flex: 0 0 100%;\n' +
+                                                       '   align-items: center;\n' +
                                                        '   display: flex;\n' +
                                                        '   flex-direction: row;\n' +
                                                        '   justify-content: space-evenly;\n' +
@@ -682,7 +655,6 @@ function wrapper(plugin_info) {
                                                        '   border: 1px solid #ffce00;\n' +
                                                        '   box-shadow: 3px 3px 5px black;\n' +
                                                        '   color: #ffce00;' +
-                                                       //                                                     '   flex: 0 0 50%;' +
                                                        '}\n'
                                                       ).appendTo("head");
 
@@ -692,7 +664,6 @@ function wrapper(plugin_info) {
                                                        '  flex-direction: row;\n' +
                                                        '  flex-wrap: wrap;\n' +
                                                        '  padding: 5px;' +
-                                                       //                                                     '   flex: 0 0 50%;' +
                                                        '}\n'
                                                       ).appendTo("head");
             $("<style>").prop("type", "text/css").html('\n' +
@@ -711,16 +682,15 @@ function wrapper(plugin_info) {
                                                       ).appendTo("head");
 
 
-            /*
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '#plugin_fanfields_toolbox a.highlight {\n' +
-                                                       '   background-color: #ffce00;\n' +
-                                                       '   color: black;\n' +
-                                                       '   font-Weight: bold\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
-                                                      */
-        }
+        };
+
+        // plugin_fanfields_availablesbul_label
+        $("<style>").prop("type", "text/css").html('\n' +
+                                                   '.plugin_fanfields_availablesbul_label {\n' +
+                                                   '  flex: 0 0 50%;\n' +
+                                                   '  display: flex;\n' +
+                                                   '  justify-content: center;\n' +
+                                                   '}\n').appendTo("head");
 
         $("<style>").prop("type", "text/css").html('\n' +
                                                    '.plugin_fanfields {\n' +
@@ -753,6 +723,7 @@ function wrapper(plugin_info) {
         };
 
     };
+
     thisplugin.getThirds = function(list, a,b) {
         var i,k;
         var linksOnA = [], linksOnB = [], result = [];
@@ -1686,11 +1657,11 @@ function wrapper(plugin_info) {
         var buttonStarDirection = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();" title="Change Perspective Technology">Inbounding</a> ';
         // Available SBUL
         var buttonSBUL =
-            '<span id="plugin_fanfields_availablesbul_label" class="plugin_fanfields_multibtn" style="display: none;">' +
-            '    <span class="plugin_fanfields_btn">Available&nbsp;SBUL:</span>' +
+            '<span id="plugin_fanfields_availablesbul" class="plugin_fanfields_multibtn" style="display: none;">' +
+            '    <span class="plugin_fanfields_availablesbul_label">Available&nbsp;SBUL:</span>' +
             '    <span class="plugin_fanfields_multibtn" style="flex: 50%">' +
             '        <a id="plugin_fanfields_inscsbulbtn" class="plugin_fanfields_minibtn" onclick="window.plugin.fanfields.decreaseSBUL();" >'+symbol_dec+'</a>' +
-            '        <span id="plugin_fanfields_availablesbul_count">'+(thisplugin.availableSBUL)+'</span>' +
+            '        <span id="plugin_fanfields_availablesbul_count" class="plugin_fanfields_minibtn">'+(thisplugin.availableSBUL)+'</span>' +
             '        <a id="plugin_fanfields_decsbulbtn" class="plugin_fanfields_minibtn" onclick="window.plugin.fanfields.increaseSBUL();">'+symbol_inc+'</a>' +
             '    </span>' +
             '</span>';
@@ -1736,7 +1707,7 @@ function wrapper(plugin_info) {
             buttonHelp
         ;
 
-        $('#sidebar').append('<div id="plugin_fanfields_toolbox" class="plugin_fanfields_sidebar"></div>');
+        $('#sidebar').append('<div id="fanfields2" class="plugin_fanfields_sidebar"></div>');
 
 
         if (!window.plugin.drawTools) {
@@ -1752,15 +1723,15 @@ function wrapper(plugin_info) {
                 width: width
             });
 
-            $('#plugin_fanfields_toolbox').empty();
-            $('#plugin_fanfields_toolbox').append("<i>Fan Fields requires IITC drawtools plugin.</i>");
+            $('#fanfields2').empty();
+            $('#fanfields2').append("<i>Fan Fields requires IITC drawtools plugin.</i>");
 
             return;
         }
 
 
 
-        $('#plugin_fanfields_toolbox').append(fanfields_buttons);
+        $('#fanfields2').append(fanfields_buttons);
 
         window.pluginCreateHook('pluginDrawTools');
 
