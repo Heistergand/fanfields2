@@ -3,21 +3,24 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.4.1
+// @version         2.5.0.20230811
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
 // @grant           none
-// @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
-// @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
-// @icon            https://raw.githubusercontent.com/Heistergand/fanfields2/master/fanfields2-32.png
-// @icon64          https://raw.githubusercontent.com/Heistergand/fanfields2/master/fanfields2-64.png
+// @downloadURL     https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.user.js
+// @updateURL       https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.meta.js
+// @icon            https://raw.githubusercontent.com/Heistergand/fanfields2/beta/fanfields2-32.png
+// @icon64          https://raw.githubusercontent.com/Heistergand/fanfields2/beta/fanfields2-64.png
 // @supportURL      https://github.com/Heistergand/fanfields2/issues
 // @namespace       https://github.com/Heistergand/fanfields2
 // ==/UserScript==
 /*
 
 Version History:
+2.5.0 (Heistergand)
+NEW: Integrate key counts from LiveInventory plugin.
+
 2.4.1 (Heistergand)
 FIX: "Show as List" without having the Keys Plugin did not show any Keys.
 
@@ -414,9 +417,13 @@ function wrapper(plugin_info) {
             }
 
             let availableKeysText = '';
-
-            if (window.plugin.keys) {
-                let availableKeys = plugin.keys.keys[portal.guid] || 0;
+            let availableKeys = 0;
+            if (window.plugin.keys || window.plugin.LiveInventory) {
+                if (window.plugin.keys) {
+                    availableKeys = window.plugin.keys.keys[portal.guid] || 0;
+                } else {
+                    availableKeys = window.plugin.LiveInventory.keyGuidCount[portal.guid] || 0;
+                }
                 let keyColorAttribute = '';
                 if (availableKeys >= portal.incoming.length) {
                     keyColorAttribute = 'plugin_fanfields_enoughKeys';
@@ -431,7 +438,7 @@ function wrapper(plugin_info) {
             text+='<tr><td>' + (index) + '</td><td>'+ title + '</td><td ' + availableKeysText + portal.incoming.length+ '</td><td>' + portal.outgoing.length + '</td></tr>';
         });
         text+='</tbody></table>';
-        if (window.plugin.keys) {
+        if (window.plugin.keys || window.plugin.LiveInventory) {
             text+='<br><div plugin_fanfields_enoughKeys>Adjust available keys using your keys plugin.</div>';
         };
         text+='<hr noshade>';
@@ -712,7 +719,7 @@ function wrapper(plugin_info) {
                                                    '}\n'
                                                   ).appendTo("head");
 
-        if (window.plugin.keys) {
+        if (window.plugin.keys || window.plugin.LiveInventory) {
             $("<style>").prop("type", "text/css").html('\n' +
                                                        'td[plugin_fanfields_enoughKeys], div[plugin_fanfields_enoughKeys] {\n' +
                                                        '   color: #828284;\n' +
