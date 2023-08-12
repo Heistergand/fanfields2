@@ -23,4 +23,5 @@ jobs:
         if [[ "$BRANCH_NAME" == "master" ]]; then
           sed -i "s|IITC plugin: Fan Fields 2 (beta)|IITC plugin: Fan Fields 2|" iitc_plugin_fanfields2.user.js iitc_plugin_fanfields2.meta.js
         fi
+        sed -E -i "s/^\/\/\s*@version\s+(\d+)\.(\d+)\.(\d+)\.(\d+)/\1.\2.\3/" iitc_plugin_fanfields2.user.js iitc_plugin_fanfields2.meta.js
         
