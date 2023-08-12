@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.5.0.20230811
+// @version         2.5.1.20230812
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -18,6 +18,9 @@
 /*
 
 Version History:
+2.5.1
+FIX: Prefer LiveInventory Plugin over Keys Plugin
+
 2.5.0 (Heistergand)
 NEW: Integrate key counts from LiveInventory plugin.
 
