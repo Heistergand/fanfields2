@@ -420,9 +420,9 @@ function wrapper(plugin_info) {
             let availableKeys = 0;
             if (window.plugin.keys || window.plugin.LiveInventory) {
                 if (window.plugin.keys) {
-                    availableKeys = window.plugin.keys.keys[portal.guid] || 0;
-                } else {
                     availableKeys = window.plugin.LiveInventory.keyGuidCount[portal.guid] || 0;
+                } else {
+                    availableKeys = window.plugin.keys.keys[portal.guid] || 0;
                 }
                 let keyColorAttribute = '';
                 if (availableKeys >= portal.incoming.length) {
