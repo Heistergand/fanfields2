@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - beta
 
 jobs:
   deploy:
@@ -12,7 +11,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       
     - name: Set URL for master branch
       if: github.ref == 'refs/heads/master'
@@ -24,4 +23,11 @@ jobs:
           sed -i "s|IITC plugin: Fan Fields 2 (beta)|IITC plugin: Fan Fields 2|" iitc_plugin_fanfields2.user.js iitc_plugin_fanfields2.meta.js
         fi
         sed -E -i "s/^\/\/\s*@version\s+(\d+)\.(\d+)\.(\d+)\.(\d+)/\1.\2.\3/" iitc_plugin_fanfields2.user.js iitc_plugin_fanfields2.meta.js
-        
+
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "${{ github.actor }}@users.noreply.github.com"
+        git config --local user.name "${{ github.actor }}"
+        git add .
+        git commit -m "Update files from GitHub Action"
+        git push
