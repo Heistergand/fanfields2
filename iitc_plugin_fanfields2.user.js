@@ -3,15 +3,15 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.5.1
+// @version         2.5.2.20230813
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
 // @grant           none
-// @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
-// @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
-// @icon            https://raw.githubusercontent.com/Heistergand/fanfields2/master/fanfields2-32.png
-// @icon64          https://raw.githubusercontent.com/Heistergand/fanfields2/master/fanfields2-64.png
+// @downloadURL     https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.user.js
+// @updateURL       https://github.com/Heistergand/fanfields2/raw/beta/iitc_plugin_fanfields2.meta.js
+// @icon            https://raw.githubusercontent.com/Heistergand/fanfields2/beta/fanfields2-32.png
+// @icon64          https://raw.githubusercontent.com/Heistergand/fanfields2/beta/fanfields2-64.png
 // @supportURL      https://github.com/Heistergand/fanfields2/issues
 // @namespace       https://github.com/Heistergand/fanfields2
 // ==/UserScript==
@@ -43,6 +43,12 @@ function wrapper(plugin_info) {
     /* exported setup, changelog --eslint */
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
+        {
+            version: '2.5.2',
+            changes: [
+                'FIX: Prefer LiveInventory Plugin over Keys Plugin (hotfix)',
+            ],
+        },
         {
             version: '2.5.1',
             changes: [
@@ -543,7 +549,7 @@ function wrapper(plugin_info) {
             let availableKeysText = '';
             let availableKeys = 0;
             if (window.plugin.keys || window.plugin.LiveInventory) {
-                if (window.plugin.keys) {
+                if (window.plugin.LiveInventory) {
                     availableKeys = window.plugin.LiveInventory.keyGuidCount[portal.guid] || 0;
                 } else {
                     availableKeys = window.plugin.keys.keys[portal.guid] || 0;
