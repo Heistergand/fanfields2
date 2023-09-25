@@ -11,6 +11,7 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
 ### Supported
 - IITC plugin: Bookmarks for maps and portals
 - IITC plugin: Arc
+- IITC plugin: Keys
 
 ## Features
 - Select portals in your area by drawing a polygon around them with DrawTools. 
@@ -20,7 +21,11 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
   - Fanfield Links
   - Fanfield Fields
   - Fanfield Numbers _(Show statistics on each portal)_
-- Show the list of portals and keys you need. 
+- Show the list of portals 
+  - in the order to visit them
+  - with the amount of keys you need
+  - with the keys you already have _(if the Keys plugin is used and maintained)_
+  - count of outgoing links per portal
 - Open the path along the Portals in google maps.
 - Tweak your plan:
   - Move the anchor portal along the hull of the area.
@@ -34,6 +39,7 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
 - Copy your plan to Bookmarks Plugin.
 - Copy your plan to Arcs Plugin.
 - Gather Stats including Build AP. _(Currently only for links and fields, not for destroying, capturing or deploying resos and mods)_
+- mobile support
 
 
 ## Contribute
@@ -64,4 +70,12 @@ The best way to say thank you is writing reports about where you used it and let
 _If you think this is great and you really like to donate something: I have all I need. But the world is not what it seems, so head out and **donate blood** in your area, register as a **bone marrow donor** or **donate money to other charities**. It will change lives._
 
 ## How it looks (on desktop)
+### New sidebar design (no fieldset box anymore)
+![image](https://github.com/Heistergand/fanfields2/assets/16416532/83d1f3b6-834d-4de2-8c03-041583ed0fe5)
+
+### Overview
+You can still see the old fieldset box design here
 ![preview image](FanFields2.png)
+
+### Use of Keys Plugin information
+![image](https://github.com/Heistergand/fanfields2/assets/16416532/d23670b2-28c9-4bdb-ac33-d3b67e7e1193)

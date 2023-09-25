@@ -3,157 +3,28 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.3.0
+// @version         2.5.2
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
 // @grant           none
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
-// @icon            https://github.com/Heistergand/fanfields2/raw/master/fanfields2-16.png
-// @icon64          https://github.com/Heistergand/fanfields2/raw/master/fanfields2-64.png
+// @icon            https://raw.githubusercontent.com/Heistergand/fanfields2/master/fanfields2-32.png
+// @icon64          https://raw.githubusercontent.com/Heistergand/fanfields2/master/fanfields2-64.png
 // @supportURL      https://github.com/Heistergand/fanfields2/issues
 // @namespace       https://github.com/Heistergand/fanfields2
 // ==/UserScript==
 /*
 
 Version History:
-
-2.3.0 (Heistergand)
-NEW: Added Arc support.
-
-2.2.9 (Heistergand)
-FIX: Link direction indicator did not work anymore.
-NEW: Link direction indicator is now optional.
-NEW: New plugin icon showing a hand fan.
-
-2.2.8 (Heistergand)
-FIX: minor changes
-
-2.2.7 (Heistergand)
-FIX: Menue Buttons in Mobile version are now actually buttons.
-
-2.2.6 (Heistergand)
-NEW: Google Maps Portal Routing
-
-2.2.5 (Heistergand)
-NEW: Set how many SBUL you plan to use.
-FIX: Anchor shift button design changed
-
-2.2.4.1 (Heistergand)
-FIX: Fixed what should have been fixed in 2.2.4
-
-2.2.4 (Heistergand)
-FIX: Width of dialog boxes did extend screen size
-
-2.2.3 (Heistergand)
-FIX: Made Bookmark Plugin optional
-NEW: Anchor shifting ("Cycle Start") is now bidirectional.
-FIX: Some minor fixes and code formatting.
-
-2.2.2 (Heistergand)
-NEW: Added favicon.ico to script header.
-
-2.2.1 (Heistergand via Jormund)
-FIX: Merged from Jormund fork (2.1.7): Fixed L.LatLng extension
-
-2.2.0 (Heistergand)
-FIX: Reintroducing the marker function which was removed in 2.1.7
-     so that a Drawtools Marker can be used to force a portal
-     inside (or outside) the hull to be the anchor.
-
-2.1.10 (Heistergand)
-FIX: minor fixes
-
-2.1.9.2 (Heistergand)
-FIX: minor fixes
-
-
-
-2.1.9.1 (zysfryar)
-FIX: Fixed blank in header for compatibility with IITC-CE Button.
-
-2.1.9 (bryane50)
-FIX: Fix for missing constants in leaflet verion 1.6.0.
-
-2.1.8 (bryane50)
-NEW: Added starting portal advance button to select
-     among the list of perimeter portals.
-
-2.1.7 (bryane50)
-DEL: Removed marker and random selection of starting point portal.
-NEW: Replaced with use of first outer hull portal. This ensures
-     maximum fields will be generated.
-
-2.1.5 (Seth10)
-FIX: Minor syntax issue affecting potentially more strict runtimes
-
-2.1.4 (Seth10)
-FIX: Make the clockwise button change its label to "Counterclockwise" when toggled
-
-2.1.3 (Heistergand)
-FIX: added id tags to menu button elements, ...just because.
-
-2.1.2
-FIX: Minor issues
-
-2.1.1
-FIX: changed List export format to display as a table
-
-2.1.0
-NEW: Added save to DrawTools functionality
-NEW: Added fanfield statistics
-FIX: Changed some menu texts
-VER: Increased Minor Version due to DrawTools Milestone
-
-2.0.9
-NEW: Added the number of outgoing links to the simple list export
-
-2.0.8
-NEW: Toggle the direction of the star-links (Inbound/Outbound) and calculate number of SBUL
-FIX: Despite crosslinks, respecting the current intel did not handle done links
-
-2.0.7
-FIX: Sorting of the portals was not accurate for far distance anchors when the angle was too equal.
-NEW: Added option to respect current intel and not crossing lines.
-
-2.0.6
-FIX: Plan messed up on multiple polygons.
-
-2.0.5
-FIX: fan links abandoned when Marker was outside the polygon
-BUG: Issue found where plan messes up when using more than one polygon (fixed in 2.0.6)
-
-2.0.4
-NEW: Added Lock/Unlock button to freeze the plan and prevent recalculation on any events.
-NEW: Added a simple text export (in a dialog box)
-FIX: Several changes to the algorithm
-BUG: Issue found where links are closing fields on top of portals that are
-     successors in the list once you got around the startportal
-
-2.0.3
-FIX: Counterclockwise did not work properly
-NEW: Save as Bookmarks
-
-2.0.2
-NEW: Added Menu
-NEW: Added counterclockwise option
-FIX: Minor Bugfixes
-
-2.0.1
-NEW: Count keys to farm
-NEW: Count total fields
-NEW: Added labels to portals
-FIX: Links were drawn in random order
-FIX: Only fields to the center portal were drawn
+-- Version History moved into the code.
 
 Todo:
 
 Add a kind of system to have a cluster of Fanfields
 Calculate distance to walk for the plan (crow / streets)
 Calculate the most efficient possible plan based on ways to walk and keys to farm
-Export to Drawtools
-Export to Arcs
 Export to Tasks
 Bookmarks saving works, but let it also save into a Bookmarks Folder
 Calculate amount of possible rebuilds after flippinig the center portal
@@ -161,14 +32,290 @@ Click on a link to flip it's direction
 
 */
 
-
 function wrapper(plugin_info) {
     // ensure plugin framework is there, even if iitc is not yet loaded
     if(typeof window.plugin !== 'function') window.plugin = function() {};
+    plugin_info.buildName = 'beta';
+    plugin_info.dateTimeVersion = '2023-08-12-184142';
+    plugin_info.pluginId = 'fanfields';
 
+    /* global L -- eslint */
+    /* exported setup, changelog --eslint */
+    let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
+    var changelog = [
+        {
+            version: '2.5.2',
+            changes: [
+                'FIX: Prefer LiveInventory Plugin over Keys Plugin (hotfix)',
+            ],
+        },
+        {
+            version: '2.5.1',
+            changes: [
+                'FIX: Prefer LiveInventory Plugin over Keys Plugin',
+            ],
+        },
+        {
+            version: '2.5.0',
+            changes: [
+                'NEW: Integrate key counts from LiveInventory plugin.',
+            ],
+        },
+        {
+            version: '2.4.1',
+            changes: [
+                'FIX: "Show as List" without having the Keys Plugin did not show any Keys.',
+            ],
+        },
+        {
+            version: '2.4.0',
+            changes: [
+                'NEW: Integrate functionality with Key Plugin.',
+                'NEW: Replace fieldset box design with a separated sidebar box.',
+            ],
+        },
+        {
+            version: '2.3.2',
+            changes: [
+                'NEW: Introducing code for upcoming multiple fanfields by Drawtools Colors',
+                'FIX: some code refactorings',
+                'FIX: SBUL defaults to 2 now, assuming most fields are done solo.',
+                'FIX: If a marker is not actually snapped onto a portal it does not act as fan point anymore.',
+                'FIX: When adding a marker, it\'s now selected as start portal.',
+            ],
+        },
+        {
+            version: '2.3.1',
+            changes: [
+                'FIX: Portals were difficult to select underneath the fanfileds plan.',
+            ],
+        },
+        {
+            version: '2.3.0',
+            changes: [
+                'NEW: Added '+arcname+' support.',
+            ],
+        },
+        {
+            version: '2.2.9',
+            changes: [
+                'FIX: Link direction indicator did not work anymore.',
+                'NEW: Link direction indicator is now optional.',
+                'NEW: New plugin icon showing a hand fan.',
+            ],
+        },
+        {
+            version: '2.2.8',
+            changes: [
+                'FIX: minor changes',
+            ],
+        },
+        {
+            version: '2.2.7',
+            changes: [
+                'FIX: Menue Buttons in Mobile version are now actually buttons.',
+            ],
+        },
+        {
+            version: '2.2.6',
+            changes: [
+                'NEW: Google Maps Portal Routing',
+            ],
+        },
+        {
+            version: '2.2.5',
+            changes: [
+                'NEW: Set how many SBUL you plan to use.',
+                'FIX: Anchor shift button design changed',
+            ],
+        },
+        {
+            version: '2.2.4',
+            changes: [
+                'FIX: Fixed what should have been fixed in 2.2.4',
+            ],
+        },
+        {
+            version: '2.2.4',
+            changes: [
+                'FIX: Width of dialog boxes did extend screen size',
+            ],
+        },
+        {
+            version: '2.2.3',
+            changes: [
+                'FIX: Made Bookmark Plugin optional',
+                'NEW: Anchor shifting ("Cycle Start") is now bidirectional.',
+                'FIX: Some minor fixes and code formatting.',
+            ],
+        },
+        {
+            version: '2.2.2',
+            changes: [
+                'NEW: Added favicon.ico to script header.',
+            ],
+        },
+        {
+            version: '2.2.1',
+            changes: [
+                'FIX: Merged from Jormund fork (2.1.7): Fixed L.LatLng extension',
+            ],
+        },
+
+        {
+            version: '2.2.0',
+            changes: [
+                'FIX: Reintroducing the marker function which was removed in 2.1.7 so that a Drawtools Marker can be used to force a portal inside (or outside) the hull to be the anchor.',
+            ],
+        },
+        {
+            version: '2.1.10',
+            changes: [
+                'FIX: minor fixes',
+            ],
+        },
+        {
+            version: '2.1.9',
+            changes: [
+                'FIX: minor fixes',
+            ],
+        },
+        {
+            version: '2.1.9',
+            changes: [
+                'FIX: Fixed blank in header for compatibility with IITC-CE Button.',
+            ],
+        },
+        {
+            version: '2.1.9',
+            changes: [
+                'FIX: Fix for missing constants in leaflet verion 1.6.0.',
+            ],
+        },
+        {
+            version: '2.1.8',
+            changes: [
+                'NEW: Added starting portal advance button to select among the list of perimeter portals.',
+            ],
+        },
+        {
+            version: '2.1.7',
+            changes: [
+                'DEL: Removed marker and random selection of starting point portal.',
+                'NEW: Replaced with use of first outer hull portal. This ensures maximum fields will be generated.',
+            ],
+        },
+        {
+            version: '2.1.5',
+            changes: [
+                'FIX: Minor syntax issue affecting potentially more strict runtimes',
+            ],
+        },
+        {
+            version: '2.1.4',
+            changes: [
+                'FIX: Make the clockwise button change its label to "Counterclockwise" when toggled',
+            ],
+        },
+        {
+            version: '2.1.3',
+            changes: [
+                'FIX: added id tags to menu button elements, ...just because.',
+            ],
+        },
+        {
+            version: '2.1.2',
+            changes: [
+                'FIX: Minor issues',
+            ],
+        },
+        {
+            version: '2.1.1',
+            changes: [
+                'FIX: changed List export format to display as a table',
+            ],
+        },
+        {
+            version: '2.1.0',
+            changes: [
+                'NEW: Added save to DrawTools functionality',
+                'NEW: Added fanfield statistics',
+                'FIX: Changed some menu texts',
+                'VER: Increased Minor Version due to DrawTools Milestone',
+            ],
+        },
+        {
+            version: '2.0.9',
+            changes: [
+                'NEW: Added the number of outgoing links to the simple list export',
+            ],
+        },
+        {
+            version: '2.0.8',
+            changes: [
+                'NEW: Toggle the direction of the star-links (Inbound/Outbound) and calculate number of SBUL',
+                'FIX: Despite crosslinks, respecting the current intel did not handle done links',
+            ],
+        },
+        {
+            version: '2.0.7',
+            changes: [
+                'FIX: Sorting of the portals was not accurate for far distance anchors when the angle was too equal.',
+                'NEW: Added option to respect current intel and not crossing lines.',
+            ],
+        },
+        {
+            version: '2.0.6',
+            changes: [
+                'FIX: Plan messed up on multiple polygons.',
+            ],
+        },
+        {
+            version: '2.0.5',
+            changes: [
+                'FIX: fan links abandoned when Marker was outside the polygon',
+                'BUG: Issue found where plan messes up when using more than one polygon (fixed in 2.0.6)',
+            ],
+        },
+        {
+            version: '2.0.4',
+            changes: [
+                'NEW: Added Lock/Unlock button to freeze the plan and prevent recalculation on any events.',
+                'NEW: Added a simple text export (in a dialog box)',
+                'FIX: Several changes to the algorithm',
+                'BUG: Issue found where links are closing fields on top of portals that are successors in the list once you got around the startportal',
+            ],
+        },
+        {
+            version: '2.0.3',
+            changes: [
+                'FIX: Counterclockwise did not work properly',
+                'NEW: Save as Bookmarks',
+            ],
+        },
+        {
+            version: '2.0.2',
+            changes: [
+                'NEW: Added Menu',
+                'NEW: Added counterclockwise option',
+                'FIX: Minor Bugfixes',
+            ],
+        },
+        {
+            version: '2.0.1',
+            changes: [
+                'NEW: Count keys to farm',
+                'NEW: Count total fields',
+                'NEW: Added labels to portals',
+                'FIX: Links were drawn in random order',
+                'FIX: Only fields to the center portal were drawn',
+            ],
+        },
+    ];
     // PLUGIN START ////////////////////////////////////////////////////////
 
     // use own namespace for plugin
+    /* jshint shadow:true */
     window.plugin.fanfields = function() {};
     var thisplugin = window.plugin.fanfields;
 
@@ -187,7 +334,7 @@ function wrapper(plugin_info) {
     thisplugin.labelLayers = {};
 
     thisplugin.startingpoint = undefined;
-    thisplugin.availableSBUL = 4;
+    thisplugin.availableSBUL = 2;
 
     thisplugin.locations = [];
     thisplugin.fanpoints = [];
@@ -236,18 +383,22 @@ function wrapper(plugin_info) {
 
     };
 
-
-    // cycle to next starting point on the convex hull list of portals
-    thisplugin.nextStartingPoint = function() {
-        // *** startingpoint handling is duplicated in updateLayer().
-        var i = thisplugin.startingpointIndex + 1;
-        if (i >= thisplugin.perimeterpoints.length) {
-            i = 0;
-        }
+    thisplugin.updateStartingPoint = function(i) {
         thisplugin.startingpointIndex = i;
         thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
         thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
         thisplugin.updateLayer();
+    }
+
+    // cycle to next starting point on the convex hull list of portals
+    thisplugin.nextStartingPoint = function() {
+        // *** startingpoint handling is duplicated in updateLayer().
+        // debugger
+        var i = thisplugin.startingpointIndex + 1;
+        if (i >= thisplugin.perimeterpoints.length) {
+            i = 0;
+        }
+        thisplugin.updateStartingPoint(i);
     };
 
     thisplugin.previousStartingPoint = function() {
@@ -255,10 +406,7 @@ function wrapper(plugin_info) {
         if (i < 0) {
             i = thisplugin.perimeterpoints.length -1;
         }
-        thisplugin.startingpointIndex = i;
-        thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
-        thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
-        thisplugin.updateLayer();
+        thisplugin.updateStartingPoint(i);
     };
 
     thisplugin.generateTasks = function() {};
@@ -347,9 +495,6 @@ function wrapper(plugin_info) {
     }
 
     thisplugin.exportDrawtools = function() {
-        // todo: currently the link plan added to the DrawTools Layer. We need to replace existing
-        // drawn links and how about just exporting the json without saving it to the current draw?
-
         var alatlng, blatlng, layer;
         $.each(thisplugin.sortedFanpoints, function(index, portal) {
             $.each(portal.outgoing, function(targetIndex, targetPortal) {
@@ -364,7 +509,10 @@ function wrapper(plugin_info) {
     }
 
     thisplugin.exportArcs = function() {
-
+        if (window.PLAYER.team === 'RESISTANCE') {
+            // sorry
+            return;
+        };
         var alatlng, blatlng, layer;
         $.each(thisplugin.sortedFanpoints, function(index, portal) {
             $.each(portal.outgoing, function(targetIndex, targetPortal) {
@@ -381,7 +529,7 @@ function wrapper(plugin_info) {
         //todo...
     }
 
-
+    // Show as list
     thisplugin.exportText = function() {
         var text = "<table><thead><tr><th style='text-align:right'>Pos.</th><th style='text-align:left'>Portal Name</th><th>Keys</th><th>Links</th></tr></thead><tbody>";
         var gmnav='http://maps.google.com/maps/dir/'
@@ -397,9 +545,32 @@ function wrapper(plugin_info) {
             if (p !== undefined) {
                 title = p.options.data.title;
             }
-            text+='<tr><td>' + (index) + '</td><td>'+ title + '</td><td>' + portal.incoming.length+ '</td><td>' + portal.outgoing.length + '</td></tr>';
+
+            let availableKeysText = '';
+            let availableKeys = 0;
+            if (window.plugin.keys || window.plugin.LiveInventory) {
+                if (window.plugin.LiveInventory) {
+                    availableKeys = window.plugin.LiveInventory.keyGuidCount[portal.guid] || 0;
+                } else {
+                    availableKeys = window.plugin.keys.keys[portal.guid] || 0;
+                }
+                let keyColorAttribute = '';
+                if (availableKeys >= portal.incoming.length) {
+                    keyColorAttribute = 'plugin_fanfields_enoughKeys';
+                } else {
+                    keyColorAttribute = 'plugin_fanfields_notEnoughKeys';
+                };
+
+                availableKeysText = keyColorAttribute + '>' + availableKeys + '/';
+            } else {
+                availableKeysText = '>';
+            };
+            text+='<tr><td>' + (index) + '</td><td>'+ title + '</td><td ' + availableKeysText + portal.incoming.length+ '</td><td>' + portal.outgoing.length + '</td></tr>';
         });
         text+='</tbody></table>';
+        if (window.plugin.keys || window.plugin.LiveInventory) {
+            text+='<br><div plugin_fanfields_enoughKeys>Adjust available keys using your keys plugin.</div>';
+        };
         text+='<hr noshade>';
         gmnav+='&nav=1';
         text+='<a target="_blank" href="'+ gmnav +'">Navigate with Google Maps</a>';
@@ -438,9 +609,9 @@ function wrapper(plugin_info) {
     thisplugin.toggleLinkDirIndicator = function() {
         thisplugin.indicateLinkDirection = !thisplugin.indicateLinkDirection;
         if (thisplugin.indicateLinkDirection) {
-            $('#plugin_fanfields_direction_indicator_btn').html('Indicate&nbsp;link&nbsp;direction:&nbsp;ON');
+            $('#plugin_fanfields_direction_indicator_btn').html('Show&nbsp;link&nbsp;dir:&nbsp;ON');
         } else {
-            $('#plugin_fanfields_direction_indicator_btn').html('Indicate&nbsp;link&nbsp;direction:&nbsp;OFF');
+            $('#plugin_fanfields_direction_indicator_btn').html('Show&nbsp;link&nbsp;dir:&nbsp;OFF');
         }
         thisplugin.delayedUpdateLayer(0.2);
     };
@@ -449,9 +620,9 @@ function wrapper(plugin_info) {
     thisplugin.lock = function() {
         thisplugin.is_locked = !thisplugin.is_locked;
         if (thisplugin.is_locked) {
-            $('#plugin_fanfields_lockbtn').html('&#128274;&nbsp;locked'); // &#128274;
+            $('#plugin_fanfields_lockbtn').html('&#128274;&nbsp;Locked'); // &#128274;
         } else {
-            $('#plugin_fanfields_lockbtn').html('&#128275;&nbsp;unlocked'); // &#128275;
+            $('#plugin_fanfields_lockbtn').html('&#128275;&nbsp;Unlocked'); // &#128275;
         }
     };
 
@@ -472,14 +643,14 @@ function wrapper(plugin_info) {
 
     thisplugin.toggleStarDirection = function() {
         thisplugin.stardirection *= -1;
-        var html = "outbounding";
+        var html = "Outbounding";
 
         if (thisplugin.stardirection == thisplugin.starDirENUM.CENTRALIZING) {
-            html = "inbounding";
-            $('#plugin_fanfields_availablesbul_label').hide();
+            html = "Inbounding";
+            $('#plugin_fanfields_availablesbul').hide();
         }
         else {
-            $('#plugin_fanfields_availablesbul_label').show();
+            $('#plugin_fanfields_availablesbul').show();
         }
 
 
@@ -513,6 +684,21 @@ function wrapper(plugin_info) {
                                                        '   margin: 2px;\n' +
                                                        '   padding: 5px;\n' +
                                                        '   border: 2px outset #20A8B1;\n' +
+                                                       '   flex: auto;\n' +
+                                                       '   display: flex;\n' +
+                                                       '   justify-content: center;\n' +
+                                                       '   align-items: center;\n' +
+                                                       '}\n'
+                                                      ).appendTo("head");
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_minibtn {\n' +
+                                                       '   margin: 2px;\n' +
+                                                       '   padding: 5px 20px;\n' +
+                                                       '   border: 2px outset #20A8B1;\n' +
+                                                       '   flex: auto;\n' +
+                                                       '   display: flex;\n' +
+                                                       '   justify-content: center;\n' +
+                                                       '   align-items: center;\n' +
                                                        '}\n'
                                                       ).appendTo("head");
 
@@ -542,38 +728,64 @@ function wrapper(plugin_info) {
                                                        '}\n'
                                                       ).appendTo("head");
 
-//             $("<style>").prop("type", "text/css").html('\n' +
-//                                                        '.plugin_fanfields_toolbox > span {\n' +
-//                                                        '   float: left;\n' +
-//                                                        '}\n'
-//                                                       ).appendTo("head");
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '#plugin_fanfields_toolbox a.highlight {\n' +
-                                                       '   background-color: #ffce00;\n' +
-                                                       '   color: black;\n' +
-                                                       '   font-Weight: bold\n' +
+                                                       '.plugin_fanfields_sidebar {\n' +
+                                                       '  display: flex;\n' +
+                                                       '  flex-direction: row;\n' +
+                                                       '  flex-wrap: wrap;\n' +
+                                                       '  padding: 5px;' +
                                                        '}\n'
                                                       ).appendTo("head");
 
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_titlebar {\n' +
+                                                       '  background-color: rgba(8, 60, 78, 0.9);\n' +
+                                                       '  margin-right: 7px;\n' +
+                                                       '  text-align: center;\n' +
+                                                       '}\n'
+                                                      ).appendTo("head");
 
         }
         else {
+
             $("<style>").prop("type", "text/css").html('\n' +
                                                        '.plugin_fanfields_btn {\n' +
-                                                       '   margin-left:2px;\n' +
-                                                       '   margin-right:6px;\n' +
+                                                       '   margin-left:0;\n' +
+                                                       '   margin-right:0;\n' +
+                                                       '   flex: 0 0 50%;\n' +
+                                                       '   overflow: hidden;\n' +
+                                                       '   text-overflow: ellipsis;\n' +
                                                        '}'
                                                       ).appendTo("head");
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_multibtn {\n' +
-                                                       '   margin-left:2px;\n' +
-                                                       '   margin-right:6px;\n' +
-                                                       '   padding: 0px;\n' +
-                                                       '   border: none;\n' +
+                                                       '.plugin_fanfields_minibtn {\n' +
+                                                       '   margin-left:0;\n' +
+                                                       '   margin-right:0;\n' +
+                                                       '   overflow: hidden;\n' +
+                                                       '   text-overflow: ellipsis;\n' +
+                                                       '   display: flex;\n' +
+                                                       '   justify-content: center;\n' +
+                                                       '   align-items: center;\n' +
                                                        '}\n'
                                                       ).appendTo("head");
+
+
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_multibtn {\n' +
+                                                       '   margin-left:0;\n' +
+                                                       '   margin-right:0;\n' +
+                                                       '   flex: 0 0 100%;\n' +
+                                                       '   align-items: center;\n' +
+                                                       '   display: flex;\n' +
+                                                       '   flex-direction: row;\n' +
+                                                       '   justify-content: space-evenly;\n' +
+                                                       '   overflow: hidden;\n' +
+                                                       '   text-overflow: ellipsis;\n' +
+                                                       '}\n'
+                                                      ).appendTo("head");
+
 
             $("<style>").prop("type", "text/css").html('\n' +
                                                        '.plugin_fanfields_toolbox {\n' +
@@ -582,9 +794,25 @@ function wrapper(plugin_info) {
                                                        '   border: 1px solid #ffce00;\n' +
                                                        '   box-shadow: 3px 3px 5px black;\n' +
                                                        '   color: #ffce00;' +
-  //                                                     '   flex: 0 0 50%;' +
                                                        '}\n'
                                                       ).appendTo("head");
+
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_sidebar {\n' +
+                                                       '  display: flex;\n' +
+                                                       '  flex-direction: row;\n' +
+                                                       '  flex-wrap: wrap;\n' +
+                                                       '  padding: 5px;' +
+                                                       '}\n'
+                                                      ).appendTo("head");
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       '.plugin_fanfields_titlebar {\n' +
+                                                       '  background-color: rgba(8, 60, 78, 0.9);\n' +
+                                                       '  margin-bottom: 7px;\n' +
+                                                       '  text-align: center;\n' +
+                                                       '}\n'
+                                                      ).appendTo("head");
+
 
             $("<style>").prop("type", "text/css").html('\n' +
                                                        '.plugin_fanfields_toolbox > span {\n' +
@@ -592,14 +820,16 @@ function wrapper(plugin_info) {
                                                        '}\n'
                                                       ).appendTo("head");
 
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '#plugin_fanfields_toolbox a.highlight {\n' +
-                                                       '   background-color: #ffce00;\n' +
-                                                       '   color: black;\n' +
-                                                       '   font-Weight: bold\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
-        }
+
+        };
+
+        // plugin_fanfields_availablesbul_label
+        $("<style>").prop("type", "text/css").html('\n' +
+                                                   '.plugin_fanfields_availablesbul_label {\n' +
+                                                   '  flex: 0 0 50%;\n' +
+                                                   '  display: flex;\n' +
+                                                   '  justify-content: center;\n' +
+                                                   '}\n').appendTo("head");
 
         $("<style>").prop("type", "text/css").html('\n' +
                                                    '.plugin_fanfields {\n' +
@@ -619,10 +849,20 @@ function wrapper(plugin_info) {
                                                    '}\n'
                                                   ).appendTo("head");
 
-
-
+        if (window.plugin.keys || window.plugin.LiveInventory) {
+            $("<style>").prop("type", "text/css").html('\n' +
+                                                       'td[plugin_fanfields_enoughKeys], div[plugin_fanfields_enoughKeys] {\n' +
+                                                       '   color: #828284;\n' +
+                                                       '}\n' +
+                                                       'td[plugin_fanfields_notEnoughKeys] {\n' +
+                                                       '    /* color: #FFBBBB; */ \n' +
+                                                       '}\n' +
+                                                       ''
+                                                      ).appendTo("head");
+        };
 
     };
+
     thisplugin.getThirds = function(list, a,b) {
         var i,k;
         var linksOnA = [], linksOnB = [], result = [];
@@ -778,9 +1018,11 @@ function wrapper(plugin_info) {
                 iconSize: [thisplugin.LABEL_WIDTH,thisplugin.LABEL_HEIGHT],
                 html: labelText
             }),
-            guid: guid
+            guid: guid,
+            interactive: false
         });
         thisplugin.labelLayers[guid] = label;
+
         label.addTo(thisplugin.numbersLayerGroup);
 
     };
@@ -846,6 +1088,13 @@ function wrapper(plugin_info) {
         other_ll = map.unproject(b, thisplugin.PROJECT_ZOOM);
         return starting_ll.bearingToE6(other_ll);
     };
+
+    thisplugin.distanceTo = function (a, b) {
+        var starting_ll, other_ll;
+        starting_ll = map.unproject(a, thisplugin.PROJECT_ZOOM);
+        other_ll = map.unproject(b, thisplugin.PROJECT_ZOOM);
+        return starting_ll.distanceTo(other_ll);
+    }
 
     thisplugin.bearingWord = function(bearing) {
         var bearingword = '';
@@ -949,10 +1198,14 @@ function wrapper(plugin_info) {
 
         // using marker as starting point, if option enabled
 
+        // TODO: possible loop start for layers by color?
+
         for (i in plugin.drawTools.drawnItems._layers) {
             var layer = plugin.drawTools.drawnItems._layers[i];
             if (layer instanceof L.Marker) {
+                //debugger;
                 console.log("Marker found")
+                // Todo: make this an array by color
                 thisplugin.startingMarker = map.project(layer.getLatLng(), thisplugin.PROJECT_ZOOM);
                 console.log("Marker set to " + thisplugin.startingMarker)
             }
@@ -1005,7 +1258,6 @@ function wrapper(plugin_info) {
             var p = map.project(ll, thisplugin.PROJECT_ZOOM);
             if (thisplugin.startingMarker !== undefined ) {
                 if (p.equals(thisplugin.startingMarker)) {
-                    debugger;
                     thisplugin.startingMarkerGUID = guid;
                     console.log("Marker GUID = " + thisplugin.startingMarkerGUID)
                 }
@@ -1041,15 +1293,19 @@ function wrapper(plugin_info) {
                     continue;
                 }
                 ll = fanLayer.getLatLngs();
-
+                // debugger;
                 polygon = [];
                 for ( k = 0; k < ll.length; ++k) {
                     p = map.project(ll[k], thisplugin.PROJECT_ZOOM);
                     polygon.push(p);
                 }
                 filtered = filter(locations, polygon);
+                // todo:
+                // add fanLayer._leaflet_id as information to the fanpoint
                 for (i in filtered) {
-                    result[i] = filtered[i];
+                    p = filtered[i];
+                    p.dtLayerColor = fanLayer.options.color;
+                    result[i] = p;
                 }
             }
             return result;
@@ -1057,29 +1313,85 @@ function wrapper(plugin_info) {
 
         this.sortedFanpoints = [];
 
-        this.fanpoints = findFanpoints(plugin.drawTools.drawnItems._layers,
+        thisplugin.dtLayers = plugin.drawTools.drawnItems.getLayers();
+
+        thisplugin.dtLayersByColor = function(dtLayers) {
+            // debugger;
+            var colors = [];
+            var color;
+            var result = [];
+            function checkColor(layer) {
+                return layer.color == this;
+            }
+            // get all colors
+            for(i in dtLayers) {
+                if (dtLayers[i] instanceof L.GeodesicPolygon) {
+                    color = dtLayers[i].options.color;
+
+                    // introducing a flattened color proprty to the layer, because
+                    // there is none at same object level across different dtLayer types.
+                    dtLayers[i].color = color;
+
+                    if (colors.indexOf(color) === -1) colors.push(color);
+                }
+                else if (dtLayers[i] instanceof L.Marker) {
+                    color = dtLayers[i].options.icon.options.color;
+                    dtLayers[i].color = color;
+                    if (colors.indexOf(color) === -1) colors.push(color);
+                }
+            }
+
+            for (i in colors) {
+                result.push(dtLayers.filter(checkColor, colors[i]));
+            }
+            // should return a multidimentional array of colors of layers.
+            return result;
+        };
+
+        this.layersByColor = thisplugin.dtLayersByColor(thisplugin.dtLayers);
+
+
+        // TODO: loop through layers by color to make the fanfields for each color of draws in drawtools.
+        // The problem is that it's not as capsuled as it should be. We need to refactor some stuff to
+        // ged rid of global vars and objects.
+
+        // for (let dtLayerByColor of this.layersByColor) {
+        //     this.fanpoints = findFanpoints(dtLayerByColor,
+        //                                    this.locations,
+        //                                    this.filterPolygon);
+        // }
+
+
+        // TODO: replace following with uncommented above.
+        this.fanpoints = findFanpoints(thisplugin.dtLayers,
                                        this.locations,
                                        this.filterPolygon);
 
 
         var npoints = Object.keys(this.fanpoints).length;
-        if (npoints === 0)
+        if (npoints === 0) {
             return;
-
-        // used in convexHull
-        function cross(a, b, o) {
-            return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
-
         }
 
         // Find convex hull from fanpoints list of points
         // Returns array : [guid, [x,y],.....]
         function convexHull(points) {
+            // debugger;
+            // nested function
+            function cross(a, b, o) {
+                //return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+                return (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+            }
+
             // convert to array
-            var pa = Object.entries(points).map(p => [p[0], [p[1].x, p[1].y]]);
+            //var pa = Object.entries(points).map(p => Point [p[0], [p[1].x, p[1].y]]);
+            var pa = Object.entries(points).map(p => [p[0], p[1]]);
+
+
             // sort by x then y if x the same
             pa.sort(function(a, b) {
-                return a[1][0] == b[1][0] ? a[1][1] - b[1][1] : a[1][0] - b[1][0];
+                //return a[1][0] == b[1][0] ? a[1][1] - b[1][1] : a[1][0] - b[1][0];
+                return a[1].x == b[1].x ? a[1].y - b[1].y : a[1].x - b[1].x;
             });
 
             var lower = [];
@@ -1105,9 +1417,12 @@ function wrapper(plugin_info) {
         };
 
         // Add Marker Point to list of Fanpoints
+        // Todo: get color magic to the startingMarker
         if (thisplugin.startingMarker !== undefined) {
-            this.fanpoints[thisplugin.startingMarkerGUID] = thisplugin.startingMarker;
-
+            // debugger;
+            if (thisplugin.startingMarkerGUID in window.portals ) {
+                this.fanpoints[thisplugin.startingMarkerGUID] = thisplugin.startingMarker;
+            }
         }
 
         function extendperimeter(perimeter, GUID, point) {
@@ -1116,7 +1431,7 @@ function wrapper(plugin_info) {
             if (GUID !== undefined) {
                 debugger;
                 for (i = 0; i < perimeter.length; i++) {
-                    if (perimeter[i] == GUID) {
+                    if (perimeter[i] === GUID) {
                         //already in
                         done=true;
                         break;
@@ -1124,7 +1439,12 @@ function wrapper(plugin_info) {
                     if (done) break;
                 }
                 if (!done) {
-                    perimeter.push([GUID,[point.x, point.y]])
+                    // add the marker to the perimeter
+                    perimeter.unshift([GUID,[point.x, point.y]]);
+
+                    // tried to sort the list here to put the point at a position in the list so it's between it's
+                    // nearest points, but it has no effect if done here, it sorts itself new somewhere.
+                    // Quite confusing. Made me mad. Spaghetti code.
                 }
             }
             return perimeter;
@@ -1160,6 +1480,7 @@ function wrapper(plugin_info) {
         if (thisplugin.startingpointIndex >= thisplugin.perimeterpoints.length) {
             thisplugin.startingpointIndex = 0;
         }
+        // TODO: add color magic to log line
         console.log("startingpointIndex = " + thisplugin.startingpointIndex);
         thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
         thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
@@ -1282,6 +1603,8 @@ function wrapper(plugin_info) {
                                };
                 intersection = 0;
                 maplinks = [];
+
+                // "Respect Intel" stuff
                 if (thisplugin.respectCurrentLinks) {
                     $.each(thisplugin.intelLinks, function(guid,link){
                         maplinks.push(link);
@@ -1345,8 +1668,8 @@ function wrapper(plugin_info) {
             }
         }
 
-        $.each(donelinks, function(i,elem) {
-            thisplugin.links[i] = elem;
+        $.each(donelinks, function(i, link) {
+            thisplugin.links[i] = link;
         });
 
         if (this.sortedFanpoints.length > 3) {
@@ -1390,6 +1713,7 @@ function wrapper(plugin_info) {
                 opacity: 1,
                 weight: 1.5,
                 clickable: false,
+                interactive: false,
                 smoothFactor: 10,
                 dashArray: thisplugin.linkDashArray,
             });
@@ -1403,9 +1727,11 @@ function wrapper(plugin_info) {
                 fillColor: '#FF0000',
                 fillOpacity: 0.1,
                 clickable: false,
+                interactive: false,
             });
         });
     };
+
 
     // as calculating portal marker visibility can take some time when there's lots of portals shown, we'll do it on
     // a short timer. this way it doesn't get repeated so much
@@ -1433,9 +1759,13 @@ function wrapper(plugin_info) {
 
         //Extend LatLng here to ensure it was created before
         thisplugin.initLatLng();
+
+        var buttonBookmarks = '';
         if(typeof window.plugin.bookmarks != 'undefined') {
-            var buttonBookmarks = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();" title="Create New Portal Potential Future">Write&nbsp;Bookmarks</a> ';
+            // Write Bookmarks
+            buttonBookmarks = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();" title="Create New Portal Potential Future">Write&nbsp;Bookmarks</a> ';
         }
+        // Show as list
         var buttonPortalList = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();" title="OpenAll Link Create Star">Show&nbsp;as&nbsp;list</a> ';
 
         // clockwise &#8635; ↻
@@ -1461,53 +1791,62 @@ function wrapper(plugin_info) {
 
         //var button5 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_resetbtn" onclick="window.plugin.fanfields.reset();">Reset</a> ';
         var buttonClockwise = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();" title="Begin Journey Breathe XM ">Clockwise&nbsp;'+symbol_clockwise+'</a> ';
-        var buttonLock = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();" title="Avoid XM Message Lie">&#128275;&nbsp;unlocked</a> ';
+        var buttonLock = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();" title="Avoid XM Message Lie">&#128275;&nbsp;Unlocked</a> ';
 
-        var buttonStarDirection = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();" title="Change Perspective Technology">inbounding</a> ';
+        var buttonStarDirection = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();" title="Change Perspective Technology">Inbounding</a> ';
+        // Available SBUL
+        var buttonSBUL =
+            '<span id="plugin_fanfields_availablesbul" class="plugin_fanfields_multibtn" style="display: none;">' +
+            '    <span class="plugin_fanfields_availablesbul_label">Available&nbsp;SBUL:</span>' +
+            '    <span class="plugin_fanfields_multibtn" style="flex: 50%">' +
+            '        <a id="plugin_fanfields_inscsbulbtn" class="plugin_fanfields_minibtn" onclick="window.plugin.fanfields.decreaseSBUL();" >'+symbol_dec+'</a>' +
+            '        <span id="plugin_fanfields_availablesbul_count" class="plugin_fanfields_minibtn">'+(thisplugin.availableSBUL)+'</span>' +
+            '        <a id="plugin_fanfields_decsbulbtn" class="plugin_fanfields_minibtn" onclick="window.plugin.fanfields.increaseSBUL();">'+symbol_inc+'</a>' +
+            '    </span>' +
+            '</span>';
 
-        var buttonSBUL = '<span class="plugin_fanfields_multibtn" id="plugin_fanfields_availablesbul_label" style="display: none;">Available&nbsp;SBUL:&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_inscsbulbtn" onclick="window.plugin.fanfields.decreaseSBUL();" >'+symbol_dec+'</a>'+
-            '<span class="" id="plugin_fanfields_availablesbul_count">'+(thisplugin.availableSBUL)+'</span>&nbsp;<a class="plugin_fanfields_btn" id="plugin_fanfields_decsbulbtn" onclick="window.plugin.fanfields.increaseSBUL();">'+symbol_inc+'</a></span>';
-        // non tile on the SBUL html link. It's little too annoying here.
-        // WOuld have been title="Star Courage Difficult"
-
+        // Respect Intel
         var buttonRespect = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();" title="Question Conflict Data">Respect&nbsp;Intel:&nbsp;OFF</a> ';
-        var buttonLinkDirectionIndicator = '<a class="plugin_fanfields_btn" id="plugin_fanfields_direction_indicator_btn" onclick="window.plugin.fanfields.toggleLinkDirIndicator();" title="Technology Intelligence See All">Indicate&nbsp;link&nbsp;direction:&nbsp;ON</a> ';
 
-        var buttonShiftAnchor = '<span class="plugin_fanfields_multibtn">Shift&nbsp;anchor: <a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();" title="Less Chaos More Stability">left&nbsp;'+symbol_counterclockwise+'</a>&nbsp;<a '+ // clockwise &#8635;
-            'class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();" title="Restraint Path Gain Harmony">right&nbsp;'+symbol_clockwise+'</a></span>';
+        // Show link dir
+        var buttonLinkDirectionIndicator = '<a class="plugin_fanfields_btn" id="plugin_fanfields_direction_indicator_btn" onclick="window.plugin.fanfields.toggleLinkDirIndicator();" title="Technology Intelligence See All">Show&nbsp;link&nbsp;dir:&nbsp;ON</a> ';
+
+        // Shift anchor
+        var buttonShiftAnchor = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();" title="Less Chaos More Stability">Shift&nbsp;left&nbsp;'+symbol_counterclockwise+'</a>'+ // clockwise &#8635;
+            '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();" title="Restraint Path Gain Harmony">Shift&nbsp;right&nbsp;'+symbol_clockwise+'</a>';
 
         var buttonStats = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();" title="See Truth Now">Stats</a> ';
+
+        // Write Drawtools
         var buttonDrawTools = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();" title="Help Shapers Create Future">Write&nbsp;DrawTools</a> ';
-        var buttonArcs = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportArcsBtn" onclick="window.plugin.fanfields.exportArcs();" title="Field Together Improve Human Mind">Write&nbsp;Arcs</a> ';
+
+        // Write Arcs
+        var buttonArcs = ''
+        if(typeof window.plugin.arcs != 'undefined' && window.PLAYER.team === 'ENLIGHTENED') {
+            buttonArcs = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportArcsBtn" onclick="window.plugin.fanfields.exportArcs();" title="Field Together Improve Human Mind">Write&nbsp;Arcs</a> ';
+        };
+
         var buttonHelp = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" title="Help" >Help</a> ';
 
-        var fanfields_buttons = '';
-        if(typeof window.plugin.bookmarks != 'undefined') {
-            fanfields_buttons += buttonBookmarks;
-        }
-        if(typeof window.plugin.arcs != 'undefined') {
-            fanfields_buttons += buttonArcs;
-        }
+        var fanfields_buttons = '<span class="plugin_fanfields_multibtn plugin_fanfields_titlebar">Fanfields 2</span>';
 
         fanfields_buttons +=
-            buttonDrawTools +
-            buttonPortalList +
-            // button5 +
+            buttonShiftAnchor +
             buttonClockwise +
-            buttonLock +
             buttonStarDirection +
             buttonSBUL +
-            buttonShiftAnchor +
+            buttonLock +
             buttonRespect +
             buttonLinkDirectionIndicator +
+            buttonPortalList +
+            buttonDrawTools +
+            buttonBookmarks +
+            buttonArcs +
             buttonStats +
             buttonHelp
         ;
-        $('#toolbox').append('<fieldset '+
-                             'id="plugin_fanfields_toolbox" '+
-                             'class="plugin_fanfields_toolbox">'+
-                             '<legend>Fan Fields</legend></fieldset>');
-        //$('#plugin_fanfields_toolbox').append('<div id="plugin_fanfields_toolbox_title">Fan Fields 2</div>');
+
+        $('#sidebar').append('<div id="fanfields2" class="plugin_fanfields_sidebar"></div>');
 
 
         if (!window.plugin.drawTools) {
@@ -1517,25 +1856,21 @@ function wrapper(plugin_info) {
             }
 
             dialog({
-                html: '<b>Fan Fields 2</b><p>Fan Fields 2 requires the IITC Drawtools plugin</p><a href="https://iitc.me/desktop/">Download here</a>',
+                html: '<b>Fan Fields 2</b><p>Fan Fields 2 requires the IITC Drawtools plugin</p><a href="https://iitc.app/download_desktop#draw-tools-by-breunigs">Download here</a>',
                 id: 'plugin_fanfields_alert_dependencies',
                 title: 'Fan Fields - Missing dependency',
                 width: width
             });
 
-            $('#plugin_fanfields_toolbox').empty();
-            $('#plugin_fanfields_toolbox').append("<i>Fan Fields requires IITC drawtools plugin.</i>");
+            $('#fanfields2').empty();
+            $('#fanfields2').append("<i>Fan Fields requires IITC drawtools plugin.</i>");
 
             return;
         }
 
 
 
-        $('#plugin_fanfields_toolbox').append(fanfields_buttons);
-        // if (L.Browser.mobile) {
-        //     $('#toolbox').append('<fieldset id="plugin_fanfields_debug"><legend >Debugging</legend>Window Width: '+$(window).width()+'<br>toolbox width: '+$('#plugin_fanfields_toolbox').width()+'</fieldset>');
-        //     //thisplugin.MaxDialogWidth = $(window).width() - 2;
-        // }
+        $('#fanfields2').append(fanfields_buttons);
 
         window.pluginCreateHook('pluginDrawTools');
 
@@ -1572,6 +1907,7 @@ function wrapper(plugin_info) {
 
 
     setup.info = plugin_info; //add the script info data to the function as a property
+    if (typeof changelog !== 'undefined') setup.info.changelog = changelog;
     if(!window.bootPlugins) window.bootPlugins = [];
     window.bootPlugins.push(setup);
     // if IITC has already booted, immediately run the 'setup' function
