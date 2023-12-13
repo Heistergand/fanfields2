@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.5.3.20230919
+// @version         2.5.4.20231211
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -36,13 +36,19 @@ function wrapper(plugin_info) {
     // ensure plugin framework is there, even if iitc is not yet loaded
     if(typeof window.plugin !== 'function') window.plugin = function() {};
     plugin_info.buildName = 'beta';
-    plugin_info.dateTimeVersion = '2023-09-19-233542';
+    plugin_info.dateTimeVersion = '2023-12-11-150742';
     plugin_info.pluginId = 'fanfields';
 
     /* global L -- eslint */
     /* exported setup, changelog --eslint */
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
+        {
+            version: '2.5.4',
+            changes: [
+              'NEW: Option to only use bookmarked portals within the Fanfields (Toggle-Button)',
+            ],
+        },
         {
             version: '2.5.3',
             changes: [
@@ -658,6 +664,29 @@ function wrapper(plugin_info) {
         }
     };
 
+    thisplugin.use_bookmarks_only = false;
+    thisplugin.useBookmarksOnly = function () {
+      thisplugin.use_bookmarks_only = !thisplugin.use_bookmarks_only;
+      if (thisplugin.use_bookmarks_only) {
+        $('#plugin_fanfields_bookarks_only_btn').html(
+          '&#128278;&nbsp;Bookmarks only'
+        );
+      } else {
+        $('#plugin_fanfields_bookarks_only_btn').html(
+          '&#128278;&nbsp;All Portals'
+        );
+      }
+      thisplugin.updateLayer();
+    };
+  
+    window.pluginCreateHook('pluginBkmrksEdit');
+  
+    window.addHook('pluginBkmrksEdit', function (e) {
+      if (thisplugin.use_bookmarks_only && e.target === 'portal') {
+        thisplugin.updateLayer();
+      }
+    });
+
     thisplugin.is_clockwise = true;
     thisplugin.toggleclockwise = function() {
         thisplugin.is_clockwise = !thisplugin.is_clockwise;
@@ -1148,6 +1177,9 @@ function wrapper(plugin_info) {
 
 
         for (guid in points) {
+            if (thisplugin.use_bookmarks_only && !window.plugin.bookmarks.findByGuid(guid)) {
+                continue;
+            }
             var asum = 0;
             for (i = 0, j = polygon.length-1; i < polygon.length; j = i, ++i) {
                 ax = polygon[i].x - points[guid].x;
@@ -1824,7 +1856,7 @@ function wrapper(plugin_info) {
         //var button5 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_resetbtn" onclick="window.plugin.fanfields.reset();">Reset</a> ';
         var buttonClockwise = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();" title="Begin Journey Breathe XM ">Clockwise&nbsp;'+symbol_clockwise+'</a> ';
         var buttonLock = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();" title="Avoid XM Message Lie">&#128275;&nbsp;Unlocked</a> ';
-
+        var buttonBookmarksOnly = '<a class="plugin_fanfields_btn" id="plugin_fanfields_bookarks_only_btn" onclick="window.plugin.fanfields.useBookmarksOnly();" title="Help Enlightened Strong Victory">&#128278;&nbsp;All Portals</a> ';
         var buttonStarDirection = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();" title="Change Perspective Technology">Inbounding</a> ';
         // Available SBUL
         var buttonSBUL =
@@ -1869,6 +1901,7 @@ function wrapper(plugin_info) {
             buttonSBUL +
             buttonLock +
             buttonRespect +
+            buttonBookmarksOnly +
             buttonLinkDirectionIndicator +
             buttonPortalList +
             buttonDrawTools +
