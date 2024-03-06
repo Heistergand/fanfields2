@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.5.4.20231211
+// @version         2.5.5.20240306
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -43,6 +43,13 @@ function wrapper(plugin_info) {
     /* exported setup, changelog --eslint */
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
+
+        {
+            version: '2.5.5',
+            changes: [
+              'FIX: Plugin did not work on IITC-Mobile.',
+            ],
+        },
         {
             version: '2.5.4',
             changes: [
@@ -679,14 +686,7 @@ function wrapper(plugin_info) {
       thisplugin.updateLayer();
     };
   
-    window.pluginCreateHook('pluginBkmrksEdit');
-  
-    window.addHook('pluginBkmrksEdit', function (e) {
-      if (thisplugin.use_bookmarks_only && e.target === 'portal') {
-        thisplugin.updateLayer();
-      }
-    });
-
+   
     thisplugin.is_clockwise = true;
     thisplugin.toggleclockwise = function() {
         thisplugin.is_clockwise = !thisplugin.is_clockwise;
@@ -1936,6 +1936,14 @@ function wrapper(plugin_info) {
 
 
         $('#fanfields2').append(fanfields_buttons);
+
+         window.pluginCreateHook('pluginBkmrksEdit');
+
+        window.addHook('pluginBkmrksEdit', function (e) {
+            if (thisplugin.use_bookmarks_only && e.target === 'portal') {
+                thisplugin.delayedUpdateLayer(0.5);
+            }
+        });
 
         window.pluginCreateHook('pluginDrawTools');
 
