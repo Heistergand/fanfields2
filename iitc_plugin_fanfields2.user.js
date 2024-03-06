@@ -683,10 +683,10 @@ function wrapper(plugin_info) {
           '&#128278;&nbsp;All Portals'
         );
       }
-      thisplugin.updateLayer();
+      thisplugin.delayedUpdateLayer(0.2);
     };
-  
-   
+
+
     thisplugin.is_clockwise = true;
     thisplugin.toggleclockwise = function() {
         thisplugin.is_clockwise = !thisplugin.is_clockwise;
@@ -1825,9 +1825,13 @@ function wrapper(plugin_info) {
         thisplugin.initLatLng();
 
         var buttonBookmarks = '';
+        var buttonBookmarksOnly = '';
         if(typeof window.plugin.bookmarks != 'undefined') {
             // Write Bookmarks
             buttonBookmarks = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();" title="Create New Portal Potential Future">Write&nbsp;Bookmarks</a> ';
+
+            // Only Use Bookmarked Portals
+            buttonBookmarksOnly = '<a class="plugin_fanfields_btn" id="plugin_fanfields_bookarks_only_btn" onclick="window.plugin.fanfields.useBookmarksOnly();" title="Help Enlightened Strong Victory">&#128278;&nbsp;All Portals</a> ';
         }
         // Show as list
         var buttonPortalList = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();" title="OpenAll Link Create Star">Show&nbsp;as&nbsp;list</a> ';
@@ -1856,7 +1860,7 @@ function wrapper(plugin_info) {
         //var button5 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_resetbtn" onclick="window.plugin.fanfields.reset();">Reset</a> ';
         var buttonClockwise = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();" title="Begin Journey Breathe XM ">Clockwise&nbsp;'+symbol_clockwise+'</a> ';
         var buttonLock = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();" title="Avoid XM Message Lie">&#128275;&nbsp;Unlocked</a> ';
-        var buttonBookmarksOnly = '<a class="plugin_fanfields_btn" id="plugin_fanfields_bookarks_only_btn" onclick="window.plugin.fanfields.useBookmarksOnly();" title="Help Enlightened Strong Victory">&#128278;&nbsp;All Portals</a> ';
+
         var buttonStarDirection = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();" title="Change Perspective Technology">Inbounding</a> ';
         // Available SBUL
         var buttonSBUL =
@@ -1937,13 +1941,13 @@ function wrapper(plugin_info) {
 
         $('#fanfields2').append(fanfields_buttons);
 
-         window.pluginCreateHook('pluginBkmrksEdit');
+//         window.pluginCreateHook('pluginBkmrksEdit');
 
-        window.addHook('pluginBkmrksEdit', function (e) {
-            if (thisplugin.use_bookmarks_only && e.target === 'portal') {
-                thisplugin.delayedUpdateLayer(0.5);
-            }
-        });
+//         window.addHook('pluginBkmrksEdit', function (e) {
+//             if (thisplugin.use_bookmarks_only && e.target === 'portal') {
+//                 thisplugin.delayedUpdateLayer(0.5);
+//             }
+//         });
 
         window.pluginCreateHook('pluginDrawTools');
 
