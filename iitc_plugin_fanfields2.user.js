@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @author          Heistergand
 // @category        Layer
-// @version         2.5.5.20240306
+// @version         2.5.6.20240409
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @match           https://intel.ingress.com/*
 // @include         https://intel.ingress.com/*
@@ -44,6 +44,12 @@ function wrapper(plugin_info) {
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
 
+        {
+            version: '2.5.6',
+            changes: [
+              'NEW: Implementing link details in show-as-list dialog.',
+            ],
+        },
         {
             version: '2.5.5',
             changes: [
