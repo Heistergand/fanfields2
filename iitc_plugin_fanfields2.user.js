@@ -579,7 +579,7 @@ function wrapper(plugin_info) {
         var text = "<table><thead><tr><th style='text-align:right'>Pos.</th><th style='text-align:left'>Portal Name</th><th>Keys</th><th>Links</th></tr></thead><tbody>";
         var gmnav='http://maps.google.com/maps/dir/'
         thisplugin.sortedFanpoints.forEach(function(portal, index) {
-            //debugger;
+
             var p, title, lat, lng;
             var latlng = map.unproject(portal.point, thisplugin.PROJECT_ZOOM);
             lat = Math.round(latlng.lat * 10000000) / 10000000
@@ -1267,7 +1267,7 @@ function wrapper(plugin_info) {
         for (i in plugin.drawTools.drawnItems._layers) {
             var layer = plugin.drawTools.drawnItems._layers[i];
             if (layer instanceof L.Marker) {
-                //debugger;
+
                 console.log("Marker found")
                 // Todo: make this an array by color
                 thisplugin.startingMarker = map.project(layer.getLatLng(), thisplugin.PROJECT_ZOOM);
@@ -1357,7 +1357,7 @@ function wrapper(plugin_info) {
                     continue;
                 }
                 ll = fanLayer.getLatLngs();
-                // debugger;
+
                 polygon = [];
                 for ( k = 0; k < ll.length; ++k) {
                     p = map.project(ll[k], thisplugin.PROJECT_ZOOM);
@@ -1380,7 +1380,7 @@ function wrapper(plugin_info) {
         thisplugin.dtLayers = plugin.drawTools.drawnItems.getLayers();
 
         thisplugin.dtLayersByColor = function(dtLayers) {
-            // debugger;
+
             var colors = [];
             var color;
             var result = [];
@@ -1440,7 +1440,7 @@ function wrapper(plugin_info) {
         // Find convex hull from fanpoints list of points
         // Returns array : [guid, [x,y],.....]
         function convexHull(points) {
-            // debugger;
+
             // nested function
             function cross(a, b, o) {
                 //return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
@@ -1483,7 +1483,7 @@ function wrapper(plugin_info) {
         // Add Marker Point to list of Fanpoints
         // Todo: get color magic to the startingMarker
         if (thisplugin.startingMarker !== undefined) {
-            // debugger;
+
             if (thisplugin.startingMarkerGUID in window.portals ) {
                 this.fanpoints[thisplugin.startingMarkerGUID] = thisplugin.startingMarker;
             }
@@ -1629,7 +1629,7 @@ function wrapper(plugin_info) {
         donelinks = [];
         var outbound = 0;
         var possibleline;
-        // debugger;
+
         for(pa = 0; pa < this.sortedFanpoints.length; pa++){
             bearing = this.sortedFanpoints[pa].bearing;
             //console.log("FANPOINTS: " + pa + " to 0 bearing: "+ bearing + " " + this.bearingWord(bearing));
