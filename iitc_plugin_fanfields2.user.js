@@ -438,7 +438,7 @@ function wrapper(plugin_info) {
     // cycle to next starting point on the convex hull list of portals
     thisplugin.nextStartingPoint = function() {
         // *** startingpoint handling is duplicated in updateLayer().
-
+        
         var i = thisplugin.startingpointIndex + 1;
         if (i >= thisplugin.perimeterpoints.length) {
             i = 0;
@@ -576,16 +576,26 @@ function wrapper(plugin_info) {
 
     // Show as list
     thisplugin.exportText = function() {
-        var text = "<table><thead><tr><th style='text-align:right'>Pos.</th><th style='text-align:left'>Portal Name</th><th>Keys</th><th>Links</th></tr></thead><tbody>";
+        var text = "<table><thead><tr>";
+
+        text+="<th style='text-align:right'>Pos.</th>";
+        text+="<th style='text-align:right'>Action</th>";
+        text+="<th style='text-align:left'>Portal Name</th>";
+        text+="<th>Keys</th>";
+        text+="<th>Links</th>";
+
+        text+="</tr></thead><tbody>";
+        let linkDetailText = '';
         var gmnav='http://maps.google.com/maps/dir/'
         thisplugin.sortedFanpoints.forEach(function(portal, index) {
-
+            
             var p, title, lat, lng;
             var latlng = map.unproject(portal.point, thisplugin.PROJECT_ZOOM);
             lat = Math.round(latlng.lat * 10000000) / 10000000
             lng = Math.round(latlng.lng * 10000000) / 10000000
             gmnav+=`${lat},${lng}/`;
-            p = window.portals[portal.guid];
+            p = portal.portal;
+                // window.portals[portal.guid];
             title = "unknown title";
             if (p !== undefined) {
                 title = p.options.data.title;
@@ -610,7 +620,75 @@ function wrapper(plugin_info) {
             } else {
                 availableKeysText = '>';
             };
-            text+='<tr><td>' + (index) + '</td><td>'+ title + '</td><td ' + availableKeysText + portal.incoming.length+ '</td><td>' + portal.outgoing.length + '</td></tr>';
+            // Row start
+            text+='<tbody class="plugin_fanfields_exportText_Portal"><tr>';
+            // List Item Index (Pos.)
+            text+='<td>' + (index) + '</td>';
+
+            // Action
+            text+='<td>';
+            text+='Capture';
+            text+='</td>';
+
+            // Portal Name
+            // text+='<td>'+ title + '</td>';
+            text+='<td>';
+            text+='  <label for="plugin_fanfields_exportText_' + portal.guid + '">'+ title + '</label>';
+            text+='  <input type="checkbox" id="plugin_fanfields_exportText_' + portal.guid + '" plugin_fanfields_exportText_toggle="toggle">';
+            text+='</td>';
+
+            // Keys
+            text+='<td ' + availableKeysText + portal.incoming.length+ '</td>';
+            // Links
+            text+='<td>' + portal.outgoing.length + '</td>';
+
+            // other
+            //text+='<td>';
+            //text+='';
+            //text+='</td>';
+
+            // Row End
+            text+='</tr>';
+            text+='</tbody>\n';
+            if (portal.outgoing.length > 0) {
+                // DetailBlock Start
+                text+='<tbody class="plugin_fanfields_exportText_LinkDetails plugin_fanfields_italic" hidden>';
+                portal.outgoing.forEach(function(outPortal, outIndex) {
+                    let distance = thisplugin.distanceTo(portal.point, outPortal.point);
+                    let measure = 'm';
+
+
+                    // Row start
+                    let linkDetailText='<tr>';
+
+                    // List Item Index (Pos.)
+                    linkDetailText+='<td>' + (index) + '.' + thisplugin.sortedFanpoints.indexOf(outPortal) + '</td>';
+
+                    // Action
+                    linkDetailText+='<td>';
+                    linkDetailText+='Link to ' + thisplugin.sortedFanpoints.indexOf(outPortal);
+                    linkDetailText+='</td>';
+
+                    let outPortalTitle = 'unknown title';
+                    if (outPortal.portal !== undefined) {
+                        outPortalTitle = outPortal.portal.options.data.title;
+                    }
+                    // Portal Name
+                    linkDetailText+='<td>'+ outPortalTitle + '</td>';
+                    // Distance
+                    linkDetailText+='<td colspan=2>' + formatDistance(distance) + '</td>';
+                    // Links
+                    // linkDetailText+='<td>' + portal.outgoing.length + '</td>';
+                    // other
+                    //linkDetailText+='<td>';
+                    //linkDetailText+='';
+                    //linkDetailText+='</td>';
+                    // Row End
+                    linkDetailText+='</tr>\n';
+                    text+=linkDetailText;
+                });
+                text+='</tbody>\n';
+            } // end if portal.outgoing.length > 0
         });
         text+='</tbody></table>';
         if (window.plugin.keys || window.plugin.LiveInventory) {
@@ -628,6 +706,12 @@ function wrapper(plugin_info) {
             width = thisplugin.MaxDialogWidth;
         }
 
+        const toggleFunction = function() {
+            $('[plugin_fanfields_exportText_toggle="toggle"]').change(function(){
+                $(this).parents().next('.plugin_fanfields_exportText_LinkDetails').toggle();
+            });
+        };
+
         dialog({
             html: text,
             id: 'plugin_fanfields_alert_textExport',
@@ -635,6 +719,7 @@ function wrapper(plugin_info) {
             width: width,
             closeOnEscape: true
         });
+        toggleFunction();
 
     };
 
@@ -893,6 +978,28 @@ function wrapper(plugin_info) {
                                                    '}\n').appendTo("head");
 
         $("<style>").prop("type", "text/css").html('\n' +
+                                                   '.plugin_fanfields_italic {\n' +
+                                                   '  font-style: italic;\n' +
+                                                   '}\n').appendTo("head");
+
+        //plugin_fanfields_exportText_LinkDetails
+        $("<style>").prop("type", "text/css").html('\n' +
+                                                   '.plugin_fanfields_exportText_LinkDetails tr td {\n' +
+                                                   '  color: #828284;\n' +
+                                                   '}\n').appendTo("head");
+
+        //plugin_fanfields_exportText_Portal
+        $("<style>").prop("type", "text/css").html('\n' +
+                                                   '.plugin_fanfields_exportText_Portal tr td {\n' +
+                                                   '}\n').appendTo("head");
+
+        $("<style>").prop("type", "text/css").html('\n' +
+                                                   '[plugin_fanfields_exportText_toggle="toggle"] {\n' +
+                                                   '  display: none; '+
+                                                   '}\n').appendTo("head");
+
+
+        $("<style>").prop("type", "text/css").html('\n' +
                                                    '.plugin_fanfields {\n' +
                                                    '   color: #FFFFBB;\n' +
                                                    '   font-size: 11px;\n'+
@@ -921,6 +1028,7 @@ function wrapper(plugin_info) {
                                                        ''
                                                       ).appendTo("head");
         };
+
 
     };
 
@@ -1267,7 +1375,7 @@ function wrapper(plugin_info) {
         for (i in plugin.drawTools.drawnItems._layers) {
             var layer = plugin.drawTools.drawnItems._layers[i];
             if (layer instanceof L.Marker) {
-
+                
                 console.log("Marker found")
                 // Todo: make this an array by color
                 thisplugin.startingMarker = map.project(layer.getLatLng(), thisplugin.PROJECT_ZOOM);
@@ -1357,7 +1465,7 @@ function wrapper(plugin_info) {
                     continue;
                 }
                 ll = fanLayer.getLatLngs();
-
+                
                 polygon = [];
                 for ( k = 0; k < ll.length; ++k) {
                     p = map.project(ll[k], thisplugin.PROJECT_ZOOM);
@@ -1380,7 +1488,7 @@ function wrapper(plugin_info) {
         thisplugin.dtLayers = plugin.drawTools.drawnItems.getLayers();
 
         thisplugin.dtLayersByColor = function(dtLayers) {
-
+            
             var colors = [];
             var color;
             var result = [];
@@ -1440,7 +1548,7 @@ function wrapper(plugin_info) {
         // Find convex hull from fanpoints list of points
         // Returns array : [guid, [x,y],.....]
         function convexHull(points) {
-
+            
             // nested function
             function cross(a, b, o) {
                 //return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
@@ -1483,7 +1591,7 @@ function wrapper(plugin_info) {
         // Add Marker Point to list of Fanpoints
         // Todo: get color magic to the startingMarker
         if (thisplugin.startingMarker !== undefined) {
-
+            
             if (thisplugin.startingMarkerGUID in window.portals ) {
                 this.fanpoints[thisplugin.startingMarkerGUID] = thisplugin.startingMarker;
             }
@@ -1493,7 +1601,7 @@ function wrapper(plugin_info) {
             var i;
             var done = false;
             if (GUID !== undefined) {
-
+                
                 for (i = 0; i < perimeter.length; i++) {
                     if (perimeter[i] === GUID) {
                         //already in
@@ -1546,6 +1654,7 @@ function wrapper(plugin_info) {
         }
         // TODO: add color magic to log line
         console.log("startingpointIndex = " + thisplugin.startingpointIndex);
+
         thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
         thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
         //console.log("Starting point : " + thisplugin.startingpointGUID);
@@ -1565,7 +1674,8 @@ function wrapper(plugin_info) {
                                b: b,
                                bearing: undefined,
                                isJetLink: undefined,
-                               isFanLink: undefined
+                               isFanLink: undefined,
+                               distance: thisplugin.distanceTo(a, b)
                               });
 
 
@@ -1577,10 +1687,10 @@ function wrapper(plugin_info) {
         for ( guid in this.fanpoints) {
             fp = this.fanpoints[guid];
             this.sortedFanpoints.push({point: fp,
+                                       portal: portals[guid],
                                        bearing: this.getBearing(thisplugin.startingpoint,fp),
                                        guid: guid,
                                        incoming: [] ,
-
                                        outgoing: [],
                                        is_startpoint: this.fanpoints[guid].equals(thisplugin.startingpoint)
                                       });
@@ -1629,7 +1739,7 @@ function wrapper(plugin_info) {
         donelinks = [];
         var outbound = 0;
         var possibleline;
-
+        
         for(pa = 0; pa < this.sortedFanpoints.length; pa++){
             bearing = this.sortedFanpoints[pa].bearing;
             //console.log("FANPOINTS: " + pa + " to 0 bearing: "+ bearing + " " + this.bearingWord(bearing));
@@ -1639,7 +1749,8 @@ function wrapper(plugin_info) {
                 outbound = 0;
                 a = this.sortedFanpoints[pa].point;
                 b = this.sortedFanpoints[pb].point;
-                bearing =  this.getBearing(a,b);
+                bearing = this.getBearing(a, b);
+                const distance = thisplugin.distanceTo(a, b);
 
                 if (pb===0) {
                     var maxLinks = 8 + thisplugin.availableSBUL * 8
@@ -1662,8 +1773,8 @@ function wrapper(plugin_info) {
                                 bearing: bearing,
                                 isJetLink: false,
                                 isFanLink: (pb===0),
-                                counts: true
-
+                                counts: true,
+                                distance: distance
                                };
                 intersection = 0;
                 maplinks = [];
@@ -1820,6 +1931,7 @@ function wrapper(plugin_info) {
         thisplugin.fieldsLayerGroup = new L.LayerGroup();
         thisplugin.numbersLayerGroup = new L.LayerGroup();
         thisplugin.MaxDialogWidth = $(window).width() - 2;
+
 
         //Extend LatLng here to ensure it was created before
         thisplugin.initLatLng();
