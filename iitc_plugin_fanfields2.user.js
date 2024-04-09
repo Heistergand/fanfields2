@@ -438,7 +438,7 @@ function wrapper(plugin_info) {
     // cycle to next starting point on the convex hull list of portals
     thisplugin.nextStartingPoint = function() {
         // *** startingpoint handling is duplicated in updateLayer().
-        // debugger
+
         var i = thisplugin.startingpointIndex + 1;
         if (i >= thisplugin.perimeterpoints.length) {
             i = 0;
@@ -1007,7 +1007,7 @@ function wrapper(plugin_info) {
                 return false;
             }
         }
-        // debugger
+
         var a1, a2, b1, b2, c1, c2;
         var r1, r2 , r3, r4;
         var denom, offset, num;
@@ -1493,7 +1493,7 @@ function wrapper(plugin_info) {
             var i;
             var done = false;
             if (GUID !== undefined) {
-                debugger;
+
                 for (i = 0; i < perimeter.length; i++) {
                     if (perimeter[i] === GUID) {
                         //already in
