@@ -5,13 +5,14 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
 
 ## Prerequisites
 ### Required
-- [IITC CE](https://iitc.app)
-- IITC plugin: draw tools 
+- [IITC CE](https://iitc.app) - Ingress Intel Total Conversion <sup>Community Edition</sup>
+- IITC plugin: [Draw tools](https://iitc.app/download_desktop#draw-tools-by-breunigs) by breunings
 
 ### Supported
-- IITC plugin: Bookmarks for maps and portals
+- IITC plugin: [Bookmarks for maps and portals](https://iitc.app/download_desktop#bookmarks-by-ZasoGD) by ZasoGD
 - IITC plugin: Arc
-- IITC plugin: Keys
+- IITC plugin: [Keys](https://iitc.app/download_desktop#keys-by-xelio) by xelio
+- IITC Plugin: [Live Inventory](https://github.com/IITC-CE/Community-plugins?tab=readme-ov-file#live-inventory-by-eisfrei---fork-by-danielondiordna) by EisFrei - fork by DanielOnDiordna
 
 ## Features
 - Select portals in your area by drawing a polygon around them with DrawTools. 
