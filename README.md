@@ -26,6 +26,10 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
   - with the amount of keys you need
   - with the keys you already have _(if the Keys plugin is used and maintained)_
   - count of outgoing links per portal
+  - detailed link information:
+    - link order
+    - target portal name
+    - link distance
 - Open the path along the Portals in google maps.
 - Tweak your plan:
   - Move the anchor portal along the hull of the area.
