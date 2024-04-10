@@ -39,6 +39,7 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
     - Set how many SBUL you plan to use
   - Toggle the link direction indicator.
   - Show respect to the current intel and avoid throwing crosslinks. _(In some cases useful, in others not at all...)_
+  - toggle to use bookmarked portals only
 - Copy your plan to Drawtools Plugin.
 - Copy your plan to Bookmarks Plugin.
 - Copy your plan to Arcs Plugin.
