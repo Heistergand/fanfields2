@@ -1,0 +1,39 @@
+name: Telegram Notifications
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  send_notification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram Notification
+        if: ${{ github.event_name == 'issues' }}
+        uses: appleboy/telegram-action@v0.2.0
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            🚨 New GitHub Issue 🚨
+
+            Repository: ${{ github.repository }}
+            Action: ${{ github.event_name }}
+            Issue Title: ${{ github.event.issue.title }}
+            Issue URL: ${{ github.event.issue.html_url }}
+      
+      - name: Send Telegram Notification
+        if: ${{ github.event_name == 'issue_comment' }}
+        uses: appleboy/telegram-action@v0.2.0
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            📝 New Comment on GitHub Issue 📝
+
+            Repository: ${{ github.repository }}
+            Action: ${{ github.event_name }}
+            Comment Body: ${{ github.event.comment.body }}
+            Issue URL: ${{ github.event.issue.html_url }}
