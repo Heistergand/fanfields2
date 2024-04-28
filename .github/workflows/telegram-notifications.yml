@@ -20,7 +20,7 @@ jobs:
             🚨 New GitHub Issue 🚨
 
             Repository: ${{ github.repository }}
-            Action: ${{ github.event_name }}
+            ${{ github.actor }} created a new issue.
             Issue Title: ${{ github.event.issue.title }}
             Issue URL: ${{ github.event.issue.html_url }}
       
@@ -34,6 +34,5 @@ jobs:
             📝 New Comment on GitHub Issue 📝
 
             Repository: ${{ github.repository }}
-            Action: ${{ github.event_name }}
-            Comment Body: ${{ github.event.comment.body }}
+            ${{ github.actor }} commented: "${{ github.event.comment.body }}"
             Issue URL: ${{ github.event.issue.html_url }}
