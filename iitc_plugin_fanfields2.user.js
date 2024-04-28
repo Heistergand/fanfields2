@@ -1,20 +1,26 @@
 // ==UserScript==
-// @name            IITC plugin: Fan Fields 2 
-// @id              fanfields@heistergand
 // @author          Heistergand
+// @name            Fan Fields 2 
+// @id              fanfields@heistergand
 // @category        Layer
-// @version         2.5.6.20240410
+// @version         2.6.0.20240428
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
-// @match           https://intel.ingress.com/*
-// @include         https://intel.ingress.com/*
-// @grant           none
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
 // @icon            https://raw.githubusercontent.com/Heistergand/fanfields2/master/fanfields2-32.png
 // @icon64          https://raw.githubusercontent.com/Heistergand/fanfields2/master/fanfields2-64.png
 // @supportURL      https://github.com/Heistergand/fanfields2/issues
 // @namespace       https://github.com/Heistergand/fanfields2
+// @issueTracker    https://github.com/Heistergand/fanfields2/issues
+// @homepageURL     https://github.com/Heistergand/fanfields2/
+// @depends         draw-tools@breunigs
+// @recommends      bookmarks@ZasoGD|draw-tools-plus@zaso|liveInventory@DanielOnDiordna|keys@xelio
+// @preview         https://raw.githubusercontent.com/Heistergand/fanfields2/master/FanFields2.png
+// @match           https://intel.ingress.com/*
+// @include         https://intel.ingress.com/*
+// @grant           none
 // ==/UserScript==
+
 /*
 
 Version History:
@@ -43,7 +49,12 @@ function wrapper(plugin_info) {
     /* exported setup, changelog --eslint */
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
-
+        {
+            version: '2.5.6',
+            changes: [
+                'NEW: Add control buttons for better ux on mobile.',
+            ],
+        },
         {
             version: '2.5.6',
             changes: [
@@ -1930,6 +1941,37 @@ function wrapper(plugin_info) {
 
     };
 
+    var symbol_clockwise = '&#8635;';
+    var symbol_counterclockwise = '&#8634;';
+
+    thisplugin.addFfButtons = function () {
+        thisplugin.ffButtons = L.Control.extend({
+            options: {
+                position: "topleft",
+            },
+            onAdd: function (map) {
+                var container = L.DomUtil.create("div", "leaflet-fanfields leaflet-bar");
+                $(container)
+                    .append(
+                    '<a id="fanfieldShiftLeftButton" href="javascript: void(0);" class="fanfields-control" title="FanFields shift left">'+symbol_counterclockwise+'</a>'
+                )
+                    .on("click", "#fanfieldShiftLeftButton", function () {
+                    thisplugin.previousStartingPoint();
+                });
+
+                $(container)
+                    .append(
+                    '<a id="fanfieldShiftRightButton" href="javascript: void(0);" class="fanfields-control" title="FanFields shift right">'+symbol_clockwise+'</a>'
+                )
+                    .on("click", "#fanfieldShiftRightButton", function () {
+                    thisplugin.nextStartingPoint();
+                });
+
+                return container;
+            },
+        });
+        map.addControl(new thisplugin.ffButtons());
+    };
 
     thisplugin.setup = function() {
         thisplugin.setupCSS();
@@ -1964,8 +2006,7 @@ function wrapper(plugin_info) {
 
 
 
-        var symbol_clockwise = '&#8635;';
-        var symbol_counterclockwise = '&#8634;';
+
 
         var symbol_up = '&#5123;';
         var symbol_down = '&#5121;';
@@ -2035,6 +2076,7 @@ function wrapper(plugin_info) {
 
         $('#sidebar').append('<div id="fanfields2" class="plugin_fanfields_sidebar"></div>');
 
+        thisplugin.addFfButtons();
 
         if (!window.plugin.drawTools) {
             var width = 400;
