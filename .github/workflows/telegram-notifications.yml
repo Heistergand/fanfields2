@@ -26,7 +26,7 @@ jobs:
       
       - name: Send Telegram Notification
         if: ${{ github.event_name == 'issue_comment' }}
-        uses: appleboy/telegram-action@v0.2.0
+        uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
