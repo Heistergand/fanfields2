@@ -39,6 +39,9 @@ jobs:
             📝 New Comment on GitHub Issue 📝
 
             <b>Comment URL:</b> ${{ github.event.comment.html_url }}
+
+            <b>Issue Title:</b> ${{ github.event.issue.title }}
+            <b>Issue URL:</b> ${{ github.event.issue.html_url }}
             
             <b>${{ github.actor }}</b> commented: 
             <blockquote>${{ github.event.comment.body }}</blockquote>
