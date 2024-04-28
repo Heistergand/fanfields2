@@ -20,9 +20,9 @@ jobs:
             🚨 New GitHub Issue 🚨
 
             Repository: ${{ github.repository }}
-            ${{ github.actor }} created a new issue.
-            Issue Title: ${{ github.event.issue.title }}
-            Issue URL: ${{ github.event.issue.html_url }}
+            **${{ github.actor }}** created a new issue.
+            **Issue Title:** ${{ github.event.issue.title }}
+            **Issue URL:** ${{ github.event.issue.html_url }}
       
       - name: Send Telegram Notification
         if: ${{ github.event_name == 'issue_comment' }}
@@ -33,6 +33,9 @@ jobs:
           message: |
             📝 New Comment on GitHub Issue 📝
 
-            Repository: ${{ github.repository }}
-            ${{ github.actor }} commented: "${{ github.event.comment.body }}"
-            Issue URL: ${{ github.event.issue.html_url }}
+            **Repository:** ${{ github.repository }}
+            **Issue URL:** ${{ github.event.issue.html_url }}
+            
+            **${{ github.actor }}** commented: 
+            "_${{ github.event.comment.body }}_"
+            
