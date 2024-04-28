@@ -16,14 +16,14 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: markdown
+          format: html
           message: |
             🚨 New GitHub Issue 🚨
 
-            Repository: ${{ github.repository }}
-            **${{ github.actor }}** created a new issue.
-            **Issue Title:** ${{ github.event.issue.title }}
-            **Issue URL:** ${{ github.event.issue.html_url }}
+            <b>Repository:</b> ${{ github.repository }}
+            <b>${{ github.actor }}</b> created a new issue.
+            <b>Issue Title:</b> ${{ github.event.issue.title }}
+            <b>Issue URL:</b> ${{ github.event.issue.html_url }}
       
       - name: Send Telegram Notification
         if: ${{ github.event_name == 'issue_comment' }}
@@ -31,13 +31,13 @@ jobs:
         with:
           to: ${{ secrets.TELEGRAM_TO }}
           token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: markdown
+          format: html
           message: |
             📝 New Comment on GitHub Issue 📝
 
-            **Repository:** ${{ github.repository }}
-            **Issue URL:** ${{ github.event.issue.html_url }}
+            <b>Repository:</b> ${{ github.repository }}
+            <b>Issue URL:</b> ${{ github.event.issue.html_url }}
             
-            **${{ github.actor }}** commented: 
-            "_${{ github.event.comment.body }}_"
+            <b>${{ github.actor }}</b> commented: 
+            <blockquote>${{ github.event.comment.body }}</blockquote>
             
