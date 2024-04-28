@@ -50,7 +50,7 @@ function wrapper(plugin_info) {
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
         {
-            version: '2.5.6',
+            version: '2.6.0',
             changes: [
                 'NEW: Add control buttons for better ux on mobile.',
             ],
