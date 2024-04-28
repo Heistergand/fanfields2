@@ -24,7 +24,7 @@ jobs:
             
             <b>${{ github.actor }}</b> created a new issue.
             <b>Issue Title:</b> ${{ github.event.issue.title }}
-            <blockquote>${{ github.event.issue.boy }}</blockquote>
+            <blockquote>${{ github.event.issue.body }}</blockquote>
       
       - name: Send Telegram Notification
         if: ${{ github.event_name == 'issue_comment' }}
