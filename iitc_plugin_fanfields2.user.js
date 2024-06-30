@@ -3,7 +3,7 @@
 // @name            Fan Fields 2 
 // @id              fanfields@heistergand
 // @category        Layer
-// @version         2.6.0.20240428
+// @version         2.6.1.20240630
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
@@ -49,6 +49,12 @@ function wrapper(plugin_info) {
     /* exported setup, changelog --eslint */
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
+        {
+            version: '2.6.1',
+            changes: [
+                'FIX: Counts of outgoing links and sbul are now correct when respecting intel and using outbounding mode.',
+            ],
+        },
         {
             version: '2.6.0',
             changes: [
@@ -1392,7 +1398,7 @@ function wrapper(plugin_info) {
         for (i in plugin.drawTools.drawnItems._layers) {
             var layer = plugin.drawTools.drawnItems._layers[i];
             if (layer instanceof L.Marker) {
-                
+
                 console.log("Marker found")
                 // Todo: make this an array by color
                 thisplugin.startingMarker = map.project(layer.getLatLng(), thisplugin.PROJECT_ZOOM);
@@ -1770,29 +1776,31 @@ function wrapper(plugin_info) {
                 const distance = thisplugin.distanceTo(a, b);
 
                 if (pb===0) {
-                    var maxLinks = 8 + thisplugin.availableSBUL * 8
+                    var maxLinks = 8 + thisplugin.availableSBUL * 8;
                     if (thisplugin.stardirection == thisplugin.starDirENUM.RADIATING && centerOutgoings < maxLinks ) {
+                        outbound = 1;
+                    }
+                    else {
+                        thisplugin.centerKeys++;
+                    }
+
+                    if (outbound == 1) {
                         a = this.sortedFanpoints[pb].point;
                         b = this.sortedFanpoints[pa].point;
                         console.log("outbound");
                         centerOutgoings++;
-                        if (centerOutgoings > 8) {
-                            // count sbul
-                            centerSbul = Math.ceil(((centerOutgoings-8) / 8));
-                        }
-                        outbound = 1;
                     }
-                    else thisplugin.centerKeys++;
                 }
 
-                possibleline = {a: a,
-                                b: b,
-                                bearing: bearing,
-                                isJetLink: false,
-                                isFanLink: (pb===0),
-                                counts: true,
-                                distance: distance
-                               };
+                possibleline = {
+                    a: a,
+                    b: b,
+                    bearing: bearing,
+                    isJetLink: false,
+                    isFanLink: (pb===0),
+                    counts: true,
+                    distance: distance
+                };
                 intersection = 0;
                 maplinks = [];
 
@@ -1804,26 +1812,35 @@ function wrapper(plugin_info) {
                     for (i in maplinks) {
                         if (this.intersects(possibleline,maplinks[i]) ) {
                             intersection++;
+                            if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
                             //console.log("FANPOINTS: " + pa + " - "+pb+" bearing: " + bearing + " " + this.bearingWord(bearing) + "(crosslink)");
                             break;
                         }
                     }
                     if (this.linkExists(maplinks, possibleline)) {
                         possibleline.counts = false;
+                        if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
                     }
                 }
 
                 for (i in donelinks) {
                     if (this.intersects(possibleline,donelinks[i])) {
                         intersection++;
+                        if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
                         break;
                     }
                 }
                 for (i in fanlinks) {
                     if (this.intersects(possibleline,fanlinks[i])) {
                         intersection++;
+                        if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
                         break;
                     }
+                }
+
+                if (centerOutgoings > 8 && centerOutgoings < maxLinks) {
+                    // count sbul
+                    centerSbul = Math.ceil((centerOutgoings - 8) / 8);
                 }
 
                 if (intersection === 0) {
