@@ -3,7 +3,7 @@
 // @name            Fan Fields 2 
 // @id              fanfields@heistergand
 // @category        Layer
-// @version         2.6.1.20240630
+// @version         2.6.2.20240630
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
@@ -49,6 +49,12 @@ function wrapper(plugin_info) {
     /* exported setup, changelog --eslint */
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
+        {
+            version: '2.6.2',
+            changes: [
+                'NEW: Task list now contains a single navigation link for each portal.',
+            ],
+        },
         {
             version: '2.6.1',
             changes: [
@@ -609,7 +615,8 @@ function wrapper(plugin_info) {
 
         text+="</tr></thead><tbody>";
         let linkDetailText = '';
-        var gmnav='http://maps.google.com/maps/dir/'
+        var gmnav='http://maps.google.com/maps/dir/';
+
         thisplugin.sortedFanpoints.forEach(function(portal, index) {
             
             var p, title, lat, lng;
@@ -649,15 +656,21 @@ function wrapper(plugin_info) {
             text+='<td>' + (index) + '</td>';
 
             // Action
+
             text+='<td>';
-            text+='Capture';
+            text+='  <label class="plugin_fanfields_exportText_Label" for="plugin_fanfields_exportText_' + portal.guid + '">Capture</label>';
+            text+='  <input type="checkbox" id="plugin_fanfields_exportText_' + portal.guid + '" plugin_fanfields_exportText_toggle="toggle">';
             text+='</td>';
+
+
+
+
 
             // Portal Name
             // text+='<td>'+ title + '</td>';
+            let uriTitle=encodeURIComponent(title);
             text+='<td>';
-            text+='  <label for="plugin_fanfields_exportText_' + portal.guid + '">'+ title + '</label>';
-            text+='  <input type="checkbox" id="plugin_fanfields_exportText_' + portal.guid + '" plugin_fanfields_exportText_toggle="toggle">';
+            text+=`  <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&query_destination_id=(${uriTitle})" target="_blank">${title}</a>`;
             text+='</td>';
 
             // Keys
@@ -730,8 +743,22 @@ function wrapper(plugin_info) {
         }
 
         const toggleFunction = function() {
+            $('[plugin_fanfields_exportText_toggle="toggle"]').each(function() {
+                const $toggle = $(this);
+                const $label = $toggle.prev('.plugin_fanfields_exportText_Label');
+                const $details = $toggle.parents().next('.plugin_fanfields_exportText_LinkDetails');
+
+                if ($details.length) {
+                    $label.addClass('has-children');
+                } else {
+                    $toggle.remove(); // Entferne die Checkbox, wenn keine Kind-Elemente vorhanden sind
+                    $label.css('cursor', 'default'); // Ändere den Cursor zurück auf Standard
+                }
+            });
             $('[plugin_fanfields_exportText_toggle="toggle"]').change(function(){
+                const isChecked = $(this).is(':checked');
                 $(this).parents().next('.plugin_fanfields_exportText_LinkDetails').toggle();
+                $(this).prev('.plugin_fanfields_exportText_Label').attr('aria-expanded', isChecked);
             });
         };
 
@@ -1020,6 +1047,24 @@ function wrapper(plugin_info) {
                                                    '[plugin_fanfields_exportText_toggle="toggle"] {\n' +
                                                    '  display: none; '+
                                                    '}\n').appendTo("head");
+
+        $("<style>").prop("type", "text/css").html('\n' +
+                                                   '.plugin_fanfields_exportText_Label {\n' +
+                                                   '    cursor: pointer;\n' +
+                                                   '    display: inline-block;\n' +
+                                                   '    padding-left: 12px;\n' +
+                                                   '    padding-right: 3px;\n' +
+                                                   '    position: relative;\n' +
+                                                   '}\n' +
+                                                   '.plugin_fanfields_exportText_Label.has-children::before {\n' +
+                                                   '    content: "\\25B9";\n /* (▹) */\n' +
+                                                   '    position: absolute;\n' +
+                                                   '    left: 0;\n' +
+                                                   '}\n' +
+                                                   '.plugin_fanfields_exportText_Label.has-children[aria-expanded="true"]::before {\n' +
+                                                   '    content: "\\25BF";\n /* (▿) */\n' +
+                                                   '}\n'
+                                                  ).appendTo("head");
 
 
         $("<style>").prop("type", "text/css").html('\n' +
