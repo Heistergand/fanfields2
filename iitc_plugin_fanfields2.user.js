@@ -3,7 +3,7 @@
 // @name            Fan Fields 2 
 // @id              fanfields@heistergand
 // @category        Layer
-// @version         2.6.0.20240428
+// @version         2.6.1.20240630
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
@@ -49,6 +49,12 @@ function wrapper(plugin_info) {
     /* exported setup, changelog --eslint */
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
+        {
+            version: '2.6.1',
+            changes: [
+                'FIX: Counts of outgoing links and sbul are now correct when respecting intel and using outbounding mode.',
+            ],
+        },
         {
             version: '2.6.0',
             changes: [
