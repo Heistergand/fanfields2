@@ -161,7 +161,7 @@ function wrapper(plugin_info) {
         {
             version: '2.2.7',
             changes: [
-                'FIX: Menue Buttons in Mobile version are now actually buttons.',
+                'FIX: Menu Buttons in Mobile version are now actually buttons.',
             ],
         },
         {
