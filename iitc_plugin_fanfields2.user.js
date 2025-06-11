@@ -1527,6 +1527,7 @@ function wrapper(plugin_info) {
             var polygon, dtLayer, result = [];
             var i, filtered;
             var fanLayer;
+            var ll, k, p;
             for( dtLayer in dtLayers) {
                 fanLayer = dtLayers[dtLayer];
                 if (!(fanLayer instanceof L.GeodesicPolygon)) {
