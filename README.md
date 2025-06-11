@@ -16,7 +16,7 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
 
 ## Features
 - Select portals in your area by drawing a polygon around them with DrawTools. 
-- Let the magic happen: A fanfiled Plan will instantly be shown as overlay.
+- Let the magic happen: A fanfield Plan will instantly be shown as overlay.
 - Add more portals to your plan by just adding more polygons around them.
 - Toggle three layers:
   - Fanfield Links
