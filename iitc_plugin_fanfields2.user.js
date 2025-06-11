@@ -496,12 +496,12 @@ function wrapper(plugin_info) {
         }
         dialog({
             html: '<p>Using Drawtools, draw one or more polygons around the portals you want to work with. '+
-            'The Polygons can overlap each other or be completely seperated. All portals within the polygons '+
+            'The Polygons can overlap each other or be completely separated. All portals within the polygons '+
             'count to your planned fanfield.</p>'+
 
             '<p>From the layer selector, enable the 3 Fanfields layer for links, fields and numbers. '+
             'The fanfield will be calculated and shown in red links on the intel. Link directions are indicated '+
-            'by dashed links at the portal to lnk from.</p>'+
+            'by dashed links at the portal to link from.</p>'+
 
             '<p>The script selects an anchor portal from the hull of all selected portals. Use the Cycle&nbsp;Start '+
             'Button to select another hull portal as anchor.</p>'+
@@ -524,7 +524,7 @@ function wrapper(plugin_info) {
             'if you change directions. Also try different anchors to get one more field out of some portal '+
             'constellations.</p> '+
 
-            '<p>Copy your fanfield portals to bookmarks or drawtools to extend your possibilites to work '+
+            '<p>Copy your fanfield portals to bookmarks or drawtools to extend your possibilities to work '+
             'with the information.</p>'+
 
             '<hr noshade>'+
