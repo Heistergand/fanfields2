@@ -10,8 +10,11 @@ jobs:
   send_notification:
     runs-on: ubuntu-latest
     steps:
-      - name: Send Telegram Notification
+      # --- Issue opened ---
+      - name: Send Telegram (issue)
         if: ${{ github.event_name == 'issues' }}
+        id: tg_issue_primary
+        continue-on-error: true
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -20,15 +23,33 @@ jobs:
           disable_web_page_preview: true
           message: |
             🚨 New GitHub Issue 🚨
-
             <b>Issue URL:</b> ${{ github.event.issue.html_url }}
-            
+
             <b>${{ github.actor }}</b> created a new issue.
             <b>Issue Title:</b> ${{ github.event.issue.title }}
             <blockquote>${{ github.event.issue.body }}</blockquote>
-      
-      - name: Send Telegram Notification
+
+      - name: Send Telegram Fallback (issue)
+        if: ${{ github.event_name == 'issues' && steps.tg_issue_primary.outcome == 'failure' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
+            🚨 New GitHub Issue 🚨
+            <b>Issue URL:</b> ${{ github.event.issue.html_url }}
+
+            <b>${{ github.actor }}</b> created a new issue.
+            <b>Issue Title:</b> ${{ github.event.issue.title }}
+            <blockquote>cannot parse message to telegram</blockquote>
+
+      # --- Issue comment created ---
+      - name: Send Telegram (comment)
         if: ${{ github.event_name == 'issue_comment' }}
+        id: tg_comment_primary
+        continue-on-error: true
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -37,12 +58,26 @@ jobs:
           disable_web_page_preview: true
           message: |
             📝 New Comment on GitHub Issue 📝
-
             <b>Comment URL:</b> ${{ github.event.comment.html_url }}
-
             <b>Issue Title:</b> ${{ github.event.issue.title }}
             <b>Issue URL:</b> ${{ github.event.issue.html_url }}
-            
-            <b>${{ github.actor }}</b> commented: 
+
+            <b>${{ github.actor }}</b> commented:
             <blockquote>${{ github.event.comment.body }}</blockquote>
-            
+
+      - name: Send Telegram Fallback (comment)
+        if: ${{ github.event_name == 'issue_comment' && steps.tg_comment_primary.outcome == 'failure' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
+            📝 New Comment on GitHub Issue 📝
+            <b>Comment URL:</b> ${{ github.event.comment.html_url }}
+            <b>Issue Title:</b> ${{ github.event.issue.title }}
+            <b>Issue URL:</b> ${{ github.event.issue.html_url }}
+
+            <b>${{ github.actor }}</b> commented:
+            <blockquote>cannot parse message to telegram</blockquote>
