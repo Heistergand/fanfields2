@@ -2,19 +2,21 @@ name: Telegram Notifications
 
 on:
   issues:
-    types: [opened]
+    types: [opened, edited, closed]
   issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, edited, closed, reopened]
+  pull_request_review_comment:
     types: [created]
 
 jobs:
   send_notification:
     runs-on: ubuntu-latest
     steps:
-      # --- Issue opened ---
-      - name: Send Telegram (issue)
-        if: ${{ github.event_name == 'issues' }}
-        id: tg_issue_primary
-        continue-on-error: true
+
+      - name: Send Telegram (Issues & Issue Comments)
+        if: ${{ github.event_name == 'issues' || github.event_name == 'issue_comment' }}
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -22,51 +24,22 @@ jobs:
           format: html
           disable_web_page_preview: true
           message: |
-            🚨 New GitHub Issue 🚨
+            {% if github.event_name == 'issues' %}
+            🚨 Issue Notification 🚨
             <b>Issue URL:</b> ${{ github.event.issue.html_url }}
-
-            <b>${{ github.actor }}</b> created a new issue.
-            <b>Issue Title:</b> ${{ github.event.issue.title }}
+            <b>${{ github.actor }}</b> triggered issue event: <b>${{ github.event.action }}</b>
+            <b>Title:</b> ${{ github.event.issue.title }}
             <blockquote>${{ github.event.issue.body }}</blockquote>
-
-      - name: Send Telegram Fallback (issue)
-        if: ${{ github.event_name == 'issues' && steps.tg_issue_primary.outcome == 'failure' }}
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: html
-          disable_web_page_preview: true
-          message: |
-            🚨 New GitHub Issue 🚨
-            <b>Issue URL:</b> ${{ github.event.issue.html_url }}
-
-            <b>${{ github.actor }}</b> created a new issue.
-            <b>Issue Title:</b> ${{ github.event.issue.title }}
-            <blockquote>cannot parse message to telegram</blockquote>
-
-      # --- Issue comment created ---
-      - name: Send Telegram (comment)
-        if: ${{ github.event_name == 'issue_comment' }}
-        id: tg_comment_primary
-        continue-on-error: true
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          format: html
-          disable_web_page_preview: true
-          message: |
-            📝 New Comment on GitHub Issue 📝
+            {% else %}
+            📝 Comment on Issue 📝
             <b>Comment URL:</b> ${{ github.event.comment.html_url }}
-            <b>Issue Title:</b> ${{ github.event.issue.title }}
             <b>Issue URL:</b> ${{ github.event.issue.html_url }}
-
             <b>${{ github.actor }}</b> commented:
             <blockquote>${{ github.event.comment.body }}</blockquote>
+            {% endif %}
 
-      - name: Send Telegram Fallback (comment)
-        if: ${{ github.event_name == 'issue_comment' && steps.tg_comment_primary.outcome == 'failure' }}
+      - name: Send Telegram (Pull Requests & PR Comments)
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_review_comment' }}
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -74,10 +47,16 @@ jobs:
           format: html
           disable_web_page_preview: true
           message: |
-            📝 New Comment on GitHub Issue 📝
+            {% if github.event_name == 'pull_request' %}
+            🚀 Pull Request Notification 🚀
+            <b>PR URL:</b> ${{ github.event.pull_request.html_url }}
+            <b>${{ github.actor }}</b> triggered PR event: <b>${{ github.event.action }}</b>
+            <b>Title:</b> ${{ github.event.pull_request.title }}
+            <blockquote>${{ github.event.pull_request.body }}</blockquote>
+            {% else %}
+            💬 Comment on Pull Request 💬
             <b>Comment URL:</b> ${{ github.event.comment.html_url }}
-            <b>Issue Title:</b> ${{ github.event.issue.title }}
-            <b>Issue URL:</b> ${{ github.event.issue.html_url }}
-
+            <b>PR URL:</b> ${{ github.event.pull_request.html_url }}
             <b>${{ github.actor }}</b> commented:
-            <blockquote>cannot parse message to telegram</blockquote>
+            <blockquote>${{ github.event.comment.body }}</blockquote>
+            {% endif %}
