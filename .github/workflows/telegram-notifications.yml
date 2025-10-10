@@ -15,8 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - name: Send Telegram (Issues & Issue Comments)
-        if: ${{ github.event_name == 'issues' || github.event_name == 'issue_comment' }}
+      # --- Issues ---
+      - name: Send Telegram (Issue opened/edited/closed)
+        if: ${{ github.event_name == 'issues' }}
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -24,22 +25,14 @@ jobs:
           format: html
           disable_web_page_preview: true
           message: |
-            {% if github.event_name == 'issues' %}
             🚨 Issue Notification 🚨
             <b>Issue URL:</b> ${{ github.event.issue.html_url }}
             <b>${{ github.actor }}</b> triggered issue event: <b>${{ github.event.action }}</b>
             <b>Title:</b> ${{ github.event.issue.title }}
             <blockquote>${{ github.event.issue.body }}</blockquote>
-            {% else %}
-            📝 Comment on Issue 📝
-            <b>Comment URL:</b> ${{ github.event.comment.html_url }}
-            <b>Issue URL:</b> ${{ github.event.issue.html_url }}
-            <b>${{ github.actor }}</b> commented:
-            <blockquote>${{ github.event.comment.body }}</blockquote>
-            {% endif %}
 
-      - name: Send Telegram (Pull Requests & PR Comments)
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_review_comment' }}
+      - name: Send Telegram (Issue comment)
+        if: ${{ github.event_name == 'issue_comment' }}
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -47,16 +40,39 @@ jobs:
           format: html
           disable_web_page_preview: true
           message: |
-            {% if github.event_name == 'pull_request' %}
+            📝 Comment on Issue 📝
+            <b>Comment URL:</b> ${{ github.event.comment.html_url }}
+            <b>Issue URL:</b> ${{ github.event.issue.html_url }}
+            <b>${{ github.actor }}</b> commented:
+            <blockquote>${{ github.event.comment.body }}</blockquote>
+
+      # --- Pull Requests ---
+      - name: Send Telegram (Pull Request opened/edited/closed/reopened)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
             🚀 Pull Request Notification 🚀
             <b>PR URL:</b> ${{ github.event.pull_request.html_url }}
             <b>${{ github.actor }}</b> triggered PR event: <b>${{ github.event.action }}</b>
             <b>Title:</b> ${{ github.event.pull_request.title }}
             <blockquote>${{ github.event.pull_request.body }}</blockquote>
-            {% else %}
+
+      - name: Send Telegram (Pull Request comment)
+        if: ${{ github.event_name == 'pull_request_review_comment' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
             💬 Comment on Pull Request 💬
             <b>Comment URL:</b> ${{ github.event.comment.html_url }}
             <b>PR URL:</b> ${{ github.event.pull_request.html_url }}
             <b>${{ github.actor }}</b> commented:
             <blockquote>${{ github.event.comment.body }}</blockquote>
-            {% endif %}
