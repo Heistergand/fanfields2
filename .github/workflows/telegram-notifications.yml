@@ -15,9 +15,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      # --- Issues ---
-      - name: Send Telegram (Issue opened/edited/closed)
+      # --- Escape Issue Body ---
+      - name: Escape Issue Body
         if: ${{ github.event_name == 'issues' }}
+        run: |
+          ESCAPED_BODY=$(echo "${{ github.event.issue.body }}" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+          echo "ESCAPED_BODY=$ESCAPED_BODY" >> $GITHUB_ENV
+
+      # --- Escape Comment Body ---
+      - name: Escape Comment Body
+        if: ${{ github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' }}
+        run: |
+          ESCAPED_COMMENT=$(echo "${{ github.event.comment.body }}" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+          echo "ESCAPED_COMMENT=$ESCAPED_COMMENT" >> $GITHUB_ENV
+
+      # --- Escape PR Body ---
+      - name: Escape PR Body
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          ESCAPED_PR_BODY=$(echo "${{ github.event.pull_request.body }}" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+          echo "ESCAPED_PR_BODY=$ESCAPED_PR_BODY" >> $GITHUB_ENV
+
+      # --- Telegram: Issue ---
+      - name: Send Telegram (Issue)
+        if: ${{ github.event_name == 'issues' }}
+        id: tg_issue
+        continue-on-error: true
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -29,10 +52,28 @@ jobs:
             <b>Issue URL:</b> ${{ github.event.issue.html_url }}
             <b>${{ github.actor }}</b> triggered issue event: <b>${{ github.event.action }}</b>
             <b>Title:</b> ${{ github.event.issue.title }}
-            <blockquote>${{ github.event.issue.body }}</blockquote>
+            <blockquote>${{ env.ESCAPED_BODY }}</blockquote>
 
-      - name: Send Telegram (Issue comment)
+      - name: Send Telegram Fallback (Issue)
+        if: ${{ github.event_name == 'issues' && steps.tg_issue.outcome == 'failure' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
+            🚨 Issue Notification 🚨
+            <b>Issue URL:</b> ${{ github.event.issue.html_url }}
+            <b>${{ github.actor }}</b> triggered issue event: <b>${{ github.event.action }}</b>
+            <b>Title:</b> ${{ github.event.issue.title }}
+            <blockquote>cannot parse message to telegram</blockquote>
+
+      # --- Telegram: Issue Comment ---
+      - name: Send Telegram (Issue Comment)
         if: ${{ github.event_name == 'issue_comment' }}
+        id: tg_comment
+        continue-on-error: true
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -44,11 +85,28 @@ jobs:
             <b>Comment URL:</b> ${{ github.event.comment.html_url }}
             <b>Issue URL:</b> ${{ github.event.issue.html_url }}
             <b>${{ github.actor }}</b> commented:
-            <blockquote>${{ github.event.comment.body }}</blockquote>
+            <blockquote>${{ env.ESCAPED_COMMENT }}</blockquote>
 
-      # --- Pull Requests ---
-      - name: Send Telegram (Pull Request opened/edited/closed/reopened)
+      - name: Send Telegram Fallback (Issue Comment)
+        if: ${{ github.event_name == 'issue_comment' && steps.tg_comment.outcome == 'failure' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
+            📝 Comment on Issue 📝
+            <b>Comment URL:</b> ${{ github.event.comment.html_url }}
+            <b>Issue URL:</b> ${{ github.event.issue.html_url }}
+            <b>${{ github.actor }}</b> commented:
+            <blockquote>cannot parse message to telegram</blockquote>
+
+      # --- Telegram: Pull Request ---
+      - name: Send Telegram (Pull Request)
         if: ${{ github.event_name == 'pull_request' }}
+        id: tg_pr
+        continue-on-error: true
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -60,10 +118,28 @@ jobs:
             <b>PR URL:</b> ${{ github.event.pull_request.html_url }}
             <b>${{ github.actor }}</b> triggered PR event: <b>${{ github.event.action }}</b>
             <b>Title:</b> ${{ github.event.pull_request.title }}
-            <blockquote>${{ github.event.pull_request.body }}</blockquote>
+            <blockquote>${{ env.ESCAPED_PR_BODY }}</blockquote>
 
-      - name: Send Telegram (Pull Request comment)
+      - name: Send Telegram Fallback (Pull Request)
+        if: ${{ github.event_name == 'pull_request' && steps.tg_pr.outcome == 'failure' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
+            🚀 Pull Request Notification 🚀
+            <b>PR URL:</b> ${{ github.event.pull_request.html_url }}
+            <b>${{ github.actor }}</b> triggered PR event: <b>${{ github.event.action }}</b>
+            <b>Title:</b> ${{ github.event.pull_request.title }}
+            <blockquote>cannot parse message to telegram</blockquote>
+
+      # --- Telegram: PR Comment ---
+      - name: Send Telegram (PR Comment)
         if: ${{ github.event_name == 'pull_request_review_comment' }}
+        id: tg_pr_comment
+        continue-on-error: true
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_TO }}
@@ -75,4 +151,19 @@ jobs:
             <b>Comment URL:</b> ${{ github.event.comment.html_url }}
             <b>PR URL:</b> ${{ github.event.pull_request.html_url }}
             <b>${{ github.actor }}</b> commented:
-            <blockquote>${{ github.event.comment.body }}</blockquote>
+            <blockquote>${{ env.ESCAPED_COMMENT }}</blockquote>
+
+      - name: Send Telegram Fallback (PR Comment)
+        if: ${{ github.event_name == 'pull_request_review_comment' && steps.tg_pr_comment.outcome == 'failure' }}
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
+            💬 Comment on Pull Request 💬
+            <b>Comment URL:</b> ${{ github.event.comment.html_url }}
+            <b>PR URL:</b> ${{ github.event.pull_request.html_url }}
+            <b>${{ github.actor }}</b> commented:
+            <blockquote>cannot parse message to telegram</blockquote>
