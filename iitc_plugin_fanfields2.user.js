@@ -645,10 +645,12 @@ function wrapper(plugin_info) {
             let availableKeysText = '';
             let availableKeys = 0;
             if (window.plugin.keys || window.plugin.LiveInventory) {
-                if (window.plugin.LiveInventory.keyGuidCount) {
-                    availableKeys = window.plugin.LiveInventory.keyGuidCount[portal.guid] || 0;
-                } else if (window.plugin.LiveInventory.keyCount) {
-                    availableKeys = window.plugin.LiveInventory.keyCount.find(obj => obj.portalCoupler.portalGuid === portal.guid)?.count || 0;
+                if (window.plugin.LiveInventory) {
+                    if (window.plugin.LiveInventory.keyGuidCount) {
+                        availableKeys = window.plugin.LiveInventory.keyGuidCount[portal.guid] || 0;
+                    } else if (window.plugin.LiveInventory.keyCount) {
+                        availableKeys = window.plugin.LiveInventory.keyCount.find(obj => obj.portalCoupler.portalGuid === portal.guid)?.count || 0;
+                    }
                 } else {
                     availableKeys = window.plugin.keys.keys[portal.guid] || 0;
                 }
