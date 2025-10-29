@@ -645,6 +645,7 @@ function wrapper(plugin_info) {
             let availableKeysText = '';
             let availableKeys = 0;
             if (window.plugin.keys || window.plugin.LiveInventory) {
+                
                 if (window.plugin.LiveInventory) {
                     if (window.plugin.LiveInventory.keyGuidCount) {
                         availableKeys = window.plugin.LiveInventory.keyGuidCount[portal.guid] || 0;
@@ -654,6 +655,8 @@ function wrapper(plugin_info) {
                 } else {
                     availableKeys = window.plugin.keys.keys[portal.guid] || 0;
                 }
+                // Beware of bugs in the above code; I have only proved it correct, not tried it! (Donald Knuth)
+                
                 let keyColorAttribute = '';
                 if (availableKeys >= portal.incoming.length) {
                     keyColorAttribute = 'plugin_fanfields_enoughKeys';
