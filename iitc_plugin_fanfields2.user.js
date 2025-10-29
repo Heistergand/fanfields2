@@ -2,7 +2,7 @@
 // @author          Heistergand
 // @id              fanfields@heistergand
 // @category        Layer
-// @version         2.6.4.20250912
+// @version         2.6.5.20251030
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
@@ -41,13 +41,19 @@ function wrapper(plugin_info) {
     // ensure plugin framework is there, even if iitc is not yet loaded
     if(typeof window.plugin !== 'function') window.plugin = function() {};
     plugin_info.buildName = 'main';
-    plugin_info.dateTimeVersion = '2024-04-10-233042';
+    plugin_info.dateTimeVersion = '2025-10-30-002042';
     plugin_info.pluginId = 'fanfields';
 
     /* global L -- eslint */
     /* exported setup, changelog --eslint */
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
+        {
+            version: '2.6.5',
+            changes: [
+                'FIX: Fixed last fix.',
+            ],
+        },
         {
             version: '2.6.4',
             changes: [
