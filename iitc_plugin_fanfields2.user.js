@@ -1,6 +1,7 @@
 // ==UserScript==
 // @author          Heistergand
 // @id              fanfields@heistergand
+// @name            Fan Fields 2 
 // @category        Layer
 // @version         2.6.6.20251207
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
