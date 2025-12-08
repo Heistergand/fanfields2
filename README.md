@@ -40,7 +40,9 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
     - Set how many SBUL you plan to use
   - Toggle the link direction indicator.
   - Show respect to the current intel and avoid throwing crosslinks. _(In some cases useful, in others not at all...)_
-  - toggle to use bookmarked portals only
+  - Toggle to use bookmarked portals only
+  - Edit the portal visit order in a portal sequence editior.
+  - View the straight-line route preview along the portal sequence.
 - Copy your plan to Drawtools Plugin.
 - Copy your plan to Bookmarks Plugin.
 - Copy your plan to Arcs Plugin.
@@ -85,3 +87,8 @@ You can still see the old fieldset box design here
 
 ### Use of Keys Plugin information
 ![image](https://github.com/Heistergand/fanfields2/assets/16416532/d23670b2-28c9-4bdb-ac33-d3b67e7e1193)
+
+### Edit the portal visit order in a portal sequence editior
+<img width="1302" height="839" alt="Screenshot_20251208_005836" src="https://github.com/user-attachments/assets/0f0d6686-adf5-4f45-a621-a4822ac3f1c2" />
+
+<img width="1302" height="839" alt="Screenshot_20251208_005937" src="https://github.com/user-attachments/assets/e8050d2f-4663-4a07-9518-ae075e0692d5" />
