@@ -52,7 +52,7 @@ function wrapper(plugin_info) {
         {
             version: '2.7.1',
             changes: [
-                'FIX: Linking algorythm from version 2.6.6 wasn\'t perfect.',
+                'FIX: The linking algorithm from version 2.6.6 was not perfect.',
             ],
         },
         {
