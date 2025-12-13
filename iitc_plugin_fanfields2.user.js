@@ -53,9 +53,10 @@ function wrapper(plugin_info) {
         {
             version: '2.7.2',
             changes: [
-                'FIX: some code cleanup',
+                'FIX: Code cleanup and refactoring.',
             ],
-        },{
+        },
+        {
             version: '2.7.1',
             changes: [
                 'FIX: The linking algorithm from version 2.6.6 was not perfect.',
