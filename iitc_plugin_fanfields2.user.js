@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @name            Fan Fields 2
 // @category        Layer
-// @version         2.7.1.20251210
+// @version         2.7.2.20251213
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
@@ -50,6 +50,11 @@ function wrapper(plugin_info) {
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
         {
+            version: '2.7.2',
+            changes: [
+                'FIX: some code cleanup',
+            ],
+        },{
             version: '2.7.1',
             changes: [
                 'FIX: The linking algorithm from version 2.6.6 was not perfect.',
@@ -217,13 +222,8 @@ function wrapper(plugin_info) {
         {
             version: '2.2.4',
             changes: [
-                'FIX: Fixed what should have been fixed in 2.2.4',
-            ],
-        },
-        {
-            version: '2.2.4',
-            changes: [
                 'FIX: Width of dialog boxes did extend screen size',
+                'FIX: Fixed what should have been fixed in 2.2.4',
             ],
         },
         {
@@ -262,18 +262,7 @@ function wrapper(plugin_info) {
         {
             version: '2.1.9',
             changes: [
-                'FIX: minor fixes',
-            ],
-        },
-        {
-            version: '2.1.9',
-            changes: [
                 'FIX: Fixed blank in header for compatibility with IITC-CE Button.',
-            ],
-        },
-        {
-            version: '2.1.9',
-            changes: [
                 'FIX: Fix for missing constants in leaflet verion 1.6.0.',
             ],
         },
@@ -509,7 +498,7 @@ function wrapper(plugin_info) {
         thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
         thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
 
-        // manuelle Reihenfolge zurücksetzen, weil der Start sich ändert ghi#23
+        // Reset manual order because the start/anchor changed (ghi#23)
         thisplugin.manualOrderGuids = null;
 
         thisplugin.updateLayer();
@@ -809,8 +798,8 @@ function wrapper(plugin_info) {
                 if ($details.length) {
                     $label.addClass('has-children');
                 } else {
-                    $toggle.remove(); // Entferne die Checkbox, wenn keine Kind-Elemente vorhanden sind
-                    $label.css('cursor', 'default'); // Ändere den Cursor zurück auf Standard
+                    $toggle.remove(); // Remove the checkbox if there are no child elements
+                    $label.css('cursor', 'default'); // Reset the cursor back to default
                 }
             });
             $('[plugin_fanfields_exportText_toggle="toggle"]').change(function(){
@@ -908,7 +897,7 @@ function wrapper(plugin_info) {
             var $tbody = $('#plugin_fanfields_order_table tbody');
             var dragSrcRow = null;
 
-            // bestehende Handler sauber entfernen, falls Dialog mehrfach geöffnet wurde
+            // Cleanly remove existing handlers in case the dialog was opened multiple times
             $tbody.off('dragstart dragend dragover drop');
 
             $tbody.on('dragstart', 'tr.plugin_fanfields_order_row', function(e) {
@@ -945,9 +934,9 @@ function wrapper(plugin_info) {
                 $(this).before(dragSrcRow);
             });
 
-            // Reset- und Apply-Buttons neu binden
+            // Rebind Reset and Apply buttons
             $('#plugin_fanfields_order_reset').off('click').on('click', function() {
-                // manuelle Order löschen, Plan neu berechnen
+                // Clear manual order and recalculate the plan
                 that.manualOrderGuids = null;
                 that.updateLayer();
 
@@ -956,7 +945,7 @@ function wrapper(plugin_info) {
                 // $('#plugin_fanfields_order_apply').prop('disabled', true);
 
 
-                // Tabelle im Dialog aktualisieren (nur Inhalt austauschen)
+                // Refresh the dialog table (replace content only)
                 $('#plugin_fanfields_order_dialog_inner').html(buildTableHTML());
                 initDragAndButtons();
 
@@ -971,7 +960,7 @@ function wrapper(plugin_info) {
                     guids.push($(this).data('guid'));
                 });
 
-                // Sicherheit: erster Eintrag muss der Anchor bleiben
+                // the first entry must remain the anchor
                 if (guids[0] !== that.startingpointGUID) {
                     that.manualOrderGuids = null;
                 } else {
@@ -979,9 +968,6 @@ function wrapper(plugin_info) {
                 }
 
                 orderDirty = false;
-                // $('#plugin_fanfields_order_reset').prop('disabled', true);
-                // $('#plugin_fanfields_order_apply').prop('disabled', true);
-
 
                 that.delayedUpdateLayer(0.2);
                 $('#plugin_fanfields_order_dialog').dialog('close');
@@ -1062,7 +1048,7 @@ function wrapper(plugin_info) {
         else
             clockwiseSymbol = "&#8634;", clockwiseWord = "Counterclockwise";
 
-        // Reihenfolge zurücksetzen – neue Geometrie, neue Basisreihenfolge (ghi#23)
+        // Reset the order – new geometry, new base ordering (ghi#23)
         thisplugin.manualOrderGuids = null;
 
         $('#plugin_fanfields_clckwsbtn').html(clockwiseWord+'&nbsp;'+clockwiseSymbol+'');
@@ -1618,28 +1604,28 @@ function wrapper(plugin_info) {
 
 
 
-    // Pfeilspitze im Projektionsraum (Pixel) berechnen
+    // Compute the arrowhead in projection space (pixels)
     thisplugin.buildArrowHeadPoints = function(pointA, pointB) {
-        // einfache kleine Pfeilspitze in Pixeln
-        var tip = pointB; // Spitze am Zielpunkt
+        // Simple small arrowhead in pixels
+        var tip = pointB; 
         var dx = pointB.x - pointA.x;
         var dy = pointB.y - pointA.y;
         var len = Math.sqrt(dx*dx + dy*dy);
         if (len === 0) return [pointB];
 
-        // Normierter Richtungsvektor
+        // Normalized direction vector
         var ux = dx / len;
         var uy = dy / len;
 
-        // Pfeilgröße (Pixel)
+        // Arrow size (pixels)
         var arrowLength = 25;
         var arrowWidth  = 14;
 
-        // Basis der Pfeilspitze etwas vor dem Zielpunkt
+        // Base of the arrowhead slightly before the target point
         var baseX = tip.x - ux * arrowLength;
         var baseY = tip.y - uy * arrowLength;
 
-        // Senkrechter Vektor
+        // Perpendicular vector
         var px = -uy;
         var py = ux;
 
@@ -1655,52 +1641,6 @@ function wrapper(plugin_info) {
         ];
     };
 
-
-    /*     thisplugin.updateOrderPath = function() {
-        var that = thisplugin;
-        var lg = that.orderPathLayerGroup;
-        if (!lg) return;
-
-        lg.clearLayers();
-
-        var sorted = that.sortedFanpoints || [];
-        if (sorted.length < 2) return;
-
-        // Punkte im Projektionsraum
-        var projPoints = sorted.map(function(fp) { return fp.point; });
-
-        // Als Polyline (ganze Route)
-        var latlngs = projPoints.map(function(p) {
-            return map.unproject(p, that.PROJECT_ZOOM);
-        });
-
-        L.polyline(latlngs, {
-            color: '#ffff00',
-            weight: 3,
-            opacity: 0.9,
-            dashArray: '6,8',
-            interactive: false
-        }).addTo(lg);
-
-        // Pfeilspitze am Ende
-        var n = projPoints.length;
-        var pointA = projPoints[n-2];
-        var pointB = projPoints[n-1];
-
-        var arrowPts = that.buildArrowHeadPoints(pointA, pointB);
-        var arrowLatLngs = arrowPts.map(function(p) {
-            return map.unproject(p, that.PROJECT_ZOOM);
-        });
-
-        L.polygon(arrowLatLngs, {
-            color: '#ffff00',
-            weight: 1,
-            fillColor: '#ffff00',
-            fillOpacity: 0.9,
-            interactive: false
-        }).addTo(lg);
-    };
- */
     thisplugin.updateOrderPath = function() {
         var that = thisplugin;
         var lg = that.orderPathLayerGroup;
@@ -1711,9 +1651,8 @@ function wrapper(plugin_info) {
         var sorted = that.sortedFanpoints || [];
         if (sorted.length < 2) return;
 
-        // Route als Polyline zeichnen (weiterhin in LatLng)
+        // Draw the route as a polyline 
         var latlngs = sorted.map(function(fp) {
-            // fp.point ist im PROJECT_ZOOM; das ist okay, hier wollen wir nur die Geometrie grob nachzeichnen
             return map.unproject(fp.point, that.PROJECT_ZOOM);
         });
 
@@ -1725,18 +1664,18 @@ function wrapper(plugin_info) {
             interactive: false
         }).addTo(lg);
 
-        // Pfeilspitze: jetzt in Layer-Pixel-Koordinaten der AKTUELLEN Zoomstufe rechnen
+        // Arrowhead: compute in layer-pixel coordinates of the CURRENT zoom level
         var n = latlngs.length;
         var latA = latlngs[n-2];
         var latB = latlngs[n-1];
 
-        // -> LayerPoints (Bildschirmkoordinaten)
+        // -> LayerPoints (screen coordinates)
         var pA = map.latLngToLayerPoint(latA);
         var pB = map.latLngToLayerPoint(latB);
 
         var arrowPtsLayer = that.buildArrowHeadPoints(pA, pB);
 
-        // zurück in LatLng wandeln
+        // Convert back to LatLng
         var arrowLatLngs = arrowPtsLayer.map(function(p) {
             return map.layerPointToLatLng(p);
         });
@@ -2045,7 +1984,7 @@ function wrapper(plugin_info) {
 
 
         // TODO: replace following with uncommented above.
-        this.fanpoints = findFanpoints(thisplugin.dtLayers,
+        thisplugin.fanpoints = findFanpoints(thisplugin.dtLayers,
                                        this.locations,
                                        this.filterPolygon);
 
@@ -2060,7 +1999,7 @@ function wrapper(plugin_info) {
         var npoints = fanpointGuids.length;
 
         if (npoints === 0) {
-            // Kein Plan -> Signatur zurücksetzen und Pfad aus
+            // No plan -> reset signature and disable the path
             thisplugin.lastPlanSignature = null;
             if (thisplugin.showOrderPath) {
                 thisplugin.setOrderPathActive(false);
@@ -2068,10 +2007,10 @@ function wrapper(plugin_info) {
             return;
         }
 
-        // NEU: Signatur der aktuellen Portalmenge (GUID-Menge, unabhängig von Reihenfolge)
+        // signature of the current portal set (GUID set, order-independent)
         var currentSignature = fanpointGuids.sort().join(',');
 
-        // Wenn sich die Menge der Portale geändert hat: Pfad deaktivieren
+        // If the portal set changed: disable the path
         if (thisplugin.lastPlanSignature !== null &&
             thisplugin.lastPlanSignature !== currentSignature &&
             thisplugin.showOrderPath) {
@@ -2079,7 +2018,7 @@ function wrapper(plugin_info) {
             thisplugin.setOrderPathActive(false);
         }
 
-        // Signatur für nächsten Durchlauf merken
+        // Store signature for the next run
         thisplugin.lastPlanSignature = currentSignature;
 
 
@@ -2152,10 +2091,6 @@ function wrapper(plugin_info) {
                 if (!done) {
                     // add the marker to the perimeter
                     perimeter.unshift([GUID,[point.x, point.y]]);
-
-                    // tried to sort the list here to put the point at a position in the list so it's between it's
-                    // nearest points, but it has no effect if done here, it sorts itself new somewhere.
-                    // Quite confusing. Made me mad. Spaghetti code.
                 }
             }
             return perimeter;
@@ -2240,7 +2175,7 @@ function wrapper(plugin_info) {
         });
 
         // ghi#23 start (1)
-        // manuelle Reihenfolge anwenden, falls vorhanden
+        // Apply manual order, if present
         if (thisplugin.manualOrderGuids &&
             thisplugin.manualOrderGuids.length === this.sortedFanpoints.length) {
 
@@ -2260,7 +2195,7 @@ function wrapper(plugin_info) {
                 }
             });
 
-            // nur übernehmen, wenn alles konsistent ist
+            // Only apply if everything is consistent
             if (allPresent &&
                 newOrder.length === this.sortedFanpoints.length &&
                 newOrder[0].guid === thisplugin.startingpointGUID) {
@@ -2308,7 +2243,7 @@ function wrapper(plugin_info) {
         }
 
         // ghi#23
-        // ======= MANUELLE REIHENFOLGE ANWENDEN (falls vorhanden) =======
+        // ======= APPLY MANUAL ORDER (if present) =======
         if (thisplugin.manualOrderGuids &&
             thisplugin.manualOrderGuids.length === this.sortedFanpoints.length) {
 
@@ -2328,15 +2263,14 @@ function wrapper(plugin_info) {
                 }
             });
 
-            // Nur wenn alle GUIDs passen und der Anker an Position 0 bleibt, übernehmen wir die Reihenfolge
+            // Only if all GUIDs match and the anchor stays at position 0 do we accept the order
             if (allPresent &&
                 newOrder.length === this.sortedFanpoints.length &&
                 newOrder[0].guid === thisplugin.startingpointGUID) {
                 this.sortedFanpoints = newOrder;
             }
         }
-        // ======= ENDE MANUELLE REIHENFOLGE =======
-
+        // ======= END MANUAL ORDER =======
 
         donelinks = [];
         var outbound = 0;
