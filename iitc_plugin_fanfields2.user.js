@@ -571,7 +571,7 @@ function wrapper(plugin_info) {
 
             '<p>Found a bug? Post your issues at GitHub:<br><a href="https://github.com/Heistergand/fanfields2/issues">https://github.com/Heistergand/fanfields2/issues</a></p>'+
             '',
-            id: 'plugin_fanfields_alert_help',
+            id: 'plugin_fanfields2_alert_help',
             title: 'Fan Fields - Help',
             width: width,
             closeOnEscape: true
@@ -598,7 +598,7 @@ function wrapper(plugin_info) {
 
             dialog({
                 html: text,
-                id: 'plugin_fanfields_alert_statistics',
+                id: 'plugin_fanfields2_alert_statistics',
                 title: '== Fan Field Statistics == ',
                 width: width,
                 closeOnEscape: true
@@ -688,9 +688,9 @@ function wrapper(plugin_info) {
 
                 let keyColorAttribute = '';
                 if (availableKeys >= portal.incoming.length) {
-                    keyColorAttribute = 'plugin_fanfields_enoughKeys';
+                    keyColorAttribute = 'plugin_fanfields2_enoughKeys';
                 } else {
-                    keyColorAttribute = 'plugin_fanfields_notEnoughKeys';
+                    keyColorAttribute = 'plugin_fanfields2_notEnoughKeys';
                 };
 
                 availableKeysText = keyColorAttribute + '>' + availableKeys + '/';
@@ -698,15 +698,15 @@ function wrapper(plugin_info) {
                 availableKeysText = '>';
             };
             // Row start
-            text+='<tbody class="plugin_fanfields_exportText_Portal"><tr>';
+            text+='<tbody class="plugin_fanfields2_exportText_Portal"><tr>';
             // List Item Index (Pos.)
             text+='<td>' + (index) + '</td>';
 
             // Action
 
             text+='<td>';
-            text+='  <label class="plugin_fanfields_exportText_Label" for="plugin_fanfields_exportText_' + portal.guid + '">Capture</label>';
-            text+='  <input type="checkbox" id="plugin_fanfields_exportText_' + portal.guid + '" plugin_fanfields_exportText_toggle="toggle">';
+            text+='  <label class="plugin_fanfields2_exportText_Label" for="plugin_fanfields2_exportText_' + portal.guid + '">Capture</label>';
+            text+='  <input type="checkbox" id="plugin_fanfields2_exportText_' + portal.guid + '" plugin_fanfields2_exportText_toggle="toggle">';
             text+='</td>';
 
 
@@ -735,7 +735,7 @@ function wrapper(plugin_info) {
             text+='</tbody>\n';
             if (portal.outgoing.length > 0) {
                 // DetailBlock Start
-                text+='<tbody class="plugin_fanfields_exportText_LinkDetails plugin_fanfields_italic" hidden>';
+                text+='<tbody class="plugin_fanfields2_exportText_LinkDetails plugin_fanfields2_italic" hidden>';
                 portal.outgoing.forEach(function(outPortal, outIndex) {
                     let distance = thisplugin.distanceTo(portal.point, outPortal.point);
                     let measure = 'm';
@@ -775,7 +775,7 @@ function wrapper(plugin_info) {
         });
         text+='</tbody></table>';
         if (window.plugin.keys || window.plugin.LiveInventory) {
-            text+='<br><div plugin_fanfields_enoughKeys>Adjust available keys using your keys plugin.</div>';
+            text+='<br><div plugin_fanfields2_enoughKeys>Adjust available keys using your keys plugin.</div>';
         };
         text+='<hr noshade>';
         gmnav+='&nav=1';
@@ -790,10 +790,10 @@ function wrapper(plugin_info) {
         }
 
         const toggleFunction = function() {
-            $('[plugin_fanfields_exportText_toggle="toggle"]').each(function() {
+            $('[plugin_fanfields2_exportText_toggle="toggle"]').each(function() {
                 const $toggle = $(this);
-                const $label = $toggle.prev('.plugin_fanfields_exportText_Label');
-                const $details = $toggle.parents().next('.plugin_fanfields_exportText_LinkDetails');
+                const $label = $toggle.prev('.plugin_fanfields2_exportText_Label');
+                const $details = $toggle.parents().next('.plugin_fanfields2_exportText_LinkDetails');
 
                 if ($details.length) {
                     $label.addClass('has-children');
@@ -802,16 +802,16 @@ function wrapper(plugin_info) {
                     $label.css('cursor', 'default'); // Reset the cursor back to default
                 }
             });
-            $('[plugin_fanfields_exportText_toggle="toggle"]').change(function(){
+            $('[plugin_fanfields2_exportText_toggle="toggle"]').change(function(){
                 const isChecked = $(this).is(':checked');
-                $(this).parents().next('.plugin_fanfields_exportText_LinkDetails').toggle();
-                $(this).prev('.plugin_fanfields_exportText_Label').attr('aria-expanded', isChecked);
+                $(this).parents().next('.plugin_fanfields2_exportText_LinkDetails').toggle();
+                $(this).prev('.plugin_fanfields2_exportText_Label').attr('aria-expanded', isChecked);
             });
         };
 
         dialog({
             html: text,
-            id: 'plugin_fanfields_alert_textExport',
+            id: 'plugin_fanfields2_alert_textExport',
             title: 'Fan Fields',
             width: width,
             closeOnEscape: true
@@ -831,7 +831,7 @@ function wrapper(plugin_info) {
             if (that.MaxDialogWidth < widthEmpty) widthEmpty = that.MaxDialogWidth;
             dialog({
                 html: '<p>No Fanfield plan calculated yet.<br>Draw a polygon and let Fanfields calculate first.</p>',
-                id: 'plugin_fanfields_order_dialog_empty',
+                id: 'plugin_fanfields2_order_dialog_empty',
                 title: 'Manage Fanfields order',
                 width: widthEmpty,
                 closeOnEscape: true
@@ -841,7 +841,7 @@ function wrapper(plugin_info) {
         var orderDirty = false;
         function buildTableHTML() {
             var html = '';
-            html += '<table id="plugin_fanfields_order_table" class="plugin_fanfields_order_table">';
+            html += '<table id="plugin_fanfields2_order_table" class="plugin_fanfields2_order_table">';
             html += '<thead><tr>';
             html += '<th style="width:30px;">#</th>';
             html += '<th>Portal</th>';
@@ -857,27 +857,27 @@ function wrapper(plugin_info) {
                 var out = fp.outgoing ? fp.outgoing.length : 0;
 
                 var isAnchor = (fp.guid === that.startingpointGUID);
-                var trClass = isAnchor ? 'plugin_fanfields_order_anchor' : 'plugin_fanfields_order_row';
+                var trClass = isAnchor ? 'plugin_fanfields2_order_anchor' : 'plugin_fanfields2_order_row';
                 var draggableAttr = isAnchor ? '' : ' draggable="true"';
-                var handle = isAnchor ? '' : '<span class="plugin_fanfields_order_handle">&#9776;</span>&nbsp;';
+                var handle = isAnchor ? '' : '<span class="plugin_fanfields2_order_handle">&#9776;</span>&nbsp;';
 
                 html += '<tr class="' + trClass + '" data-guid="' + fp.guid + '"' + draggableAttr + '>';
                 html += '<td>' + idx + '</td>';
-                html += '<td>' + handle + title + (isAnchor ? ' <span class="plugin_fanfields_italic">(anchor)</span>' : '') + '</td>';
+                html += '<td>' + handle + title + (isAnchor ? ' <span class="plugin_fanfields2_italic">(anchor)</span>' : '') + '</td>';
                 html += '<td style="text-align:right;">' + keys + '</td>';
                 html += '<td style="text-align:right;">' + out + '</td>';
                 html += '</tr>';
             });
 
             html += '</tbody></table>';
-            html += '<div class="plugin_fanfields_order_hint">';
+            html += '<div class="plugin_fanfields2_order_hint">';
             html += 'Drag &amp; drop rows to change visit order. First row (anchor) is fixed.<br>';
             html += 'Click <b>Apply</b> to use this order for the fanfield calculation.';
             html += '</div>';
             html += '<div style="margin-top:5px;text-align:right;">';
-            html += '  <button id="plugin_fanfields_order_path">Path</button> ';
-            html += '  <button id="plugin_fanfields_order_reset" >Reset</button> ';
-            html += '  <button id="plugin_fanfields_order_apply" >Apply</button>';
+            html += '  <button id="plugin_fanfields2_order_path">Path</button> ';
+            html += '  <button id="plugin_fanfields2_order_reset" >Reset</button> ';
+            html += '  <button id="plugin_fanfields2_order_apply" >Apply</button>';
             html += '</div>';
             return html;
         }
@@ -886,67 +886,67 @@ function wrapper(plugin_info) {
         if (that.MaxDialogWidth < width) width = that.MaxDialogWidth;
 
         dialog({
-            html: '<div id="plugin_fanfields_order_dialog_inner">' + buildTableHTML() + '</div>',
-            id: 'plugin_fanfields_order_dialog',
+            html: '<div id="plugin_fanfields2_order_dialog_inner">' + buildTableHTML() + '</div>',
+            id: 'plugin_fanfields2_order_dialog',
             title: 'Manage Fanfields order',
             width: width,
             closeOnEscape: true
         });
 
         function initDragAndButtons() {
-            var $tbody = $('#plugin_fanfields_order_table tbody');
+            var $tbody = $('#plugin_fanfields2_order_table tbody');
             var dragSrcRow = null;
 
             // Cleanly remove existing handlers in case the dialog was opened multiple times
             $tbody.off('dragstart dragend dragover drop');
 
-            $tbody.on('dragstart', 'tr.plugin_fanfields_order_row', function(e) {
+            $tbody.on('dragstart', 'tr.plugin_fanfields2_order_row', function(e) {
                 dragSrcRow = this;
                 e.originalEvent.dataTransfer.effectAllowed = 'move';
                 e.originalEvent.dataTransfer.setData('text/plain', $(this).data('guid'));
-                $(this).addClass('plugin_fanfields_order_dragging');
+                $(this).addClass('plugin_fanfields2_order_dragging');
 
                 orderDirty = true;
-                // $('#plugin_fanfields_order_reset').prop('disabled', false);
-                // $('#plugin_fanfields_order_apply').prop('disabled', false);
+                // $('#plugin_fanfields2_order_reset').prop('disabled', false);
+                // $('#plugin_fanfields2_order_apply').prop('disabled', false);
 
                 if (that.showOrderPath) {
                     that.setOrderPathActive(false);
-                    $('#plugin_fanfields_order_path').text('Path');
+                    $('#plugin_fanfields2_order_path').text('Path');
                 }
 
             });
 
-            $tbody.on('dragend', 'tr.plugin_fanfields_order_row', function() {
-                $(this).removeClass('plugin_fanfields_order_dragging');
+            $tbody.on('dragend', 'tr.plugin_fanfields2_order_row', function() {
+                $(this).removeClass('plugin_fanfields2_order_dragging');
                 dragSrcRow = null;
             });
 
-            $tbody.on('dragover', 'tr.plugin_fanfields_order_row', function(e) {
+            $tbody.on('dragover', 'tr.plugin_fanfields2_order_row', function(e) {
                 e.preventDefault();
                 e.originalEvent.dataTransfer.dropEffect = 'move';
             });
 
-            $tbody.on('drop', 'tr.plugin_fanfields_order_row', function(e) {
+            $tbody.on('drop', 'tr.plugin_fanfields2_order_row', function(e) {
                 e.preventDefault();
                 if (!dragSrcRow || dragSrcRow === this) return;
-                if ($(this).hasClass('plugin_fanfields_order_anchor')) return;
+                if ($(this).hasClass('plugin_fanfields2_order_anchor')) return;
                 $(this).before(dragSrcRow);
             });
 
             // Rebind Reset and Apply buttons
-            $('#plugin_fanfields_order_reset').off('click').on('click', function() {
+            $('#plugin_fanfields2_order_reset').off('click').on('click', function() {
                 // Clear manual order and recalculate the plan
                 that.manualOrderGuids = null;
                 that.updateLayer();
 
                 orderDirty = false;
-                // $('#plugin_fanfields_order_reset').prop('disabled', true);
-                // $('#plugin_fanfields_order_apply').prop('disabled', true);
+                // $('#plugin_fanfields2_order_reset').prop('disabled', true);
+                // $('#plugin_fanfields2_order_apply').prop('disabled', true);
 
 
                 // Refresh the dialog table (replace content only)
-                $('#plugin_fanfields_order_dialog_inner').html(buildTableHTML());
+                $('#plugin_fanfields2_order_dialog_inner').html(buildTableHTML());
                 initDragAndButtons();
 
                 if (that.showOrderPath) {
@@ -954,9 +954,9 @@ function wrapper(plugin_info) {
                 }
             });
 
-            $('#plugin_fanfields_order_apply').off('click').on('click', function() {
+            $('#plugin_fanfields2_order_apply').off('click').on('click', function() {
                 var guids = [];
-                $('#plugin_fanfields_order_table tbody tr').each(function() {
+                $('#plugin_fanfields2_order_table tbody tr').each(function() {
                     guids.push($(this).data('guid'));
                 });
 
@@ -970,15 +970,15 @@ function wrapper(plugin_info) {
                 orderDirty = false;
 
                 that.delayedUpdateLayer(0.2);
-                $('#plugin_fanfields_order_dialog').dialog('close');
+                $('#plugin_fanfields2_order_dialog').dialog('close');
             });
 
-            $('#plugin_fanfields_order_path').off('click').on('click', function() {
+            $('#plugin_fanfields2_order_path').off('click').on('click', function() {
                 var newState = !that.showOrderPath;
                 that.setOrderPathActive(newState);
                 $(this).text(newState ? 'Hide path' : 'Path');
             });
-            $('#plugin_fanfields_order_path').text(
+            $('#plugin_fanfields2_order_path').text(
                 that.showOrderPath ? 'Hide path' : 'Path'
             );
 
@@ -995,9 +995,9 @@ function wrapper(plugin_info) {
     thisplugin.toggleRespectCurrentLinks = function() {
         thisplugin.respectCurrentLinks = !thisplugin.respectCurrentLinks;
         if (thisplugin.respectCurrentLinks) {
-            $('#plugin_fanfields_respectbtn').html('Respect&nbsp;Intel:&nbsp;ON');
+            $('#plugin_fanfields2_respectbtn').html('Respect&nbsp;Intel:&nbsp;ON');
         } else {
-            $('#plugin_fanfields_respectbtn').html('Respect&nbsp;Intel:&nbsp;OFF');
+            $('#plugin_fanfields2_respectbtn').html('Respect&nbsp;Intel:&nbsp;OFF');
         }
         thisplugin.delayedUpdateLayer(0.2);
     };
@@ -1006,9 +1006,9 @@ function wrapper(plugin_info) {
     thisplugin.toggleLinkDirIndicator = function() {
         thisplugin.indicateLinkDirection = !thisplugin.indicateLinkDirection;
         if (thisplugin.indicateLinkDirection) {
-            $('#plugin_fanfields_direction_indicator_btn').html('Show&nbsp;link&nbsp;dir:&nbsp;ON');
+            $('#plugin_fanfields2_direction_indicator_btn').html('Show&nbsp;link&nbsp;dir:&nbsp;ON');
         } else {
-            $('#plugin_fanfields_direction_indicator_btn').html('Show&nbsp;link&nbsp;dir:&nbsp;OFF');
+            $('#plugin_fanfields2_direction_indicator_btn').html('Show&nbsp;link&nbsp;dir:&nbsp;OFF');
         }
         thisplugin.delayedUpdateLayer(0.2);
     };
@@ -1017,9 +1017,9 @@ function wrapper(plugin_info) {
     thisplugin.lock = function() {
         thisplugin.is_locked = !thisplugin.is_locked;
         if (thisplugin.is_locked) {
-            $('#plugin_fanfields_lockbtn').html('&#128274;&nbsp;Locked'); // &#128274;
+            $('#plugin_fanfields2_lockbtn').html('&#128274;&nbsp;Locked'); // &#128274;
         } else {
-            $('#plugin_fanfields_lockbtn').html('&#128275;&nbsp;Unlocked'); // &#128275;
+            $('#plugin_fanfields2_lockbtn').html('&#128275;&nbsp;Unlocked'); // &#128275;
         }
     };
 
@@ -1027,11 +1027,11 @@ function wrapper(plugin_info) {
     thisplugin.useBookmarksOnly = function () {
         thisplugin.use_bookmarks_only = !thisplugin.use_bookmarks_only;
         if (thisplugin.use_bookmarks_only) {
-            $('#plugin_fanfields_bookarks_only_btn').html(
+            $('#plugin_fanfields2_bookarks_only_btn').html(
                 '&#128278;&nbsp;Bookmarks only'
             );
         } else {
-            $('#plugin_fanfields_bookarks_only_btn').html(
+            $('#plugin_fanfields2_bookarks_only_btn').html(
                 '&#128278;&nbsp;All Portals'
             );
         }
@@ -1051,7 +1051,7 @@ function wrapper(plugin_info) {
         // Reset the order – new geometry, new base ordering (ghi#23)
         thisplugin.manualOrderGuids = null;
 
-        $('#plugin_fanfields_clckwsbtn').html(clockwiseWord+'&nbsp;'+clockwiseSymbol+'');
+        $('#plugin_fanfields2_clckwsbtn').html(clockwiseWord+'&nbsp;'+clockwiseSymbol+'');
         thisplugin.delayedUpdateLayer(0.2);
     };
 
@@ -1064,14 +1064,14 @@ function wrapper(plugin_info) {
 
         if (thisplugin.stardirection == thisplugin.starDirENUM.CENTRALIZING) {
             html = "Inbounding";
-            $('#plugin_fanfields_availablesbul').hide();
+            $('#plugin_fanfields2_availablesbul').hide();
         }
         else {
-            $('#plugin_fanfields_availablesbul').show();
+            $('#plugin_fanfields2_availablesbul').show();
         }
 
 
-        $('#plugin_fanfields_stardirbtn').html(html);
+        $('#plugin_fanfields2_stardirbtn').html(html);
         thisplugin.delayedUpdateLayer(0.2);
     };
 
@@ -1080,14 +1080,14 @@ function wrapper(plugin_info) {
     thisplugin.increaseSBUL = function() {
         if (thisplugin.availableSBUL < 4) {
             thisplugin.availableSBUL++;
-            $('#plugin_fanfields_availablesbul_count').html(''+(thisplugin.availableSBUL)+'');
+            $('#plugin_fanfields2_availablesbul_count').html(''+(thisplugin.availableSBUL)+'');
             thisplugin.delayedUpdateLayer(0.2);
         }
     }
     thisplugin.decreaseSBUL = function() {
         if (thisplugin.availableSBUL > 0) {
             thisplugin.availableSBUL--;
-            $('#plugin_fanfields_availablesbul_count').html(''+(thisplugin.availableSBUL)+'');
+            $('#plugin_fanfields2_availablesbul_count').html(''+(thisplugin.availableSBUL)+'');
             thisplugin.delayedUpdateLayer(0.2);
         }
     }
@@ -1097,7 +1097,7 @@ function wrapper(plugin_info) {
         if (L.Browser.mobile) {
             // alert('this is mobile')
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_btn {\n' +
+                                                       '.plugin_fanfields2_btn {\n' +
                                                        '   margin: 2px;\n' +
                                                        '   padding: 5px;\n' +
                                                        '   border: 2px outset #20A8B1;\n' +
@@ -1108,7 +1108,7 @@ function wrapper(plugin_info) {
                                                        '}\n'
                                                       ).appendTo("head");
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_minibtn {\n' +
+                                                       '.plugin_fanfields2_minibtn {\n' +
                                                        '   margin: 2px;\n' +
                                                        '   padding: 5px 20px;\n' +
                                                        '   border: 2px outset #20A8B1;\n' +
@@ -1120,7 +1120,7 @@ function wrapper(plugin_info) {
                                                       ).appendTo("head");
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_multibtn {\n' +
+                                                       '.plugin_fanfields2_multibtn {\n' +
                                                        '   margin-left: 5px;\n' +
                                                        '   padding: 0px; \n' +
                                                        '   border: none;\n' +
@@ -1133,7 +1133,7 @@ function wrapper(plugin_info) {
 
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_toolbox {\n' +
+                                                       '.plugin_fanfields2_toolbox {\n' +
                                                        '   margin: 7px 1px;\n' +
                                                        '   padding: 15px 5px;\n' +
                                                        '   border: 1px solid #ffce00;\n' +
@@ -1147,7 +1147,7 @@ function wrapper(plugin_info) {
 
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_sidebar {\n' +
+                                                       '.plugin_fanfields2_sidebar {\n' +
                                                        '  display: flex;\n' +
                                                        '  flex-direction: row;\n' +
                                                        '  flex-wrap: wrap;\n' +
@@ -1156,7 +1156,7 @@ function wrapper(plugin_info) {
                                                       ).appendTo("head");
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_titlebar {\n' +
+                                                       '.plugin_fanfields2_titlebar {\n' +
                                                        '  background-color: rgba(8, 60, 78, 0.9);\n' +
                                                        '  margin-right: 7px;\n' +
                                                        '  text-align: center;\n' +
@@ -1167,7 +1167,7 @@ function wrapper(plugin_info) {
         else {
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_btn {\n' +
+                                                       '.plugin_fanfields2_btn {\n' +
                                                        '   margin-left:0;\n' +
                                                        '   margin-right:0;\n' +
                                                        '   flex: 0 0 50%;\n' +
@@ -1177,7 +1177,7 @@ function wrapper(plugin_info) {
                                                       ).appendTo("head");
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_minibtn {\n' +
+                                                       '.plugin_fanfields2_minibtn {\n' +
                                                        '   margin-left:0;\n' +
                                                        '   margin-right:0;\n' +
                                                        '   overflow: hidden;\n' +
@@ -1190,7 +1190,7 @@ function wrapper(plugin_info) {
 
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_multibtn {\n' +
+                                                       '.plugin_fanfields2_multibtn {\n' +
                                                        '   margin-left:0;\n' +
                                                        '   margin-right:0;\n' +
                                                        '   flex: 0 0 100%;\n' +
@@ -1205,7 +1205,7 @@ function wrapper(plugin_info) {
 
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_toolbox {\n' +
+                                                       '.plugin_fanfields2_toolbox {\n' +
                                                        '   margin: 5px;\n' +
                                                        '   padding: 3px;\n' +
                                                        '   border: 1px solid #ffce00;\n' +
@@ -1215,7 +1215,7 @@ function wrapper(plugin_info) {
                                                       ).appendTo("head");
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_sidebar {\n' +
+                                                       '.plugin_fanfields2_sidebar {\n' +
                                                        '  display: flex;\n' +
                                                        '  flex-direction: row;\n' +
                                                        '  flex-wrap: wrap;\n' +
@@ -1223,7 +1223,7 @@ function wrapper(plugin_info) {
                                                        '}\n'
                                                       ).appendTo("head");
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_titlebar {\n' +
+                                                       '.plugin_fanfields2_titlebar {\n' +
                                                        '  background-color: rgba(8, 60, 78, 0.9);\n' +
                                                        '  margin-bottom: 7px;\n' +
                                                        '  text-align: center;\n' +
@@ -1232,7 +1232,7 @@ function wrapper(plugin_info) {
 
 
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields_toolbox > span {\n' +
+                                                       '.plugin_fanfields2_toolbox > span {\n' +
                                                        '   float: left;\n' +
                                                        '}\n'
                                                       ).appendTo("head");
@@ -1240,49 +1240,49 @@ function wrapper(plugin_info) {
 
         };
 
-        // plugin_fanfields_availablesbul_label
+        // plugin_fanfields2_availablesbul_label
         $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields_availablesbul_label {\n' +
+                                                   '.plugin_fanfields2_availablesbul_label {\n' +
                                                    '  flex: 0 0 50%;\n' +
                                                    '  display: flex;\n' +
                                                    '  justify-content: center;\n' +
                                                    '}\n').appendTo("head");
 
         $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields_italic {\n' +
+                                                   '.plugin_fanfields2_italic {\n' +
                                                    '  font-style: italic;\n' +
                                                    '}\n').appendTo("head");
 
-        //plugin_fanfields_exportText_LinkDetails
+        //plugin_fanfields2_exportText_LinkDetails
         $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields_exportText_LinkDetails tr td {\n' +
+                                                   '.plugin_fanfields2_exportText_LinkDetails tr td {\n' +
                                                    '  color: #828284;\n' +
                                                    '}\n').appendTo("head");
 
-        //plugin_fanfields_exportText_Portal
+        //plugin_fanfields2_exportText_Portal
         $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields_exportText_Portal tr td {\n' +
+                                                   '.plugin_fanfields2_exportText_Portal tr td {\n' +
                                                    '}\n').appendTo("head");
 
         $("<style>").prop("type", "text/css").html('\n' +
-                                                   '[plugin_fanfields_exportText_toggle="toggle"] {\n' +
+                                                   '[plugin_fanfields2_exportText_toggle="toggle"] {\n' +
                                                    '  display: none; '+
                                                    '}\n').appendTo("head");
 
         $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields_exportText_Label {\n' +
+                                                   '.plugin_fanfields2_exportText_Label {\n' +
                                                    '    cursor: pointer;\n' +
                                                    '    display: inline-block;\n' +
                                                    '    padding-left: 12px;\n' +
                                                    '    padding-right: 3px;\n' +
                                                    '    position: relative;\n' +
                                                    '}\n' +
-                                                   '.plugin_fanfields_exportText_Label.has-children::before {\n' +
+                                                   '.plugin_fanfields2_exportText_Label.has-children::before {\n' +
                                                    '    content: "\\25B9";\n /* (▹) */\n' +
                                                    '    position: absolute;\n' +
                                                    '    left: 0;\n' +
                                                    '}\n' +
-                                                   '.plugin_fanfields_exportText_Label.has-children[aria-expanded="true"]::before {\n' +
+                                                   '.plugin_fanfields2_exportText_Label.has-children[aria-expanded="true"]::before {\n' +
                                                    '    content: "\\25BF";\n /* (▿) */\n' +
                                                    '}\n'
                                                   ).appendTo("head");
@@ -1308,10 +1308,10 @@ function wrapper(plugin_info) {
 
         if (window.plugin.keys || window.plugin.LiveInventory) {
             $("<style>").prop("type", "text/css").html('\n' +
-                                                       'td[plugin_fanfields_enoughKeys], div[plugin_fanfields_enoughKeys] {\n' +
+                                                       'td[plugin_fanfields2_enoughKeys], div[plugin_fanfields2_enoughKeys] {\n' +
                                                        '   color: #828284;\n' +
                                                        '}\n' +
-                                                       'td[plugin_fanfields_notEnoughKeys] {\n' +
+                                                       'td[plugin_fanfields2_notEnoughKeys] {\n' +
                                                        '    /* color: #FFBBBB; */ \n' +
                                                        '}\n' +
                                                        ''
@@ -1322,31 +1322,31 @@ function wrapper(plugin_info) {
 
         // Manage-Order-Dialog (ghi#23)
         $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields_order_table {\n' +
+                                                   '.plugin_fanfields2_order_table {\n' +
                                                    '  width: 100%;\n' +
                                                    '  border-collapse: collapse;\n' +
                                                    '  font-size: 11px;\n' +
                                                    '}\n' +
-                                                   '.plugin_fanfields_order_table th,\n' +
-                                                   '.plugin_fanfields_order_table td {\n' +
+                                                   '.plugin_fanfields2_order_table th,\n' +
+                                                   '.plugin_fanfields2_order_table td {\n' +
                                                    '  border: 1px solid #555;\n' +
                                                    '  padding: 2px 4px;\n' +
                                                    '}\n' +
-                                                   '.plugin_fanfields_order_table tbody tr.plugin_fanfields_order_row {\n' +
+                                                   '.plugin_fanfields2_order_table tbody tr.plugin_fanfields2_order_row {\n' +
                                                    '  cursor: move;\n' +
                                                    '}\n' +
-                                                   '.plugin_fanfields_order_table tbody tr.plugin_fanfields_order_row:hover {\n' +
+                                                   '.plugin_fanfields2_order_table tbody tr.plugin_fanfields2_order_row:hover {\n' +
                                                    '  background-color: rgba(255, 206, 0, 0.08);\n' +
                                                    '}\n' +
-                                                   '.plugin_fanfields_order_anchor {\n' +
+                                                   '.plugin_fanfields2_order_anchor {\n' +
                                                    '  font-weight: bold;\n' +
                                                    '  background-color: rgba(8, 60, 78, 0.6);\n' +
                                                    '}\n' +
-                                                   '.plugin_fanfields_order_handle {\n' +
+                                                   '.plugin_fanfields2_order_handle {\n' +
                                                    '  font-family: monospace;\n' +
                                                    '  padding-right: 4px;\n' +
                                                    '}\n' +
-                                                   '.plugin_fanfields_order_hint {\n' +
+                                                   '.plugin_fanfields2_order_hint {\n' +
                                                    '  margin-top: 5px;\n' +
                                                    '  font-size: 10px;\n' +
                                                    '  color: #ccc;\n' +
@@ -1354,12 +1354,12 @@ function wrapper(plugin_info) {
                                                   ).appendTo("head");
 
         $("<style>").prop("type", "text/css").html('\n' +
-                                                   '#plugin_fanfields_order_dialog button[disabled] {\n' +
+                                                   '#plugin_fanfields2_order_dialog button[disabled] {\n' +
                                                    '  opacity: 0.3;\n' +
                                                    '  cursor: default;\n' +
                                                    '  color: #ccc;\n' +
                                                    '}\n' +
-                                                   '#plugin_fanfields_order_dialog button:not([disabled]) {\n' +
+                                                   '#plugin_fanfields2_order_dialog button:not([disabled]) {\n' +
                                                    '  cursor: pointer;\n' +
                                                    '}\n'
                                                   ).appendTo("head");
@@ -2557,16 +2557,16 @@ function wrapper(plugin_info) {
         var buttonBookmarksOnly = '';
         if(typeof window.plugin.bookmarks != 'undefined') {
             // Write Bookmarks
-            buttonBookmarks = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.saveBookmarks();" title="Create New Portal Potential Future">Write&nbsp;Bookmarks</a> ';
+            buttonBookmarks = '<a class="plugin_fanfields2_btn" onclick="window.plugin.fanfields.saveBookmarks();" title="Create New Portal Potential Future">Write&nbsp;Bookmarks</a> ';
 
             // Only Use Bookmarked Portals
-            buttonBookmarksOnly = '<a class="plugin_fanfields_btn" id="plugin_fanfields_bookarks_only_btn" onclick="window.plugin.fanfields.useBookmarksOnly();" title="Help Enlightened Strong Victory">&#128278;&nbsp;All Portals</a> ';
+            buttonBookmarksOnly = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_bookarks_only_btn" onclick="window.plugin.fanfields.useBookmarksOnly();" title="Help Enlightened Strong Victory">&#128278;&nbsp;All Portals</a> ';
         }
         // Show as list
-        var buttonPortalList = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.exportText();" title="OpenAll Link Create Star">Show&nbsp;as&nbsp;list</a> ';
+        var buttonPortalList = '<a class="plugin_fanfields2_btn" onclick="window.plugin.fanfields.exportText();" title="OpenAll Link Create Star">Show&nbsp;as&nbsp;list</a> ';
 
         // Manage order
-        var buttonManageOrder = '<a class="plugin_fanfields_btn" id="plugin_fanfields_manageorderbtn" onclick="window.plugin.fanfields.showManageOrderDialog();" title="Manage visiting order of fanfield portals">Manage&nbsp;order</a> ';
+        var buttonManageOrder = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_manageorderbtn" onclick="window.plugin.fanfields.showManageOrderDialog();" title="Manage visiting order of fanfield portals">Manage&nbsp;order</a> ';
 
 
 
@@ -2590,46 +2590,46 @@ function wrapper(plugin_info) {
         var symbol_inc = symbol_right;
         var symbol_dec = symbol_left;
 
-        //var button5 = '<a class="plugin_fanfields_btn" id="plugin_fanfields_resetbtn" onclick="window.plugin.fanfields.reset();">Reset</a> ';
-        var buttonClockwise = '<a class="plugin_fanfields_btn" id="plugin_fanfields_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();" title="Begin Journey Breathe XM ">Clockwise&nbsp;'+symbol_clockwise+'</a> ';
-        var buttonLock = '<a class="plugin_fanfields_btn" id="plugin_fanfields_lockbtn" onclick="window.plugin.fanfields.lock();" title="Avoid XM Message Lie">&#128275;&nbsp;Unlocked</a> ';
+        //var button5 = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_resetbtn" onclick="window.plugin.fanfields.reset();">Reset</a> ';
+        var buttonClockwise = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();" title="Begin Journey Breathe XM ">Clockwise&nbsp;'+symbol_clockwise+'</a> ';
+        var buttonLock = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_lockbtn" onclick="window.plugin.fanfields.lock();" title="Avoid XM Message Lie">&#128275;&nbsp;Unlocked</a> ';
 
-        var buttonStarDirection = '<a class="plugin_fanfields_btn" id="plugin_fanfields_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();" title="Change Perspective Technology">Inbounding</a> ';
+        var buttonStarDirection = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();" title="Change Perspective Technology">Inbounding</a> ';
         // Available SBUL
         var buttonSBUL =
-            '<span id="plugin_fanfields_availablesbul" class="plugin_fanfields_multibtn" style="display: none;">' +
-            '    <span class="plugin_fanfields_availablesbul_label">Available&nbsp;SBUL:</span>' +
-            '    <span class="plugin_fanfields_multibtn" style="flex: 50%">' +
-            '        <a id="plugin_fanfields_inscsbulbtn" class="plugin_fanfields_minibtn" onclick="window.plugin.fanfields.decreaseSBUL();" >'+symbol_dec+'</a>' +
-            '        <span id="plugin_fanfields_availablesbul_count" class="plugin_fanfields_minibtn">'+(thisplugin.availableSBUL)+'</span>' +
-            '        <a id="plugin_fanfields_decsbulbtn" class="plugin_fanfields_minibtn" onclick="window.plugin.fanfields.increaseSBUL();">'+symbol_inc+'</a>' +
+            '<span id="plugin_fanfields2_availablesbul" class="plugin_fanfields2_multibtn" style="display: none;">' +
+            '    <span class="plugin_fanfields2_availablesbul_label">Available&nbsp;SBUL:</span>' +
+            '    <span class="plugin_fanfields2_multibtn" style="flex: 50%">' +
+            '        <a id="plugin_fanfields2_inscsbulbtn" class="plugin_fanfields2_minibtn" onclick="window.plugin.fanfields.decreaseSBUL();" >'+symbol_dec+'</a>' +
+            '        <span id="plugin_fanfields2_availablesbul_count" class="plugin_fanfields2_minibtn">'+(thisplugin.availableSBUL)+'</span>' +
+            '        <a id="plugin_fanfields2_decsbulbtn" class="plugin_fanfields2_minibtn" onclick="window.plugin.fanfields.increaseSBUL();">'+symbol_inc+'</a>' +
             '    </span>' +
             '</span>';
 
         // Respect Intel
-        var buttonRespect = '<a class="plugin_fanfields_btn" id="plugin_fanfields_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();" title="Question Conflict Data">Respect&nbsp;Intel:&nbsp;OFF</a> ';
+        var buttonRespect = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();" title="Question Conflict Data">Respect&nbsp;Intel:&nbsp;OFF</a> ';
 
         // Show link dir
-        var buttonLinkDirectionIndicator = '<a class="plugin_fanfields_btn" id="plugin_fanfields_direction_indicator_btn" onclick="window.plugin.fanfields.toggleLinkDirIndicator();" title="Technology Intelligence See All">Show&nbsp;link&nbsp;dir:&nbsp;ON</a> ';
+        var buttonLinkDirectionIndicator = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_direction_indicator_btn" onclick="window.plugin.fanfields.toggleLinkDirIndicator();" title="Technology Intelligence See All">Show&nbsp;link&nbsp;dir:&nbsp;ON</a> ';
 
         // Shift anchor
-        var buttonShiftAnchor = '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.previousStartingPoint();" title="Less Chaos More Stability">Shift&nbsp;left&nbsp;'+symbol_counterclockwise+'</a>'+ // clockwise &#8635;
-            '<a class="plugin_fanfields_btn" onclick="window.plugin.fanfields.nextStartingPoint();" title="Restraint Path Gain Harmony">Shift&nbsp;right&nbsp;'+symbol_clockwise+'</a>';
+        var buttonShiftAnchor = '<a class="plugin_fanfields2_btn" onclick="window.plugin.fanfields.previousStartingPoint();" title="Less Chaos More Stability">Shift&nbsp;left&nbsp;'+symbol_counterclockwise+'</a>'+ // clockwise &#8635;
+            '<a class="plugin_fanfields2_btn" onclick="window.plugin.fanfields.nextStartingPoint();" title="Restraint Path Gain Harmony">Shift&nbsp;right&nbsp;'+symbol_clockwise+'</a>';
 
-        var buttonStats = '<a class="plugin_fanfields_btn" id="plugin_fanfields_statsbtn" onclick="window.plugin.fanfields.showStatistics();" title="See Truth Now">Stats</a> ';
+        var buttonStats = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_statsbtn" onclick="window.plugin.fanfields.showStatistics();" title="See Truth Now">Stats</a> ';
 
         // Write Drawtools
-        var buttonDrawTools = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();" title="Help Shapers Create Future">Write&nbsp;DrawTools</a> ';
+        var buttonDrawTools = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();" title="Help Shapers Create Future">Write&nbsp;DrawTools</a> ';
 
         // Write Arcs
         var buttonArcs = ''
         if(typeof window.plugin.arcs != 'undefined' && window.PLAYER.team === 'ENLIGHTENED') {
-            buttonArcs = '<a class="plugin_fanfields_btn" id="plugin_fanfields_exportArcsBtn" onclick="window.plugin.fanfields.exportArcs();" title="Field Together Improve Human Mind">Write&nbsp;Arcs</a> ';
+            buttonArcs = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_exportArcsBtn" onclick="window.plugin.fanfields.exportArcs();" title="Field Together Improve Human Mind">Write&nbsp;Arcs</a> ';
         };
 
-        var buttonHelp = '<a class="plugin_fanfields_btn" id="plugin_fanfields_helpbtn" onclick="window.plugin.fanfields.help();" title="Help" >Help</a> ';
+        var buttonHelp = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_helpbtn" onclick="window.plugin.fanfields.help();" title="Help" >Help</a> ';
 
-        var fanfields_buttons = '<span class="plugin_fanfields_multibtn plugin_fanfields_titlebar">Fanfields 2</span>';
+        var fanfields_buttons = '<span class="plugin_fanfields2_multibtn plugin_fanfields2_titlebar">Fanfields 2</span>';
 
         fanfields_buttons +=
             buttonShiftAnchor +
@@ -2649,7 +2649,7 @@ function wrapper(plugin_info) {
             buttonHelp
         ;
 
-        $('#sidebar').append('<div id="fanfields2" class="plugin_fanfields_sidebar"></div>');
+        $('#sidebar').append('<div id="fanfields2" class="plugin_fanfields2_sidebar"></div>');
 
         thisplugin.addFfButtons();
 
@@ -2661,7 +2661,7 @@ function wrapper(plugin_info) {
 
             dialog({
                 html: '<b>Fan Fields 2</b><p>Fan Fields 2 requires the IITC Drawtools plugin</p><a href="https://iitc.app/download_desktop#draw-tools-by-breunigs">Download here</a>',
-                id: 'plugin_fanfields_alert_dependencies',
+                id: 'plugin_fanfields2_alert_dependencies',
                 title: 'Fan Fields - Missing dependency',
                 width: width
             });
