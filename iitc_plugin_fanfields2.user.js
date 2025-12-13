@@ -42,11 +42,12 @@ function wrapper(plugin_info) {
     // ensure plugin framework is there, even if iitc is not yet loaded
     if(typeof window.plugin !== 'function') window.plugin = function() {};
     plugin_info.buildName = 'main';
-    plugin_info.dateTimeVersion = '2025-12-10-030842';
+    plugin_info.dateTimeVersion = '2025-12-13-201142';
     plugin_info.pluginId = 'fanfields';
 
-    /* global L -- eslint */
-    /* exported setup, changelog --eslint */
+    /* global L, $, dialog, map, portals, links, plugin, formatDistance  -- eslint*/
+    /* exported setup, changelog -- eslint */
+
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
         {
@@ -659,17 +660,21 @@ function wrapper(plugin_info) {
 
         thisplugin.sortedFanpoints.forEach(function(portal, index) {
 
-            var p, title, lat, lng;
+            var p, lat, lng;
             var latlng = map.unproject(portal.point, thisplugin.PROJECT_ZOOM);
             lat = Math.round(latlng.lat * 10000000) / 10000000
             lng = Math.round(latlng.lng * 10000000) / 10000000
             gmnav+=`${lat},${lng}/`;
             p = portal.portal;
             // window.portals[portal.guid];
-            title = "unknown title";
-            if (p !== undefined) {
-                title = p.options.data.title;
+
+            let rawTitle = "unknown title";
+            if (p !== undefined && p.options && p.options.data && p.options.data.title) {
+                rawTitle = p.options.data.title;
             }
+
+            let title = window.escapeHtmlSpecialChars(rawTitle);
+            let uriTitle = encodeURIComponent(rawTitle);
 
             let availableKeysText = '';
             let availableKeys = 0;
@@ -714,8 +719,7 @@ function wrapper(plugin_info) {
 
 
             // Portal Name
-            // text+='<td>'+ title + '</td>';
-            let uriTitle=encodeURIComponent(title);
+
             text+='<td>';
             text+=`  <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&query_destination_id=(${uriTitle})" target="_blank">${title}</a>`;
             text+='</td>';
@@ -907,8 +911,6 @@ function wrapper(plugin_info) {
                 $(this).addClass('plugin_fanfields2_order_dragging');
 
                 orderDirty = true;
-                // $('#plugin_fanfields2_order_reset').prop('disabled', false);
-                // $('#plugin_fanfields2_order_apply').prop('disabled', false);
 
                 if (that.showOrderPath) {
                     that.setOrderPathActive(false);
@@ -941,9 +943,6 @@ function wrapper(plugin_info) {
                 that.updateLayer();
 
                 orderDirty = false;
-                // $('#plugin_fanfields2_order_reset').prop('disabled', true);
-                // $('#plugin_fanfields2_order_apply').prop('disabled', true);
-
 
                 // Refresh the dialog table (replace content only)
                 $('#plugin_fanfields2_order_dialog_inner').html(buildTableHTML());
@@ -1043,10 +1042,14 @@ function wrapper(plugin_info) {
     thisplugin.toggleclockwise = function() {
         thisplugin.is_clockwise = !thisplugin.is_clockwise;
         var clockwiseSymbol="", clockwiseWord="";
-        if (thisplugin.is_clockwise)
-            clockwiseSymbol = "&#8635;", clockwiseWord = "Clockwise";
-        else
-            clockwiseSymbol = "&#8634;", clockwiseWord = "Counterclockwise";
+        if (thisplugin.is_clockwise) {
+            clockwiseSymbol = "&#8635;"
+            clockwiseWord = "Clockwise";
+        }
+        else {
+            clockwiseSymbol = "&#8634;"
+            clockwiseWord = "Counterclockwise";
+        }
 
         // Reset the order – new geometry, new base ordering (ghi#23)
         thisplugin.manualOrderGuids = null;
@@ -1094,280 +1097,296 @@ function wrapper(plugin_info) {
 
 
     thisplugin.setupCSS = function() {
+
+        // Collect CSS in one place and inject/update a single <style> tag
+        var cssParts = [];
+        function addCSS(s) { cssParts.push(s); }
+
+
         if (L.Browser.mobile) {
             // alert('this is mobile')
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_btn {\n' +
-                                                       '   margin: 2px;\n' +
-                                                       '   padding: 5px;\n' +
-                                                       '   border: 2px outset #20A8B1;\n' +
-                                                       '   flex: auto;\n' +
-                                                       '   display: flex;\n' +
-                                                       '   justify-content: center;\n' +
-                                                       '   align-items: center;\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_minibtn {\n' +
-                                                       '   margin: 2px;\n' +
-                                                       '   padding: 5px 20px;\n' +
-                                                       '   border: 2px outset #20A8B1;\n' +
-                                                       '   flex: auto;\n' +
-                                                       '   display: flex;\n' +
-                                                       '   justify-content: center;\n' +
-                                                       '   align-items: center;\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
+            addCSS('\n' +
+                   '.plugin_fanfields2_btn {\n' +
+                   '   margin: 2px;\n' +
+                   '   padding: 5px;\n' +
+                   '   border: 2px outset #20A8B1;\n' +
+                   '   flex: auto;\n' +
+                   '   display: flex;\n' +
+                   '   justify-content: center;\n' +
+                   '   align-items: center;\n' +
+                   '}\n'
+                  );
+            addCSS('\n' +
+                   '.plugin_fanfields2_minibtn {\n' +
+                   '   margin: 2px;\n' +
+                   '   padding: 5px 20px;\n' +
+                   '   border: 2px outset #20A8B1;\n' +
+                   '   flex: auto;\n' +
+                   '   display: flex;\n' +
+                   '   justify-content: center;\n' +
+                   '   align-items: center;\n' +
+                   '}\n'
+                  );
 
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_multibtn {\n' +
-                                                       '   margin-left: 5px;\n' +
-                                                       '   padding: 0px; \n' +
-                                                       '   border: none;\n' +
-                                                       '   display: flex;\n' +
-                                                       '   justify-content: center;\n' +
-                                                       '   align-items: center;\n' +
-                                                       '   flex-direction: row;\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
-
-
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_toolbox {\n' +
-                                                       '   margin: 7px 1px;\n' +
-                                                       '   padding: 15px 5px;\n' +
-                                                       '   border: 1px solid #ffce00;\n' +
-                                                       '   box-shadow: 3px 3px 5px black;\n' +
-                                                       '   color: #ffce00;\n' +
-                                                       '   display: flex;\n' +
-                                                       '   flex-direction: column;\n' +
-                                                       '   flex-basis: 50%;\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
+            addCSS('\n' +
+                   '.plugin_fanfields2_multibtn {\n' +
+                   '   margin-left: 5px;\n' +
+                   '   padding: 0px; \n' +
+                   '   border: none;\n' +
+                   '   display: flex;\n' +
+                   '   justify-content: center;\n' +
+                   '   align-items: center;\n' +
+                   '   flex-direction: row;\n' +
+                   '}\n'
+                  );
 
 
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_sidebar {\n' +
-                                                       '  display: flex;\n' +
-                                                       '  flex-direction: row;\n' +
-                                                       '  flex-wrap: wrap;\n' +
-                                                       '  padding: 5px;' +
-                                                       '}\n'
-                                                      ).appendTo("head");
+            addCSS('\n' +
+                   '.plugin_fanfields2_toolbox {\n' +
+                   '   margin: 7px 1px;\n' +
+                   '   padding: 15px 5px;\n' +
+                   '   border: 1px solid #ffce00;\n' +
+                   '   box-shadow: 3px 3px 5px black;\n' +
+                   '   color: #ffce00;\n' +
+                   '   display: flex;\n' +
+                   '   flex-direction: column;\n' +
+                   '   flex-basis: 50%;\n' +
+                   '}\n'
+                  );
 
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_titlebar {\n' +
-                                                       '  background-color: rgba(8, 60, 78, 0.9);\n' +
-                                                       '  margin-right: 7px;\n' +
-                                                       '  text-align: center;\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
+
+            addCSS('\n' +
+                   '.plugin_fanfields2_sidebar {\n' +
+                   '  display: flex;\n' +
+                   '  flex-direction: row;\n' +
+                   '  flex-wrap: wrap;\n' +
+                   '  padding: 5px;' +
+                   '}\n'
+                  );
+
+            addCSS('\n' +
+                   '.plugin_fanfields2_titlebar {\n' +
+                   '  background-color: rgba(8, 60, 78, 0.9);\n' +
+                   '  margin-right: 7px;\n' +
+                   '  text-align: center;\n' +
+                   '}\n'
+                  );
 
         }
         else {
 
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_btn {\n' +
-                                                       '   margin-left:0;\n' +
-                                                       '   margin-right:0;\n' +
-                                                       '   flex: 0 0 50%;\n' +
-                                                       '   overflow: hidden;\n' +
-                                                       '   text-overflow: ellipsis;\n' +
-                                                       '}'
-                                                      ).appendTo("head");
+            addCSS('\n' +
+                   '.plugin_fanfields2_btn {\n' +
+                   '   margin-left:0;\n' +
+                   '   margin-right:0;\n' +
+                   '   flex: 0 0 50%;\n' +
+                   '   overflow: hidden;\n' +
+                   '   text-overflow: ellipsis;\n' +
+                   '}'
+                  );
 
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_minibtn {\n' +
-                                                       '   margin-left:0;\n' +
-                                                       '   margin-right:0;\n' +
-                                                       '   overflow: hidden;\n' +
-                                                       '   text-overflow: ellipsis;\n' +
-                                                       '   display: flex;\n' +
-                                                       '   justify-content: center;\n' +
-                                                       '   align-items: center;\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
-
-
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_multibtn {\n' +
-                                                       '   margin-left:0;\n' +
-                                                       '   margin-right:0;\n' +
-                                                       '   flex: 0 0 100%;\n' +
-                                                       '   align-items: center;\n' +
-                                                       '   display: flex;\n' +
-                                                       '   flex-direction: row;\n' +
-                                                       '   justify-content: space-evenly;\n' +
-                                                       '   overflow: hidden;\n' +
-                                                       '   text-overflow: ellipsis;\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
+            addCSS('\n' +
+                   '.plugin_fanfields2_minibtn {\n' +
+                   '   margin-left:0;\n' +
+                   '   margin-right:0;\n' +
+                   '   overflow: hidden;\n' +
+                   '   text-overflow: ellipsis;\n' +
+                   '   display: flex;\n' +
+                   '   justify-content: center;\n' +
+                   '   align-items: center;\n' +
+                   '}\n'
+                  );
 
 
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_toolbox {\n' +
-                                                       '   margin: 5px;\n' +
-                                                       '   padding: 3px;\n' +
-                                                       '   border: 1px solid #ffce00;\n' +
-                                                       '   box-shadow: 3px 3px 5px black;\n' +
-                                                       '   color: #ffce00;' +
-                                                       '}\n'
-                                                      ).appendTo("head");
-
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_sidebar {\n' +
-                                                       '  display: flex;\n' +
-                                                       '  flex-direction: row;\n' +
-                                                       '  flex-wrap: wrap;\n' +
-                                                       '  padding: 5px;' +
-                                                       '}\n'
-                                                      ).appendTo("head");
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_titlebar {\n' +
-                                                       '  background-color: rgba(8, 60, 78, 0.9);\n' +
-                                                       '  margin-bottom: 7px;\n' +
-                                                       '  text-align: center;\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
+            addCSS('\n' +
+                   '.plugin_fanfields2_multibtn {\n' +
+                   '   margin-left:0;\n' +
+                   '   margin-right:0;\n' +
+                   '   flex: 0 0 100%;\n' +
+                   '   align-items: center;\n' +
+                   '   display: flex;\n' +
+                   '   flex-direction: row;\n' +
+                   '   justify-content: space-evenly;\n' +
+                   '   overflow: hidden;\n' +
+                   '   text-overflow: ellipsis;\n' +
+                   '}\n'
+                  );
 
 
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       '.plugin_fanfields2_toolbox > span {\n' +
-                                                       '   float: left;\n' +
-                                                       '}\n'
-                                                      ).appendTo("head");
+            addCSS('\n' +
+                   '.plugin_fanfields2_toolbox {\n' +
+                   '   margin: 5px;\n' +
+                   '   padding: 3px;\n' +
+                   '   border: 1px solid #ffce00;\n' +
+                   '   box-shadow: 3px 3px 5px black;\n' +
+                   '   color: #ffce00;' +
+                   '}\n'
+                  );
+
+            addCSS('\n' +
+                   '.plugin_fanfields2_sidebar {\n' +
+                   '  display: flex;\n' +
+                   '  flex-direction: row;\n' +
+                   '  flex-wrap: wrap;\n' +
+                   '  padding: 5px;' +
+                   '}\n'
+                  );
+            addCSS('\n' +
+                   '.plugin_fanfields2_titlebar {\n' +
+                   '  background-color: rgba(8, 60, 78, 0.9);\n' +
+                   '  margin-bottom: 7px;\n' +
+                   '  text-align: center;\n' +
+                   '}\n'
+                  );
+
+
+            addCSS('\n' +
+                   '.plugin_fanfields2_toolbox > span {\n' +
+                   '   float: left;\n' +
+                   '}\n'
+                  );
 
 
         };
 
         // plugin_fanfields2_availablesbul_label
-        $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields2_availablesbul_label {\n' +
-                                                   '  flex: 0 0 50%;\n' +
-                                                   '  display: flex;\n' +
-                                                   '  justify-content: center;\n' +
-                                                   '}\n').appendTo("head");
+        addCSS('\n' +
+               '.plugin_fanfields2_availablesbul_label {\n' +
+               '  flex: 0 0 50%;\n' +
+               '  display: flex;\n' +
+               '  justify-content: center;\n' +
+               '}\n');
 
-        $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields2_italic {\n' +
-                                                   '  font-style: italic;\n' +
-                                                   '}\n').appendTo("head");
+        addCSS('\n' +
+               '.plugin_fanfields2_italic {\n' +
+               '  font-style: italic;\n' +
+               '}\n');
 
         //plugin_fanfields2_exportText_LinkDetails
-        $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields2_exportText_LinkDetails tr td {\n' +
-                                                   '  color: #828284;\n' +
-                                                   '}\n').appendTo("head");
+        addCSS('\n' +
+               '.plugin_fanfields2_exportText_LinkDetails tr td {\n' +
+               '  color: #828284;\n' +
+               '}\n');
 
         //plugin_fanfields2_exportText_Portal
-        $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields2_exportText_Portal tr td {\n' +
-                                                   '}\n').appendTo("head");
+        addCSS('\n' +
+               '.plugin_fanfields2_exportText_Portal tr td {\n' +
+               '}\n');
 
-        $("<style>").prop("type", "text/css").html('\n' +
-                                                   '[plugin_fanfields2_exportText_toggle="toggle"] {\n' +
-                                                   '  display: none; '+
-                                                   '}\n').appendTo("head");
+        addCSS('\n' +
+               '[plugin_fanfields2_exportText_toggle="toggle"] {\n' +
+               '  display: none; '+
+               '}\n');
 
-        $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields2_exportText_Label {\n' +
-                                                   '    cursor: pointer;\n' +
-                                                   '    display: inline-block;\n' +
-                                                   '    padding-left: 12px;\n' +
-                                                   '    padding-right: 3px;\n' +
-                                                   '    position: relative;\n' +
-                                                   '}\n' +
-                                                   '.plugin_fanfields2_exportText_Label.has-children::before {\n' +
-                                                   '    content: "\\25B9";\n /* (▹) */\n' +
-                                                   '    position: absolute;\n' +
-                                                   '    left: 0;\n' +
-                                                   '}\n' +
-                                                   '.plugin_fanfields2_exportText_Label.has-children[aria-expanded="true"]::before {\n' +
-                                                   '    content: "\\25BF";\n /* (▿) */\n' +
-                                                   '}\n'
-                                                  ).appendTo("head");
+        addCSS('\n' +
+               '.plugin_fanfields2_exportText_Label {\n' +
+               '    cursor: pointer;\n' +
+               '    display: inline-block;\n' +
+               '    padding-left: 12px;\n' +
+               '    padding-right: 3px;\n' +
+               '    position: relative;\n' +
+               '}\n' +
+               '.plugin_fanfields2_exportText_Label.has-children::before {\n' +
+               '    content: "\\25B9";\n /* (▹) */\n' +
+               '    position: absolute;\n' +
+               '    left: 0;\n' +
+               '}\n' +
+               '.plugin_fanfields2_exportText_Label.has-children[aria-expanded="true"]::before {\n' +
+               '    content: "\\25BF";\n /* (▿) */\n' +
+               '}\n'
+              );
 
 
-        $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields {\n' +
-                                                   '   color: #FFFFBB;\n' +
-                                                   '   font-size: 11px;\n'+
-                                                   '   line-height: 13px;\n' +
-                                                   '   text-align: left;\n'+
-                                                   '   vertical-align: bottom;\n'+
-                                                   '   padding: 2px;\n' +
-                                                   '   padding-top: 15px;\n' +
-                                                   '   overflow: hidden;\n' +
-                                                   '   text-shadow: 1px 1px #000, 1px -1px #000, -1px 1px #000, -1px -1px #000, 0 0 5px #000;\n' +
-                                                   '   pointer-events: none;\n' +
-                                                   '   width: ' + thisplugin.LABEL_WIDTH + 'px;\n'+
-                                                   '   height: '+ thisplugin.LABEL_HEIGHT + 'px;\n'+
-                                                   '   border-left-color:red; border-left-style: dotted; border-left-width: thin;\n'+
-                                                   '}\n'
-                                                  ).appendTo("head");
+        addCSS('\n' +
+               '.plugin_fanfields {\n' +
+               '   color: #FFFFBB;\n' +
+               '   font-size: 11px;\n'+
+               '   line-height: 13px;\n' +
+               '   text-align: left;\n'+
+               '   vertical-align: bottom;\n'+
+               '   padding: 2px;\n' +
+               '   padding-top: 15px;\n' +
+               '   overflow: hidden;\n' +
+               '   text-shadow: 1px 1px #000, 1px -1px #000, -1px 1px #000, -1px -1px #000, 0 0 5px #000;\n' +
+               '   pointer-events: none;\n' +
+               '   width: ' + thisplugin.LABEL_WIDTH + 'px;\n'+
+               '   height: '+ thisplugin.LABEL_HEIGHT + 'px;\n'+
+               '   border-left-color:red; border-left-style: dotted; border-left-width: thin;\n'+
+               '}\n'
+              );
 
         if (window.plugin.keys || window.plugin.LiveInventory) {
-            $("<style>").prop("type", "text/css").html('\n' +
-                                                       'td[plugin_fanfields2_enoughKeys], div[plugin_fanfields2_enoughKeys] {\n' +
-                                                       '   color: #828284;\n' +
-                                                       '}\n' +
-                                                       'td[plugin_fanfields2_notEnoughKeys] {\n' +
-                                                       '    /* color: #FFBBBB; */ \n' +
-                                                       '}\n' +
-                                                       ''
-                                                      ).appendTo("head");
+            addCSS('\n' +
+                   'td[plugin_fanfields2_enoughKeys], div[plugin_fanfields2_enoughKeys] {\n' +
+                   '   color: #828284;\n' +
+                   '}\n' +
+                   'td[plugin_fanfields2_notEnoughKeys] {\n' +
+                   '    /* color: #FFBBBB; */ \n' +
+                   '}\n' +
+                   ''
+                  );
         };
 
 
 
         // Manage-Order-Dialog (ghi#23)
-        $("<style>").prop("type", "text/css").html('\n' +
-                                                   '.plugin_fanfields2_order_table {\n' +
-                                                   '  width: 100%;\n' +
-                                                   '  border-collapse: collapse;\n' +
-                                                   '  font-size: 11px;\n' +
-                                                   '}\n' +
-                                                   '.plugin_fanfields2_order_table th,\n' +
-                                                   '.plugin_fanfields2_order_table td {\n' +
-                                                   '  border: 1px solid #555;\n' +
-                                                   '  padding: 2px 4px;\n' +
-                                                   '}\n' +
-                                                   '.plugin_fanfields2_order_table tbody tr.plugin_fanfields2_order_row {\n' +
-                                                   '  cursor: move;\n' +
-                                                   '}\n' +
-                                                   '.plugin_fanfields2_order_table tbody tr.plugin_fanfields2_order_row:hover {\n' +
-                                                   '  background-color: rgba(255, 206, 0, 0.08);\n' +
-                                                   '}\n' +
-                                                   '.plugin_fanfields2_order_anchor {\n' +
-                                                   '  font-weight: bold;\n' +
-                                                   '  background-color: rgba(8, 60, 78, 0.6);\n' +
-                                                   '}\n' +
-                                                   '.plugin_fanfields2_order_handle {\n' +
-                                                   '  font-family: monospace;\n' +
-                                                   '  padding-right: 4px;\n' +
-                                                   '}\n' +
-                                                   '.plugin_fanfields2_order_hint {\n' +
-                                                   '  margin-top: 5px;\n' +
-                                                   '  font-size: 10px;\n' +
-                                                   '  color: #ccc;\n' +
-                                                   '}\n'
-                                                  ).appendTo("head");
+        addCSS('\n' +
+               '.plugin_fanfields2_order_table {\n' +
+               '  width: 100%;\n' +
+               '  border-collapse: collapse;\n' +
+               '  font-size: 11px;\n' +
+               '}\n' +
+               '.plugin_fanfields2_order_table th,\n' +
+               '.plugin_fanfields2_order_table td {\n' +
+               '  border: 1px solid #555;\n' +
+               '  padding: 2px 4px;\n' +
+               '}\n' +
+               '.plugin_fanfields2_order_table tbody tr.plugin_fanfields2_order_row {\n' +
+               '  cursor: move;\n' +
+               '}\n' +
+               '.plugin_fanfields2_order_table tbody tr.plugin_fanfields2_order_row:hover {\n' +
+               '  background-color: rgba(255, 206, 0, 0.08);\n' +
+               '}\n' +
+               '.plugin_fanfields2_order_anchor {\n' +
+               '  font-weight: bold;\n' +
+               '  background-color: rgba(8, 60, 78, 0.6);\n' +
+               '}\n' +
+               '.plugin_fanfields2_order_handle {\n' +
+               '  font-family: monospace;\n' +
+               '  padding-right: 4px;\n' +
+               '}\n' +
+               '.plugin_fanfields2_order_hint {\n' +
+               '  margin-top: 5px;\n' +
+               '  font-size: 10px;\n' +
+               '  color: #ccc;\n' +
+               '}\n'
+              );
 
-        $("<style>").prop("type", "text/css").html('\n' +
-                                                   '#plugin_fanfields2_order_dialog button[disabled] {\n' +
-                                                   '  opacity: 0.3;\n' +
-                                                   '  cursor: default;\n' +
-                                                   '  color: #ccc;\n' +
-                                                   '}\n' +
-                                                   '#plugin_fanfields2_order_dialog button:not([disabled]) {\n' +
-                                                   '  cursor: pointer;\n' +
-                                                   '}\n'
-                                                  ).appendTo("head");
+        addCSS('\n' +
+               '#plugin_fanfields2_order_dialog button[disabled] {\n' +
+               '  opacity: 0.3;\n' +
+               '  cursor: default;\n' +
+               '  color: #ccc;\n' +
+               '}\n' +
+               '#plugin_fanfields2_order_dialog button:not([disabled]) {\n' +
+               '  cursor: pointer;\n' +
+               '}\n'
+              );
 
+        // Inject/update a single style tag
+        var style = document.getElementById('plugin_fanfields2_css');
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'plugin_fanfields2_css';
+            style.type = 'text/css';
+            (document.head || document.documentElement).appendChild(style);
+        }
+        style.textContent = cssParts.join('\n');
 
 
     };
 
+    /*
     thisplugin.getThirds = function(list, a,b) {
         var i,k;
         var linksOnA = [], linksOnB = [], result = [];
@@ -1381,14 +1400,54 @@ function wrapper(plugin_info) {
         }
         for (i in linksOnA) {
             for (k in linksOnB) {
-                if (linksOnA[i].a.equals(linksOnB[k].a) || linksOnA[i].a.equals(linksOnB[k].b) )
+                if (linksOnA[i].a.equals(linksOnB[k].a) || linksOnA[i].a.equals(linksOnB[k].b)) {
                     result.push(linksOnA[i].a);
-                if (linksOnA[i].b.equals(linksOnB[k].a) || linksOnA[i].b.equals(linksOnB[k].b))
+                }
+                if (linksOnA[i].b.equals(linksOnB[k].a) || linksOnA[i].b.equals(linksOnB[k].b)) {
                     result.push(linksOnA[i].b);
+                }
+            }
+        }
+        return result;
+    }; 
+    */
+
+    // Faster variant: find common third points without list concatenation and without O(n^2) matching
+    thisplugin.getThirds2 = function(listA, listB, a, b) {
+        var neighA = {};
+        var neighB = {};
+        var result = [];
+
+        function key(p) { return p.x + ',' + p.y; }
+
+        function considerLink(l) {
+            // Skip the tested link itself (undirected)
+            if ((l.a.equals(a) && l.b.equals(b)) || (l.a.equals(b) && l.b.equals(a))) {
+                return;
+            }
+
+            // Collect neighbors of a
+            if (l.a.equals(a)) neighA[key(l.b)] = l.b;
+            else if (l.b.equals(a)) neighA[key(l.a)] = l.a;
+
+            // Collect neighbors of b
+            if (l.a.equals(b)) neighB[key(l.b)] = l.b;
+            else if (l.b.equals(b)) neighB[key(l.a)] = l.a;
+        }
+
+        // Scan both lists
+        for (var i = 0; i < listA.length; i++) considerLink(listA[i]);
+        for (var j = 0; j < listB.length; j++) considerLink(listB[j]);
+
+        // Intersection of neighbor sets
+        for (var k in neighA) {
+            if (Object.prototype.hasOwnProperty.call(neighA, k) && neighB[k]) {
+                result.push(neighA[k]);
             }
         }
         return result;
     };
+
 
 
     thisplugin.linkExists = function(list, link) {
@@ -1396,7 +1455,7 @@ function wrapper(plugin_info) {
         for (i in list) {
             //if ((list[i].a == link.a && list[i].b == link.b) || (list[i].a == link.b && list[i].b == link.a))
             if (thisplugin.linksEqual(list[i],link)) {
-                result =  true;
+                result = true;
                 break;
             }
         }
@@ -1407,10 +1466,10 @@ function wrapper(plugin_info) {
 
     thisplugin.linksEqual = function(link1,link2) {
         var Aa, Ab, Ba, Bb;
-        Aa =  link1.a.equals(link2.a);
-        Ab =  link1.a.equals(link2.b);
-        Ba =  link1.b.equals(link2.a);
-        Bb =  link1.b.equals(link2.b);
+        Aa = link1.a.equals(link2.a);
+        Ab = link1.a.equals(link2.b);
+        Ba = link1.b.equals(link2.a);
+        Bb = link1.b.equals(link2.b);
         if ((Aa || Ab) && (Ba || Bb)) {
             return true;
         }
@@ -1433,13 +1492,13 @@ function wrapper(plugin_info) {
         y4 = link2.b.y;
 
         var Aa, Ab, Ba, Bb;
-        Aa =  link1.a.equals(link2.a);
-        Ab =  link1.a.equals(link2.b);
-        Ba =  link1.b.equals(link2.a);
-        Bb =  link1.b.equals(link2.b);
+        Aa = link1.a.equals(link2.a);
+        Ab = link1.a.equals(link2.b);
+        Ba = link1.b.equals(link2.a);
+        Bb = link1.b.equals(link2.b);
 
 
-        if ( Aa || Ab || Ba || Bb)  {
+        if ( Aa || Ab || Ba || Bb) {
             // intersection is at start, that's ok.
             return false;
         }
@@ -1544,10 +1603,10 @@ function wrapper(plugin_info) {
          * extend Leaflet's LatLng class
          * giving it the ability to calculate the bearing to another LatLng
          * Usage example:
-         *     here  = map.getCenter();   / some latlng
+         *     here = map.getCenter();   / some latlng
          *     there = L.latlng([37.7833,-122.4167]);
          *     var whichway = here.bearingWordTo(there);
-         *     var howfar   = (here.distanceTo(there) / 1609.34).toFixed(2);
+         *     var howfar = (here.distanceTo(there) / 1609.34).toFixed(2);
          *     alert("San Francisco is " + howfar + " miles, to the " + whichway );
          *
          * Greg Allensworth   <greg.allensworth@gmail.com>
@@ -1555,13 +1614,13 @@ function wrapper(plugin_info) {
          */
 
         L.LatLng.prototype.bearingToE6 = function(other) {
-            var d2r  = thisplugin.DEG_TO_RAD;
-            var r2d  = thisplugin.RAD_TO_DEG;
+            var d2r = thisplugin.DEG_TO_RAD;
+            var r2d = thisplugin.RAD_TO_DEG;
             var lat1 = this.lat * d2r;
             var lat2 = other.lat * d2r;
             var dLon = (other.lng-this.lng) * d2r;
-            var y    = Math.sin(dLon) * Math.cos(lat2);
-            var x    = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+            var y = Math.sin(dLon) * Math.cos(lat2);
+            var x = Math.cos(lat1)*Math.sin(lat2) - Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
             var brng = Math.atan2(y, x);
             brng = parseInt( brng * r2d * 1E6 );
             brng = ((brng + 360 * 1E6) % (360 * 1E6) / 1E6);
@@ -1570,14 +1629,14 @@ function wrapper(plugin_info) {
 
         L.LatLng.prototype.bearingWord = function(bearing) {
             var bearingword = '';
-            if      (bearing >=  22 && bearing <=  67) bearingword = 'NE';
-            else if (bearing >=  67 && bearing <= 112) bearingword =  'E';
+            if (bearing >= 22 && bearing <= 67) bearingword = 'NE';
+            else if (bearing >= 67 && bearing <= 112) bearingword = 'E';
             else if (bearing >= 112 && bearing <= 157) bearingword = 'SE';
-            else if (bearing >= 157 && bearing <= 202) bearingword =  'S';
+            else if (bearing >= 157 && bearing <= 202) bearingword = 'S';
             else if (bearing >= 202 && bearing <= 247) bearingword = 'SW';
-            else if (bearing >= 247 && bearing <= 292) bearingword =  'W';
+            else if (bearing >= 247 && bearing <= 292) bearingword = 'W';
             else if (bearing >= 292 && bearing <= 337) bearingword = 'NW';
-            else if (bearing >= 337 || bearing <=  22) bearingword =  'N';
+            else if (bearing >= 337 || bearing <= 22) bearingword = 'N';
             return bearingword;
         };
 
@@ -1607,7 +1666,7 @@ function wrapper(plugin_info) {
     // Compute the arrowhead in projection space (pixels)
     thisplugin.buildArrowHeadPoints = function(pointA, pointB) {
         // Simple small arrowhead in pixels
-        var tip = pointB; 
+        var tip = pointB;
         var dx = pointB.x - pointA.x;
         var dy = pointB.y - pointA.y;
         var len = Math.sqrt(dx*dx + dy*dy);
@@ -1619,7 +1678,7 @@ function wrapper(plugin_info) {
 
         // Arrow size (pixels)
         var arrowLength = 25;
-        var arrowWidth  = 14;
+        var arrowWidth = 14;
 
         // Base of the arrowhead slightly before the target point
         var baseX = tip.x - ux * arrowLength;
@@ -1629,13 +1688,13 @@ function wrapper(plugin_info) {
         var px = -uy;
         var py = ux;
 
-        var leftX  = baseX + px * (arrowWidth / 2);
-        var leftY  = baseY + py * (arrowWidth / 2);
+        var leftX = baseX + px * (arrowWidth / 2);
+        var leftY = baseY + py * (arrowWidth / 2);
         var rightX = baseX - px * (arrowWidth / 2);
         var rightY = baseY - py * (arrowWidth / 2);
 
         return [
-            new L.Point(leftX,  leftY),
+            new L.Point(leftX, leftY),
             tip,
             new L.Point(rightX, rightY)
         ];
@@ -1651,7 +1710,7 @@ function wrapper(plugin_info) {
         var sorted = that.sortedFanpoints || [];
         if (sorted.length < 2) return;
 
-        // Draw the route as a polyline 
+        // Draw the route as a polyline
         var latlngs = sorted.map(function(fp) {
             return map.unproject(fp.point, that.PROJECT_ZOOM);
         });
@@ -1715,14 +1774,14 @@ function wrapper(plugin_info) {
 
     thisplugin.bearingWord = function(bearing) {
         var bearingword = '';
-        if      (bearing >=  22 && bearing <=  67) bearingword = 'NE';
-        else if (bearing >=  67 && bearing <= 112) bearingword =  'E';
+        if (bearing >= 22 && bearing <= 67) bearingword = 'NE';
+        else if (bearing >= 67 && bearing <= 112) bearingword = 'E';
         else if (bearing >= 112 && bearing <= 157) bearingword = 'SE';
-        else if (bearing >= 157 && bearing <= 202) bearingword =  'S';
+        else if (bearing >= 157 && bearing <= 202) bearingword = 'S';
         else if (bearing >= 202 && bearing <= 247) bearingword = 'SW';
-        else if (bearing >= 247 && bearing <= 292) bearingword =  'W';
+        else if (bearing >= 247 && bearing <= 292) bearingword = 'W';
         else if (bearing >= 292 && bearing <= 337) bearingword = 'NW';
-        else if (bearing >= 337 || bearing <=  22) bearingword =  'N';
+        else if (bearing >= 337 || bearing <= 22) bearingword = 'N';
         return bearingword;
     };
 
@@ -1748,21 +1807,28 @@ function wrapper(plugin_info) {
                     break;
                 }
                 cos = (ax*bx+ay*by)/la/lb;
-                if (cos < -1)
+                if (cos < -1) {
                     cos = -1;
-                if (cos > 1)
+                }
+                else if (cos > 1) {
                     cos = 1;
+                }
                 alpha = Math.acos(cos);
                 det = ax*by-ay*bx;
-                if (Math.abs(det) < 0.1 && Math.abs(alpha - Math.PI) < 0.1) // the point is on a rib of the polygon
+                if (Math.abs(det) < 0.1 && Math.abs(alpha - Math.PI) < 0.1) {
+                    // the point is on a rib of the polygon
                     break;
-                if (det >= 0)
+                }
+                if (det >= 0) {
                     asum += alpha;
-                else
+                }
+                else {
                     asum -= alpha;
+                }
             }
-            if (i == polygon.length && Math.round(asum / Math.PI / 2) % 2 === 0)
+            if (i == polygon.length && Math.round(asum / Math.PI / 2) % 2 === 0) {
                 continue;
+            }
 
             result[guid] = points[guid];
         }
@@ -1803,8 +1869,9 @@ function wrapper(plugin_info) {
         thisplugin.links = [];
         if (!window.map.hasLayer(thisplugin.linksLayerGroup) &&
             !window.map.hasLayer(thisplugin.fieldsLayerGroup) &&
-            !window.map.hasLayer(thisplugin.numbersLayerGroup))
+            !window.map.hasLayer(thisplugin.numbersLayerGroup)) {
             return;
+        }
 
 
         thisplugin.linksLayerGroup.clearLayers();
@@ -1890,12 +1957,19 @@ function wrapper(plugin_info) {
             //console.log('================================================================================');
             var lls = link.getLatLngs();
             var line = {a: {}, b: {} };
-            var a = lls[0], b  = lls[1];
+            var a = lls[0], b = lls[1];
 
             line.a = map.project(a, thisplugin.PROJECT_ZOOM);
             line.b = map.project(b, thisplugin.PROJECT_ZOOM);
             thisplugin.intelLinks[guid] = line;
         });
+
+        // Cache intel links as a flat array once (used repeatedly in candidate loop)
+        var maplinksAll = null;
+        var emptyMaplinks = [];
+        if (thisplugin.respectCurrentLinks) {
+            maplinksAll = Object.values(thisplugin.intelLinks);
+        }
 
 
         function recordLine(index_a, index_b, bearing, bearing_word, guid_a, guid_b ) {
@@ -1985,8 +2059,8 @@ function wrapper(plugin_info) {
 
         // TODO: replace following with uncommented above.
         thisplugin.fanpoints = findFanpoints(thisplugin.dtLayers,
-                                       this.locations,
-                                       this.filterPolygon);
+                                             this.locations,
+                                             this.filterPolygon);
 
 
         /*
@@ -2174,18 +2248,18 @@ function wrapper(plugin_info) {
             return a.bearing - b.bearing;
         });
 
-        // ghi#23 start (1)
+        /*
         // Apply manual order, if present
         if (thisplugin.manualOrderGuids &&
             thisplugin.manualOrderGuids.length === this.sortedFanpoints.length) {
 
-            var byGuid = {};
+            let byGuid = {};
             this.sortedFanpoints.forEach(function(fp) {
                 byGuid[fp.guid] = fp;
             });
 
-            var newOrder = [];
-            var allPresent = true;
+            let newOrder = [];
+            let allPresent = true;
 
             thisplugin.manualOrderGuids.forEach(function(guid) {
                 if (byGuid[guid]) {
@@ -2201,10 +2275,9 @@ function wrapper(plugin_info) {
                 newOrder[0].guid === thisplugin.startingpointGUID) {
                 this.sortedFanpoints = newOrder;
             }
+
         }
-
-        // ghi#23 end (1)
-
+        */
 
         //console.log("rotating...");
         // rotate the this.sortedFanpoints array until the bearing to the startingpoint has the longest gap to the previous one.
@@ -2247,13 +2320,13 @@ function wrapper(plugin_info) {
         if (thisplugin.manualOrderGuids &&
             thisplugin.manualOrderGuids.length === this.sortedFanpoints.length) {
 
-            var byGuid = {};
+            let byGuid = {};
             this.sortedFanpoints.forEach(function(fp) {
                 byGuid[fp.guid] = fp;
             });
 
-            var newOrder = [];
-            var allPresent = true;
+            let newOrder = [];
+            let allPresent = true;
 
             thisplugin.manualOrderGuids.forEach(function(guid) {
                 if (byGuid[guid]) {
@@ -2310,12 +2383,15 @@ function wrapper(plugin_info) {
                 return v.metric - u.metric;
             });
 
+            var paFp = this.sortedFanpoints[pa];
+            var paPoint = paFp.point;
+
 
             for (var ci = 0; ci < candidates.length; ci++) {
                 pb = candidates[ci].pbIndex;
                 outbound = 0;
 
-                a = this.sortedFanpoints[pa].point;
+                a = paPoint;
                 b = this.sortedFanpoints[pb].point;
                 bearing = this.getBearing(a, b);
                 const distance = thisplugin.distanceTo(a, b);
@@ -2331,7 +2407,7 @@ function wrapper(plugin_info) {
                     if (outbound == 1) {
                         a = this.sortedFanpoints[pb].point;
                         b = this.sortedFanpoints[pa].point;
-                        console.log("outbound");
+                        // console.log("outbound");
                         centerOutgoings++;
                     }
                 }
@@ -2350,35 +2426,34 @@ function wrapper(plugin_info) {
 
                 // "Respect Intel" stuff
                 if (thisplugin.respectCurrentLinks) {
-                    $.each(thisplugin.intelLinks, function (guid, link) {
-                        maplinks.push(link);
-                    });
                     for (i in maplinks) {
                         if (this.intersects(possibleline, maplinks[i])) {
                             intersection++;
                             if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
-                            //console.log("FANPOINTS: " + pa + " - "+pb+" bearing: " + bearing + " " + this.bearingWord(bearing) + "(crosslink)");
                             break;
                         }
                     }
-                    if (this.linkExists(maplinks, possibleline)) {
+                    if (intersection === 0 && this.linkExists(maplinks, possibleline)) {
                         possibleline.counts = false;
                         if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
                     }
                 }
-
-                for (i in donelinks) {
-                    if (this.intersects(possibleline, donelinks[i])) {
-                        intersection++;
-                        if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
-                        break;
+                if (intersection === 0) {
+                    for (i in donelinks) {
+                        if (this.intersects(possibleline, donelinks[i])) {
+                            intersection++;
+                            if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
+                            break;
+                        }
                     }
                 }
-                for (i in fanlinks) {
-                    if (this.intersects(possibleline, fanlinks[i])) {
-                        intersection++;
-                        if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
-                        break;
+                if (intersection === 0) {
+                    for (i in fanlinks) {
+                        if (this.intersects(possibleline, fanlinks[i])) {
+                            intersection++;
+                            if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
+                            break;
+                        }
                     }
                 }
 
@@ -2393,10 +2468,12 @@ function wrapper(plugin_info) {
                     var thirds = [];
                     if (thisplugin.respectCurrentLinks) {
                         if (possibleline.counts) {
-                            thirds = this.getThirds(donelinks.concat(maplinks), possibleline.a, possibleline.b);
+                             // thirds = this.getThirds(donelinks.concat(maplinks), possibleline.a, possibleline.b);
+                             thirds = thisplugin.getThirds2(donelinks, maplinks, possibleline.a, possibleline.b);
                         }
                     } else {
-                        thirds = this.getThirds(donelinks, possibleline.a, possibleline.b);
+                        // thirds = this.getThirds(donelinks, possibleline.a, possibleline.b);
+                        thirds = thisplugin.getThirds2(donelinks, [], possibleline.a, possibleline.b);
                     }
 
                     if (thirds.length == 2) {
@@ -2449,8 +2526,9 @@ function wrapper(plugin_info) {
                 drawStartLabel(fp);
                 startLabelDrawn = true;
             }
-            else
+            else {
                 drawNumber(fp,idx);
+            }
 
         });
 
@@ -2499,8 +2577,9 @@ function wrapper(plugin_info) {
 
 
                 thisplugin.timer = undefined;
-                if (!thisplugin.is_locked)
+                if (!thisplugin.is_locked) {
                     thisplugin.updateLayer();
+                }
             }, wait*350);
 
         }
@@ -2732,6 +2811,7 @@ function wrapper(plugin_info) {
 } // wrapper end
 // inject code into site context
 var script = document.createElement('script');
+script.id = 'iitc_plugin_fanfields2';
 var info = {};
 if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) info.script = { version: GM_info.script.version, name: GM_info.script.name, description: GM_info.script.description };
 script.appendChild(document.createTextNode('('+ wrapper +')('+JSON.stringify(info)+');'));
