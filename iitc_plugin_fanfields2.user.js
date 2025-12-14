@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @name            Fan Fields 2
 // @category        Layer
-// @version         2.7.2.20251213
+// @version         2.7.3.20251214
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
@@ -42,7 +42,7 @@ function wrapper(plugin_info) {
     // ensure plugin framework is there, even if iitc is not yet loaded
     if(typeof window.plugin !== 'function') window.plugin = function() {};
     plugin_info.buildName = 'main';
-    plugin_info.dateTimeVersion = '2025-12-13-201142';
+    plugin_info.dateTimeVersion = '2025-12-14-121142';
     plugin_info.pluginId = 'fanfields';
 
     /* global L, $, dialog, map, portals, links, plugin, formatDistance  -- eslint*/
@@ -50,6 +50,12 @@ function wrapper(plugin_info) {
 
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
+        {
+            version: '2.7.3',
+            changes: [
+                'FIX: Tooltip must be a glyph sequence.',
+            ],
+        },
         {
             version: '2.7.2',
             changes: [
