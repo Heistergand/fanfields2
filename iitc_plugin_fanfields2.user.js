@@ -1,4 +1,4 @@
-// ==UserScript==
+⁷// ==UserScript==
 // @author          Heistergand
 // @id              fanfields@heistergand
 // @name            Fan Fields 2
@@ -54,7 +54,7 @@ function wrapper(plugin_info) {
             version: '2.7.3',
             changes: [
                 'FIX: Tooltip must be a glyph sequence.',
-                'FIX: Double-Click on leaflet buttons isn\'t zooming the map anymore.'
+                'FIX: Double-Click on leaflet buttons isn\'t zooming the map anymore.',
             ],
         },
         {
