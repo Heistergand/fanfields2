@@ -2646,7 +2646,7 @@ function wrapper(plugin_info) {
         var buttonPortalList = '<a class="plugin_fanfields2_btn" onclick="window.plugin.fanfields.exportText();" title="OpenAll Link Create Star">Show&nbsp;as&nbsp;list</a> ';
 
         // Manage order
-        var buttonManageOrder = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_manageorderbtn" onclick="window.plugin.fanfields.showManageOrderDialog();" title="Manage visiting order of fanfield portals">Manage&nbsp;order</a> ';
+        var buttonManageOrder = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_manageorderbtn" onclick="window.plugin.fanfields.showManageOrderDialog();" title="USE RESTRAINT FOLLOW EASY PATH">Manage&nbsp;order</a> ';
 
 
 
