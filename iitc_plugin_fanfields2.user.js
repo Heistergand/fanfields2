@@ -1,4 +1,4 @@
-⁷// ==UserScript==
+// ==UserScript==
 // @author          Heistergand
 // @id              fanfields@heistergand
 // @name            Fan Fields 2
