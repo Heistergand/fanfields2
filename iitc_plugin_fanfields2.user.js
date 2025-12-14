@@ -54,6 +54,7 @@ function wrapper(plugin_info) {
             version: '2.7.3',
             changes: [
                 'FIX: Tooltip must be a glyph sequence.',
+                'FIX: Double-Click on leaflet buttons isn\'t zooming the map anymore.'
             ],
         },
         {
@@ -2603,6 +2604,15 @@ function wrapper(plugin_info) {
             },
             onAdd: function (map) {
                 var container = L.DomUtil.create("div", "leaflet-fanfields leaflet-bar");
+
+                // Prevent clicks/double-clicks on this control from reaching the map (no dblclick zoom)
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.disableScrollPropagation(container);
+
+                // hard-stop double click
+                L.DomEvent.on(container, 'dblclick', L.DomEvent.stop);
+
+
                 $(container)
                     .append(
                     '<a id="fanfieldShiftLeftButton" href="javascript: void(0);" class="fanfields-control" title="FanFields shift left">'+symbol_counterclockwise+'</a>'
