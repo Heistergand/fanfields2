@@ -2430,7 +2430,7 @@ function wrapper(plugin_info) {
                     distance: distance
                 };
                 intersection = 0;
-                maplinks = [];
+                maplinks = maplinksAll;
 
                 // "Respect Intel" stuff
                 if (thisplugin.respectCurrentLinks) {
