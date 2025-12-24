@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @name            Fan Fields 2
 // @category        Layer
-// @version         2.7.5.20251219
+// @version         2.7.6.20251224
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
@@ -41,7 +41,7 @@ function wrapper(plugin_info) {
     // ensure plugin framework is there, even if iitc is not yet loaded
     if(typeof window.plugin !== 'function') window.plugin = function() {};
     plugin_info.buildName = 'main';
-    plugin_info.dateTimeVersion = '2025-12-19-021342';
+    plugin_info.dateTimeVersion = '2025-12-24-031142';
     plugin_info.pluginId = 'fanfields';
 
     /* global L, $, dialog, map, portals, links, plugin, formatDistance  -- eslint*/
@@ -49,6 +49,12 @@ function wrapper(plugin_info) {
 
     let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
     var changelog = [
+        {
+            version: '2.7.6',
+            changes: [
+                'FIX: eqeqeq',
+            ],
+        },
         {
             version: '2.7.5',
             changes: [
@@ -1245,7 +1251,7 @@ function wrapper(plugin_info) {
         thisplugin.stardirection *= -1;
         var html = "Outbounding";
 
-        if (thisplugin.stardirection == thisplugin.starDirENUM.CENTRALIZING) {
+        if (thisplugin.stardirection === thisplugin.starDirENUM.CENTRALIZING) {
             html = "Inbounding";
             $('#plugin_fanfields2_availablesbul').hide();
         }
@@ -1679,7 +1685,7 @@ function wrapper(plugin_info) {
     thisplugin.linkExists = function(list, link) {
         var i, result = false;
         for (i in list) {
-            //if ((list[i].a == link.a && list[i].b == link.b) || (list[i].a == link.b && list[i].b == link.a))
+            //if ((list[i].a === link.a && list[i].b === link.b) || (list[i].a === link.b && list[i].b === link.a))
             if (thisplugin.linksEqual(list[i],link)) {
                 result = true;
                 break;
@@ -2052,7 +2058,7 @@ function wrapper(plugin_info) {
                     asum -= alpha;
                 }
             }
-            if (i == polygon.length && Math.round(asum / Math.PI / 2) % 2 === 0) {
+            if (i === polygon.length && Math.round(asum / Math.PI / 2) % 2 === 0) {
                 continue;
             }
 
@@ -2128,7 +2134,7 @@ function wrapper(plugin_info) {
             if (n <2) return;
             var alatlng = map.unproject(a.point, thisplugin.PROJECT_ZOOM);
             var labelText = "";
-            if (thisplugin.stardirection == thisplugin.starDirENUM.CENTRALIZING) {
+            if (thisplugin.stardirection === thisplugin.starDirENUM.CENTRALIZING) {
                 labelText = "START PORTAL<BR>Keys: "+ a.incoming.length +"<br>Total Fields: " + triangles.length.toString();
             }
             else {
@@ -2242,7 +2248,7 @@ function wrapper(plugin_info) {
             var color;
             var result = [];
             function checkColor(layer) {
-                return layer.color == this;
+                return layer.color === this;
             }
             // get all colors
             for(i in dtLayers) {
@@ -2340,8 +2346,8 @@ function wrapper(plugin_info) {
 
             // sort by x then y if x the same
             pa.sort(function(a, b) {
-                //return a[1][0] == b[1][0] ? a[1][1] - b[1][1] : a[1][0] - b[1][0];
-                return a[1].x == b[1].x ? a[1].y - b[1].y : a[1].x - b[1].x;
+                //return a[1][0] === b[1][0] ? a[1][1] - b[1][1] : a[1][0] - b[1][0];
+                return a[1].x === b[1].x ? a[1].y - b[1].y : a[1].x - b[1].x;
             });
 
             var lower = [];
@@ -2625,13 +2631,13 @@ function wrapper(plugin_info) {
 
                 if (pb === 0) {
                     var maxLinks = 8 + thisplugin.availableSBUL * 8;
-                    if (thisplugin.stardirection == thisplugin.starDirENUM.RADIATING && centerOutgoings < maxLinks) {
+                    if (thisplugin.stardirection === thisplugin.starDirENUM.RADIATING && centerOutgoings < maxLinks) {
                         outbound = 1;
                     } else {
                         thisplugin.centerKeys++;
                     }
 
-                    if (outbound == 1) {
+                    if (outbound === 1) {
                         a = this.sortedFanpoints[pb].point;
                         b = this.sortedFanpoints[pa].point;
                         // console.log("outbound");
@@ -2657,20 +2663,20 @@ function wrapper(plugin_info) {
                     for (i in maplinks) {
                         if (this.intersects(possibleline, maplinks[i])) {
                             intersection++;
-                            if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
+                            if (possibleline.isFanLink && outbound === 1) centerOutgoings--;
                             break;
                         }
                     }
                     if (intersection === 0 && this.linkExists(maplinks, possibleline)) {
                         possibleline.counts = false;
-                        if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
+                        if (possibleline.isFanLink && outbound === 1) centerOutgoings--;
                     }
                 }
                 if (intersection === 0) {
                     for (i in donelinks) {
                         if (this.intersects(possibleline, donelinks[i])) {
                             intersection++;
-                            if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
+                            if (possibleline.isFanLink && outbound === 1) centerOutgoings--;
                             break;
                         }
                     }
@@ -2679,7 +2685,7 @@ function wrapper(plugin_info) {
                     for (i in fanlinks) {
                         if (this.intersects(possibleline, fanlinks[i])) {
                             intersection++;
-                            if (possibleline.isFanLink && outbound == 1) centerOutgoings--;
+                            if (possibleline.isFanLink && outbound === 1) centerOutgoings--;
                             break;
                         }
                     }
@@ -2704,7 +2710,7 @@ function wrapper(plugin_info) {
                         thirds = thisplugin.getThirds2(donelinks, [], possibleline.a, possibleline.b);
                     }
 
-                    if (thirds.length == 2) {
+                    if (thirds.length === 2) {
                         possibleline.isJetLink = true;
                     }
 
@@ -2718,7 +2724,7 @@ function wrapper(plugin_info) {
 
                     if (possibleline.counts) {
                         donelinks.splice(donelinks.length - (this.sortedFanpoints.length - pa), 0, possibleline);
-                        if (pb === 0 && thisplugin.stardirection == thisplugin.starDirENUM.RADIATING && outbound == 1) {
+                        if (pb === 0 && thisplugin.stardirection === thisplugin.starDirENUM.RADIATING && outbound === 1) {
                             this.sortedFanpoints[pb].outgoing.push(this.sortedFanpoints[pa]);
                             this.sortedFanpoints[pa].incoming.push(this.sortedFanpoints[pb]);
                             
@@ -2754,7 +2760,7 @@ function wrapper(plugin_info) {
             thisplugin.donelinks = donelinks;
             thisplugin.n = n;
             var MessageStr =
-                console.log("== Fan Fields == " +
+                console.log("=== Fan Fields === " +
                             "\nFanPortals: " + (n-1) +
                             "\nCenterKeys:" + thisplugin.centerKeys +
                             "\nTotal links / keys:    " + donelinks.length.toString() +
@@ -2897,7 +2903,7 @@ function wrapper(plugin_info) {
 
         var buttonBookmarks = '';
         var buttonBookmarksOnly = '';
-        if(typeof window.plugin.bookmarks != 'undefined') {
+        if(typeof window.plugin.bookmarks !== 'undefined') {
             // Write Bookmarks
             buttonBookmarks = '<a class="plugin_fanfields2_btn" onclick="window.plugin.fanfields.saveBookmarks();" title="Create New Portal Potential Future">Write&nbsp;Bookmarks</a> ';
 
@@ -2965,7 +2971,7 @@ function wrapper(plugin_info) {
 
         // Write Arcs
         var buttonArcs = ''
-        if(typeof window.plugin.arcs != 'undefined' && window.PLAYER.team === 'ENLIGHTENED') {
+        if(typeof window.plugin.arcs !== 'undefined' && window.PLAYER.team === 'ENLIGHTENED') {
             buttonArcs = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_exportArcsBtn" onclick="window.plugin.fanfields.exportArcs();" title="Field Together Improve Human Mind">Write&nbsp;Arcs</a> ';
         };
 
