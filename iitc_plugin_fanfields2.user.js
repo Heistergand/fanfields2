@@ -4,6 +4,7 @@
 // @name            Fan Fields 2
 // @category        Layer
 // @version         2.7.6.20260114
+
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
@@ -32,11 +33,14 @@ function wrapper(plugin_info) {
   /* exported setup, changelog -- eslint */
 
   let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
+
   var changelog = [{
       version: '2.7.6',
       changes: [
         'FIX: Some minor code cleanup',
         'FIX: Minor cosmetics',
+        'FIX: eqeqeq',
+
       ],
     },
     {
@@ -404,7 +408,7 @@ function wrapper(plugin_info) {
 
   // use own namespace for plugin
   /* jshint shadow:true */
-  window.plugin.fanfields = function () {};
+  window.plugin.fanfields = function() {};
   var thisplugin = window.plugin.fanfields;
 
   // const values
@@ -444,7 +448,7 @@ function wrapper(plugin_info) {
   thisplugin.manualOrderGuids = null;
   thisplugin.lastPlanSignature = null;
 
-  thisplugin.saveBookmarks = function () {
+  thisplugin.saveBookmarks = function() {
 
     // loop thru portals and UN-Select them for bkmrks
     var bkmrkData, list;
@@ -528,7 +532,7 @@ function wrapper(plugin_info) {
     });
   };
 
-  thisplugin.updateStartingPoint = function (i) {
+  thisplugin.updateStartingPoint = function(i) {
     thisplugin.startingpointIndex = i;
     thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
     thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
@@ -869,7 +873,7 @@ function wrapper(plugin_info) {
           $label.css('cursor', 'default'); // Reset the cursor back to default
         }
       });
-      $('[plugin_fanfields2_exportText_toggle="toggle"]').change(function () {
+      $('[plugin_fanfields2_exportText_toggle="toggle"]').change(function(){
         const isChecked = $(this).is(':checked');
         $(this).parents().next('.plugin_fanfields2_exportText_LinkDetails').toggle();
         $(this).prev('.plugin_fanfields2_exportText_Label').attr('aria-expanded', isChecked);
@@ -885,7 +889,7 @@ function wrapper(plugin_info) {
     });
     toggleFunction();
 
-    $('#plugin_fanfields2_export_pdf_btn').off('click').on('click', function () {
+    $('#plugin_fanfields2_export_pdf_btn').off('click').on('click', function() {
       thisplugin.exportTaskListToPDF();
     });
 
@@ -893,7 +897,7 @@ function wrapper(plugin_info) {
   };
 
 
-  thisplugin.exportTaskListToPDF = function () {
+  thisplugin.exportTaskListToPDF = function() {
     const id = 'plugin_fanfields2_alert_textExport';
 
     // Resolve the actual dialog content element.
@@ -907,7 +911,7 @@ function wrapper(plugin_info) {
 
     // Ensure all link detail rows are expanded before exporting
 
-    $dlg.find('[plugin_fanfields2_exportText_toggle="toggle"]').each(function () {
+    $dlg.find('[plugin_fanfields2_exportText_toggle="toggle"]').each(function() {
       const $toggle = $(this);
       const $label = $toggle.prev('.plugin_fanfields2_exportText_Label');
       const $details = $toggle.parents().next('.plugin_fanfields2_exportText_LinkDetails');
@@ -970,7 +974,7 @@ function wrapper(plugin_info) {
 
   // ghi#23 start (3)
   // Manage-Order-Dialog
-  thisplugin.showManageOrderDialog = function () {
+  thisplugin.showManageOrderDialog = function() {
     var that = thisplugin;
     let manageOrderDialogTitle = 'Fan Fields 2 - Manage Portal Order';
 
@@ -1252,12 +1256,39 @@ function wrapper(plugin_info) {
       $('#plugin_fanfields2_availablesbul').show();
     }
 
+      addCSS('\n' +
+             '.plugin_fanfields2_toolbox {\n' +
+             '   margin: 7px 1px;\n' +
+             '   padding: 15px 5px;\n' +
+             '   border: 1px solid #ffce00;\n' +
+             '   box-shadow: 3px 3px 5px black;\n' +
+             '   color: #ffce00;\n' +
+             '   display: flex;\n' +
+             '   flex-direction: column;\n' +
+             '   flex-basis: 50%;\n' +
+             '}\n'
+            );
 
     $('#plugin_fanfields2_stardirbtn').html(html);
     thisplugin.delayedUpdateLayer(0.2);
   };
 
+      addCSS('\n' +
+             '.plugin_fanfields2_sidebar {\n' +
+             '  display: flex;\n' +
+             '  flex-direction: row;\n' +
+             '  flex-wrap: wrap;\n' +
+             '  padding: 5px;' +
+             '}\n'
+            );
 
+      addCSS('\n' +
+             '.plugin_fanfields2_titlebar {\n' +
+             '  background-color: rgba(8, 60, 78, 0.9);\n' +
+             '  margin-right: 7px;\n' +
+             '  text-align: center;\n' +
+             '}\n'
+            );
 
   thisplugin.increaseSBUL = function () {
     if (thisplugin.availableSBUL < 4) {
@@ -1274,6 +1305,17 @@ function wrapper(plugin_info) {
     }
   }
 
+      addCSS('\n' +
+             '.plugin_fanfields2_minibtn {\n' +
+             '   margin-left:0;\n' +
+             '   margin-right:0;\n' +
+             '   overflow: hidden;\n' +
+             '   text-overflow: ellipsis;\n' +
+             '   display: flex;\n' +
+             '   justify-content: center;\n' +
+             '   align-items: center;\n' +
+             '}\n'
+            );
 
   thisplugin.setupCSS = function () {
 
@@ -1504,6 +1546,11 @@ function wrapper(plugin_info) {
       );
     };
 
+      addCSS('\n' +
+             '.plugin_fanfields2_toolbox > span {\n' +
+             '   float: left;\n' +
+             '}\n'
+            );
 
 
     // Manage-Order-Dialog (ghi#23)
@@ -2058,11 +2105,41 @@ function wrapper(plugin_info) {
     thisplugin.centerKeys = 0;
 
 
+      result[guid] = points[guid];
+    }
+    return result;
+  };
+
+
+  thisplugin.n = 0;
+  thisplugin.triangles = [];
+  thisplugin.donelinks = [];
+
+  thisplugin.updateLayer = function() {
+    var a,b,c;
+    var fanlinks = [], donelinks = [], maplinks = [];
+    var triangles = [];
+    var n = 0;
+    var directiontest;
+    var centerOutgoings = 0;
+    var centerSbul = 0;
+    var pa,i,pb,k,ll,p;
+    var guid;
+    var polygon,intersection;
+    var starting_ll , fanpoint_ll ;
+    var fp_index, fp, bearing, sublinkCount;
+    thisplugin.startingpoint = undefined;
+    thisplugin.startingpointGUID = "";
+    thisplugin.startingMarker = undefined;
+    thisplugin.startingMarkerGUID = undefined;
+    thisplugin.centerKeys = 0;
 
     thisplugin.locations = [];
     thisplugin.fanpoints = [];
 
 
+    thisplugin.locations = [];
+    thisplugin.fanpoints = [];
 
     thisplugin.links = [];
     if (!window.map.hasLayer(thisplugin.linksLayerGroup) &&
@@ -2600,6 +2677,7 @@ function wrapper(plugin_info) {
           // count sbul
           centerSbul = Math.ceil((centerOutgoings - 8) / 8);
         }
+      }, wait*350);
 
         if (intersection === 0) {
           //console.log("FANPOINTS: " + pa + " - "+pb+" bearing: " + bearing + "° " + this.bearingWord(bearing));
@@ -2941,7 +3019,14 @@ function wrapper(plugin_info) {
       return;
     }
 
+    // Write Drawtools
+    var buttonDrawTools = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();" title="Help Shapers Create Future">Write&nbsp;DrawTools</a> ';
 
+    // Write Arcs
+    var buttonArcs = ''
+    if(typeof window.plugin.arcs !== 'undefined' && window.PLAYER.team === 'ENLIGHTENED') {
+      buttonArcs = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_exportArcsBtn" onclick="window.plugin.fanfields.exportArcs();" title="Field Together Improve Human Mind">Write&nbsp;Arcs</a> ';
+    };
 
     $('#fanfields2').append(fanfields_buttons);
 
