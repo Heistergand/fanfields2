@@ -4,7 +4,6 @@
 // @name            Fan Fields 2
 // @category        Layer
 // @version         2.7.6.20260114
-
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
@@ -33,14 +32,11 @@ function wrapper(plugin_info) {
   /* exported setup, changelog -- eslint */
 
   let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
-
   var changelog = [{
       version: '2.7.6',
       changes: [
         'FIX: Some minor code cleanup',
         'FIX: Minor cosmetics',
-        'FIX: eqeqeq',
-
       ],
     },
     {
@@ -408,7 +404,7 @@ function wrapper(plugin_info) {
 
   // use own namespace for plugin
   /* jshint shadow:true */
-  window.plugin.fanfields = function() {};
+  window.plugin.fanfields = function () {};
   var thisplugin = window.plugin.fanfields;
 
   // const values
@@ -448,7 +444,7 @@ function wrapper(plugin_info) {
   thisplugin.manualOrderGuids = null;
   thisplugin.lastPlanSignature = null;
 
-  thisplugin.saveBookmarks = function() {
+  thisplugin.saveBookmarks = function () {
 
     // loop thru portals and UN-Select them for bkmrks
     var bkmrkData, list;
@@ -461,7 +457,8 @@ function wrapper(plugin_info) {
 
         delete list[bkmrkData.id_folder].bkmrk[bkmrkData.id_bookmark];
 
-        $('.bkmrk#' + bkmrkData.id_bookmark + '').remove();
+        $('.bkmrk#' + bkmrkData.id_bookmark + '')
+          .remove();
 
         window.plugin.bookmarks.saveStorage();
         window.plugin.bookmarks.updateStarPortal();
@@ -532,7 +529,7 @@ function wrapper(plugin_info) {
     });
   };
 
-  thisplugin.updateStartingPoint = function(i) {
+  thisplugin.updateStartingPoint = function (i) {
     thisplugin.startingpointIndex = i;
     thisplugin.startingpointGUID = thisplugin.perimeterpoints[thisplugin.startingpointIndex][0];
     thisplugin.startingpoint = this.fanpoints[thisplugin.startingpointGUID];
@@ -623,7 +620,8 @@ function wrapper(plugin_info) {
         "<tr><td>CenterKeys:</td><td>" + thisplugin.centerKeys + "</td><tr>" +
         "<tr><td>Total links / keys:</td><td>" + thisplugin.donelinks.length.toString() + "</td><tr>" +
         "<tr><td>Fields:</td><td>" + thisplugin.triangles.length.toString() + "</td><tr>" +
-        "<tr><td>Build AP (links and fields):</td><td>" + (thisplugin.donelinks.length * 313 + thisplugin.triangles.length * 1250).toString() + "</td><tr>" +
+        "<tr><td>Build AP (links and fields):</td><td>" + (thisplugin.donelinks.length * 313 + thisplugin.triangles.length * 1250)
+        .toString() + "</td><tr>" +
         //"<tr><td>Destroy AP (links and fields):</td><td>" + (thisplugin.sortedFanpoints.length*187 + thisplugin.triangles.length*750).toString() + "</td><tr>" +
         "</table>";
 
@@ -728,7 +726,8 @@ function wrapper(plugin_info) {
           if (window.plugin.LiveInventory.keyGuidCount) {
             availableKeys = window.plugin.LiveInventory.keyGuidCount[portal.guid] || 0;
           } else if (window.plugin.LiveInventory.keyCount) {
-            availableKeys = window.plugin.LiveInventory.keyCount.find(obj => obj.portalCoupler.portalGuid === portal.guid)?.count || 0;
+            availableKeys = window.plugin.LiveInventory.keyCount.find(obj => obj.portalCoupler.portalGuid === portal.guid)
+              ?.count || 0;
           }
         } else {
           availableKeys = window.plugin.keys.keys[portal.guid] || 0;
@@ -861,23 +860,32 @@ function wrapper(plugin_info) {
     }
 
     const toggleFunction = function () {
-      $('[plugin_fanfields2_exportText_toggle="toggle"]').each(function () {
-        const $toggle = $(this);
-        const $label = $toggle.prev('.plugin_fanfields2_exportText_Label');
-        const $details = $toggle.parents().next('.plugin_fanfields2_exportText_LinkDetails');
+      $('[plugin_fanfields2_exportText_toggle="toggle"]')
+        .each(function () {
+          const $toggle = $(this);
+          const $label = $toggle.prev('.plugin_fanfields2_exportText_Label');
+          const $details = $toggle.parents()
+            .next('.plugin_fanfields2_exportText_LinkDetails');
 
-        if ($details.length) {
-          $label.addClass('has-children');
-        } else {
-          $toggle.remove(); // Remove the checkbox if there are no child elements
-          $label.css('cursor', 'default'); // Reset the cursor back to default
-        }
-      });
-      $('[plugin_fanfields2_exportText_toggle="toggle"]').change(function(){
-        const isChecked = $(this).is(':checked');
-        $(this).parents().next('.plugin_fanfields2_exportText_LinkDetails').toggle();
-        $(this).prev('.plugin_fanfields2_exportText_Label').attr('aria-expanded', isChecked);
-      });
+          if ($details.length) {
+            $label.addClass('has-children');
+          } else {
+            $toggle.remove(); // Remove the checkbox if there are no child elements
+            $label.css('cursor', 'default'); // Reset the cursor back to default
+          }
+        });
+      $('[plugin_fanfields2_exportText_toggle="toggle"]')
+        .change(function () {
+          const isChecked = $(this)
+            .is(':checked');
+          $(this)
+            .parents()
+            .next('.plugin_fanfields2_exportText_LinkDetails')
+            .toggle();
+          $(this)
+            .prev('.plugin_fanfields2_exportText_Label')
+            .attr('aria-expanded', isChecked);
+        });
     };
 
     dialog({
@@ -889,15 +897,17 @@ function wrapper(plugin_info) {
     });
     toggleFunction();
 
-    $('#plugin_fanfields2_export_pdf_btn').off('click').on('click', function() {
-      thisplugin.exportTaskListToPDF();
-    });
+    $('#plugin_fanfields2_export_pdf_btn')
+      .off('click')
+      .on('click', function () {
+        thisplugin.exportTaskListToPDF();
+      });
 
 
   };
 
 
-  thisplugin.exportTaskListToPDF = function() {
+  thisplugin.exportTaskListToPDF = function () {
     const id = 'plugin_fanfields2_alert_textExport';
 
     // Resolve the actual dialog content element.
@@ -911,16 +921,18 @@ function wrapper(plugin_info) {
 
     // Ensure all link detail rows are expanded before exporting
 
-    $dlg.find('[plugin_fanfields2_exportText_toggle="toggle"]').each(function() {
-      const $toggle = $(this);
-      const $label = $toggle.prev('.plugin_fanfields2_exportText_Label');
-      const $details = $toggle.parents().next('.plugin_fanfields2_exportText_LinkDetails');
-      if ($details.length) {
-        $toggle.prop('checked', true);
-        $details.show();
-        $label.attr('aria-expanded', true);
-      }
-    });
+    $dlg.find('[plugin_fanfields2_exportText_toggle="toggle"]')
+      .each(function () {
+        const $toggle = $(this);
+        const $label = $toggle.prev('.plugin_fanfields2_exportText_Label');
+        const $details = $toggle.parents()
+          .next('.plugin_fanfields2_exportText_LinkDetails');
+        if ($details.length) {
+          $toggle.prop('checked', true);
+          $details.show();
+          $label.attr('aria-expanded', true);
+        }
+      });
 
     const htmlInner = $dlg.html();
 
@@ -974,7 +986,7 @@ function wrapper(plugin_info) {
 
   // ghi#23 start (3)
   // Manage-Order-Dialog
-  thisplugin.showManageOrderDialog = function() {
+  thisplugin.showManageOrderDialog = function () {
     var that = thisplugin;
     let manageOrderDialogTitle = 'Fan Fields 2 - Manage Portal Order';
 
@@ -1057,15 +1069,19 @@ function wrapper(plugin_info) {
 
       function renumberRows() {
         // Update the "#" column to match the current DOM order.
-        $tbody.find('tr').each(function (i) {
-          $(this).find('td.plugin_fanfields2_order_idx').text(i);
-        });
+        $tbody.find('tr')
+          .each(function (i) {
+            $(this)
+              .find('td.plugin_fanfields2_order_idx')
+              .text(i);
+          });
       }
 
       function pinAnchorRow() {
         // Keep anchor row at top (and prevent it from being displaced).
         var $anchor = $tbody.find('tr.plugin_fanfields2_order_anchor');
-        if ($anchor.length && $tbody.children().first()[0] !== $anchor[0]) {
+        if ($anchor.length && $tbody.children()
+          .first()[0] !== $anchor[0]) {
           $tbody.prepend($anchor);
         }
       }
@@ -1089,16 +1105,22 @@ function wrapper(plugin_info) {
 
           if (that.showOrderPath) {
             that.setOrderPathActive(false);
-            $('#plugin_fanfields2_order_path').text('Path');
+            $('#plugin_fanfields2_order_path')
+              .text('Path');
           }
 
           // Keep column widths stable while dragging.
-          ui.helper.children().each(function (i) {
-            $(this).width(ui.item.children().eq(i).width());
-          });
+          ui.helper.children()
+            .each(function (i) {
+              $(this)
+                .width(ui.item.children()
+                  .eq(i)
+                  .width());
+            });
 
           // Make placeholder span the full row width.
-          var colCount = ui.item.children('td,th').length;
+          var colCount = ui.item.children('td,th')
+            .length;
           ui.placeholder
             .addClass('plugin_fanfields2_order_sort_placeholder')
             .html('<td colspan="' + colCount + '">&nbsp;</td>');
@@ -1125,43 +1147,55 @@ function wrapper(plugin_info) {
       });
 
       // Rebind Reset and Apply buttons
-      $('#plugin_fanfields2_order_reset').off('click').on('click', function () {
-        that.manualOrderGuids = null;
-        that.updateLayer();
+      $('#plugin_fanfields2_order_reset')
+        .off('click')
+        .on('click', function () {
+          that.manualOrderGuids = null;
+          that.updateLayer();
 
 
-        $('#plugin_fanfields2_order_dialog_inner').html(buildTableHTML());
-        initDragAndButtons();
+          $('#plugin_fanfields2_order_dialog_inner')
+            .html(buildTableHTML());
+          initDragAndButtons();
 
-        if (that.showOrderPath) {
-          that.updateOrderPath();
-        }
-      });
-
-      $('#plugin_fanfields2_order_apply').off('click').on('click', function () {
-        var guids = [];
-        $('#plugin_fanfields2_order_table tbody tr').each(function () {
-          guids.push($(this).data('guid'));
+          if (that.showOrderPath) {
+            that.updateOrderPath();
+          }
         });
 
-        // The first entry must remain the anchor.
-        if (guids[0] !== that.startingpointGUID) {
-          that.manualOrderGuids = null;
-        } else {
-          that.manualOrderGuids = guids;
-        }
+      $('#plugin_fanfields2_order_apply')
+        .off('click')
+        .on('click', function () {
+          var guids = [];
+          $('#plugin_fanfields2_order_table tbody tr')
+            .each(function () {
+              guids.push($(this)
+                .data('guid'));
+            });
 
-        that.delayedUpdateLayer(0.2);
-        $('#plugin_fanfields2_order_dialog').dialog('close');
-      });
+          // The first entry must remain the anchor.
+          if (guids[0] !== that.startingpointGUID) {
+            that.manualOrderGuids = null;
+          } else {
+            that.manualOrderGuids = guids;
+          }
 
-      $('#plugin_fanfields2_order_path').off('click').on('click', function () {
-        var newState = !that.showOrderPath;
-        that.setOrderPathActive(newState);
-        $(this).text(newState ? 'Hide path' : 'Path');
-      });
+          that.delayedUpdateLayer(0.2);
+          $('#plugin_fanfields2_order_dialog')
+            .dialog('close');
+        });
 
-      $('#plugin_fanfields2_order_path').text(that.showOrderPath ? 'Hide path' : 'Path');
+      $('#plugin_fanfields2_order_path')
+        .off('click')
+        .on('click', function () {
+          var newState = !that.showOrderPath;
+          that.setOrderPathActive(newState);
+          $(this)
+            .text(newState ? 'Hide path' : 'Path');
+        });
+
+      $('#plugin_fanfields2_order_path')
+        .text(that.showOrderPath ? 'Hide path' : 'Path');
     }
 
     initDragAndButtons();
@@ -1175,9 +1209,11 @@ function wrapper(plugin_info) {
   thisplugin.toggleRespectCurrentLinks = function () {
     thisplugin.respectCurrentLinks = !thisplugin.respectCurrentLinks;
     if (thisplugin.respectCurrentLinks) {
-      $('#plugin_fanfields2_respectbtn').html('Respect&nbsp;Intel:&nbsp;ON');
+      $('#plugin_fanfields2_respectbtn')
+        .html('Respect&nbsp;Intel:&nbsp;ON');
     } else {
-      $('#plugin_fanfields2_respectbtn').html('Respect&nbsp;Intel:&nbsp;OFF');
+      $('#plugin_fanfields2_respectbtn')
+        .html('Respect&nbsp;Intel:&nbsp;OFF');
     }
     thisplugin.delayedUpdateLayer(0.2);
   };
@@ -1186,9 +1222,11 @@ function wrapper(plugin_info) {
   thisplugin.toggleLinkDirIndicator = function () {
     thisplugin.indicateLinkDirection = !thisplugin.indicateLinkDirection;
     if (thisplugin.indicateLinkDirection) {
-      $('#plugin_fanfields2_direction_indicator_btn').html('Show&nbsp;link&nbsp;dir:&nbsp;ON');
+      $('#plugin_fanfields2_direction_indicator_btn')
+        .html('Show&nbsp;link&nbsp;dir:&nbsp;ON');
     } else {
-      $('#plugin_fanfields2_direction_indicator_btn').html('Show&nbsp;link&nbsp;dir:&nbsp;OFF');
+      $('#plugin_fanfields2_direction_indicator_btn')
+        .html('Show&nbsp;link&nbsp;dir:&nbsp;OFF');
     }
     thisplugin.delayedUpdateLayer(0.2);
   };
@@ -1197,9 +1235,11 @@ function wrapper(plugin_info) {
   thisplugin.lock = function () {
     thisplugin.is_locked = !thisplugin.is_locked;
     if (thisplugin.is_locked) {
-      $('#plugin_fanfields2_lockbtn').html('&#128274;&nbsp;Locked'); // &#128274;
+      $('#plugin_fanfields2_lockbtn')
+        .html('&#128274;&nbsp;Locked'); // &#128274;
     } else {
-      $('#plugin_fanfields2_lockbtn').html('&#128275;&nbsp;Unlocked'); // &#128275;
+      $('#plugin_fanfields2_lockbtn')
+        .html('&#128275;&nbsp;Unlocked'); // &#128275;
     }
   };
 
@@ -1207,13 +1247,15 @@ function wrapper(plugin_info) {
   thisplugin.useBookmarksOnly = function () {
     thisplugin.use_bookmarks_only = !thisplugin.use_bookmarks_only;
     if (thisplugin.use_bookmarks_only) {
-      $('#plugin_fanfields2_bookarks_only_btn').html(
-        '&#128278;&nbsp;Bookmarks only'
-      );
+      $('#plugin_fanfields2_bookarks_only_btn')
+        .html(
+          '&#128278;&nbsp;Bookmarks only'
+        );
     } else {
-      $('#plugin_fanfields2_bookarks_only_btn').html(
-        '&#128278;&nbsp;All Portals'
-      );
+      $('#plugin_fanfields2_bookarks_only_btn')
+        .html(
+          '&#128278;&nbsp;All Portals'
+        );
     }
     thisplugin.delayedUpdateLayer(0.2);
   };
@@ -1235,7 +1277,8 @@ function wrapper(plugin_info) {
     // Reset the order – new geometry, new base ordering (ghi#23)
     thisplugin.manualOrderGuids = null;
 
-    $('#plugin_fanfields2_clckwsbtn').html(clockwiseWord + '&nbsp;' + clockwiseSymbol + '');
+    $('#plugin_fanfields2_clckwsbtn')
+      .html(clockwiseWord + '&nbsp;' + clockwiseSymbol + '');
     thisplugin.delayedUpdateLayer(0.2);
   };
 
@@ -1251,71 +1294,38 @@ function wrapper(plugin_info) {
 
     if (thisplugin.stardirection === thisplugin.starDirENUM.CENTRALIZING) {
       html = "Inbounding";
-      $('#plugin_fanfields2_availablesbul').hide();
+      $('#plugin_fanfields2_availablesbul')
+        .hide();
     } else {
-      $('#plugin_fanfields2_availablesbul').show();
+      $('#plugin_fanfields2_availablesbul')
+        .show();
     }
 
-      addCSS('\n' +
-             '.plugin_fanfields2_toolbox {\n' +
-             '   margin: 7px 1px;\n' +
-             '   padding: 15px 5px;\n' +
-             '   border: 1px solid #ffce00;\n' +
-             '   box-shadow: 3px 3px 5px black;\n' +
-             '   color: #ffce00;\n' +
-             '   display: flex;\n' +
-             '   flex-direction: column;\n' +
-             '   flex-basis: 50%;\n' +
-             '}\n'
-            );
 
-    $('#plugin_fanfields2_stardirbtn').html(html);
+    $('#plugin_fanfields2_stardirbtn')
+      .html(html);
     thisplugin.delayedUpdateLayer(0.2);
   };
 
-      addCSS('\n' +
-             '.plugin_fanfields2_sidebar {\n' +
-             '  display: flex;\n' +
-             '  flex-direction: row;\n' +
-             '  flex-wrap: wrap;\n' +
-             '  padding: 5px;' +
-             '}\n'
-            );
 
-      addCSS('\n' +
-             '.plugin_fanfields2_titlebar {\n' +
-             '  background-color: rgba(8, 60, 78, 0.9);\n' +
-             '  margin-right: 7px;\n' +
-             '  text-align: center;\n' +
-             '}\n'
-            );
 
   thisplugin.increaseSBUL = function () {
     if (thisplugin.availableSBUL < 4) {
       thisplugin.availableSBUL++;
-      $('#plugin_fanfields2_availablesbul_count').html('' + (thisplugin.availableSBUL) + '');
+      $('#plugin_fanfields2_availablesbul_count')
+        .html('' + (thisplugin.availableSBUL) + '');
       thisplugin.delayedUpdateLayer(0.2);
     }
   }
   thisplugin.decreaseSBUL = function () {
     if (thisplugin.availableSBUL > 0) {
       thisplugin.availableSBUL--;
-      $('#plugin_fanfields2_availablesbul_count').html('' + (thisplugin.availableSBUL) + '');
+      $('#plugin_fanfields2_availablesbul_count')
+        .html('' + (thisplugin.availableSBUL) + '');
       thisplugin.delayedUpdateLayer(0.2);
     }
   }
 
-      addCSS('\n' +
-             '.plugin_fanfields2_minibtn {\n' +
-             '   margin-left:0;\n' +
-             '   margin-right:0;\n' +
-             '   overflow: hidden;\n' +
-             '   text-overflow: ellipsis;\n' +
-             '   display: flex;\n' +
-             '   justify-content: center;\n' +
-             '   align-items: center;\n' +
-             '}\n'
-            );
 
   thisplugin.setupCSS = function () {
 
@@ -1546,11 +1556,6 @@ function wrapper(plugin_info) {
       );
     };
 
-      addCSS('\n' +
-             '.plugin_fanfields2_toolbox > span {\n' +
-             '   float: left;\n' +
-             '}\n'
-            );
 
 
     // Manage-Order-Dialog (ghi#23)
@@ -1660,7 +1665,8 @@ function wrapper(plugin_info) {
       style = document.createElement('style');
       style.id = 'plugin_fanfields2_css';
       style.type = 'text/css';
-      (document.head || document.documentElement).appendChild(style);
+      (document.head || document.documentElement)
+      .appendChild(style);
     }
     style.textContent = cssParts.join('\n');
 
@@ -1973,12 +1979,13 @@ function wrapper(plugin_info) {
     });
 
     L.polyline(latlngs, {
-      color: '#ffff00',
-      weight: 3,
-      opacity: 0.9,
-      dashArray: '6,8',
-      interactive: false
-    }).addTo(lg);
+        color: '#ffff00',
+        weight: 3,
+        opacity: 0.9,
+        dashArray: '6,8',
+        interactive: false
+      })
+      .addTo(lg);
 
     // Arrowhead: compute in layer-pixel coordinates of the CURRENT zoom level
     var n = latlngs.length;
@@ -1997,12 +2004,13 @@ function wrapper(plugin_info) {
     });
 
     L.polygon(arrowLatLngs, {
-      color: '#ffff00',
-      weight: 1,
-      fillColor: '#ffff00',
-      fillOpacity: 0.9,
-      interactive: false
-    }).addTo(lg);
+        color: '#ffff00',
+        weight: 1,
+        fillColor: '#ffff00',
+        fillOpacity: 0.9,
+        interactive: false
+      })
+      .addTo(lg);
   };
 
 
@@ -2105,41 +2113,11 @@ function wrapper(plugin_info) {
     thisplugin.centerKeys = 0;
 
 
-      result[guid] = points[guid];
-    }
-    return result;
-  };
-
-
-  thisplugin.n = 0;
-  thisplugin.triangles = [];
-  thisplugin.donelinks = [];
-
-  thisplugin.updateLayer = function() {
-    var a,b,c;
-    var fanlinks = [], donelinks = [], maplinks = [];
-    var triangles = [];
-    var n = 0;
-    var directiontest;
-    var centerOutgoings = 0;
-    var centerSbul = 0;
-    var pa,i,pb,k,ll,p;
-    var guid;
-    var polygon,intersection;
-    var starting_ll , fanpoint_ll ;
-    var fp_index, fp, bearing, sublinkCount;
-    thisplugin.startingpoint = undefined;
-    thisplugin.startingpointGUID = "";
-    thisplugin.startingMarker = undefined;
-    thisplugin.startingMarkerGUID = undefined;
-    thisplugin.centerKeys = 0;
 
     thisplugin.locations = [];
     thisplugin.fanpoints = [];
 
 
-    thisplugin.locations = [];
-    thisplugin.fanpoints = [];
 
     thisplugin.links = [];
     if (!window.map.hasLayer(thisplugin.linksLayerGroup) &&
@@ -2304,7 +2282,8 @@ function wrapper(plugin_info) {
     }
 
     // signature of the current portal set (GUID set, order-independent)
-    var currentSignature = fanpointGuids.sort().join(',');
+    var currentSignature = fanpointGuids.sort()
+      .join(',');
 
     // If the portal set changed: disable the path
     if (thisplugin.lastPlanSignature !== null &&
@@ -2331,7 +2310,8 @@ function wrapper(plugin_info) {
 
       // convert to array
       //var pa = Object.entries(points).map(p => Point [p[0], [p[1].x, p[1].y]]);
-      var pa = Object.entries(points).map(p => [p[0], p[1]]);
+      var pa = Object.entries(points)
+        .map(p => [p[0], p[1]]);
 
 
       // sort by x then y if x the same
@@ -2526,7 +2506,8 @@ function wrapper(plugin_info) {
     this.sortedFanpoints = this.sortedFanpoints.concat(this.sortedFanpoints.splice(1, maxGapIndex - 1));
     if (!thisplugin.is_clockwise) {
       // reverse all but the first element
-      this.sortedFanpoints = this.sortedFanpoints.concat(this.sortedFanpoints.splice(1, this.sortedFanpoints.length - 1).reverse());
+      this.sortedFanpoints = this.sortedFanpoints.concat(this.sortedFanpoints.splice(1, this.sortedFanpoints.length - 1)
+        .reverse());
       //lines.sort(function(a, b){return b.bearing - a.bearing;});
     }
 
@@ -2677,7 +2658,6 @@ function wrapper(plugin_info) {
           // count sbul
           centerSbul = Math.ceil((centerOutgoings - 8) / 8);
         }
-      }, wait*350);
 
         if (intersection === 0) {
           //console.log("FANPOINTS: " + pa + " - "+pb+" bearing: " + bearing + "° " + this.bearingWord(bearing));
@@ -2751,8 +2731,10 @@ function wrapper(plugin_info) {
         "\nCenterKeys:" + thisplugin.centerKeys +
         "\nTotal links / keys:    " + donelinks.length.toString() +
         "\nFields:                " + triangles.length.toString() +
-        "\nBuild AP:              " + (donelinks.length * 313 + triangles.length * 1250).toString() +
-        "\nDestroy AP:            " + (this.sortedFanpoints.length * 187 + triangles.length * 750).toString());
+        "\nBuild AP:              " + (donelinks.length * 313 + triangles.length * 1250)
+        .toString() +
+        "\nDestroy AP:            " + (this.sortedFanpoints.length * 187 + triangles.length * 750)
+        .toString());
     }
 
 
@@ -2995,7 +2977,8 @@ function wrapper(plugin_info) {
       buttonStats +
       buttonHelp;
 
-    $('#sidebar').append('<div id="fanfields2" class="plugin_fanfields2_sidebar"></div>');
+    $('#sidebar')
+      .append('<div id="fanfields2" class="plugin_fanfields2_sidebar"></div>');
 
     thisplugin.addFfButtons();
 
@@ -3013,22 +2996,18 @@ function wrapper(plugin_info) {
         width: width
       });
 
-      $('#fanfields2').empty();
-      $('#fanfields2').append("<i>Fan Fields requires IITC drawtools plugin.</i>");
+      $('#fanfields2')
+        .empty();
+      $('#fanfields2')
+        .append("<i>Fan Fields requires IITC drawtools plugin.</i>");
 
       return;
     }
 
-    // Write Drawtools
-    var buttonDrawTools = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();" title="Help Shapers Create Future">Write&nbsp;DrawTools</a> ';
 
-    // Write Arcs
-    var buttonArcs = ''
-    if(typeof window.plugin.arcs !== 'undefined' && window.PLAYER.team === 'ENLIGHTENED') {
-      buttonArcs = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_exportArcsBtn" onclick="window.plugin.fanfields.exportArcs();" title="Field Together Improve Human Mind">Write&nbsp;Arcs</a> ';
-    };
 
-    $('#fanfields2').append(fanfields_buttons);
+    $('#fanfields2')
+      .append(fanfields_buttons);
 
     //         window.pluginCreateHook('pluginBkmrksEdit');
 
@@ -3096,7 +3075,8 @@ if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) info.script = {
   description: GM_info.script.description
 };
 script.appendChild(document.createTextNode('(' + wrapper + ')(' + JSON.stringify(info) + ');'));
-(document.body || document.head || document.documentElement).appendChild(script);
+(document.body || document.head || document.documentElement)
+.appendChild(script);
 
 
 
