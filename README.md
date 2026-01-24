@@ -92,3 +92,11 @@ You can still see the old fieldset box design here
 <img width="1302" height="839" alt="Screenshot_20251208_005836" src="https://github.com/user-attachments/assets/0f0d6686-adf5-4f45-a621-a4822ac3f1c2" />
 
 <img width="1302" height="839" alt="Screenshot_20251208_005937" src="https://github.com/user-attachments/assets/e8050d2f-4663-4a07-9518-ae075e0692d5" />
+
+---
+
+## ⭐ Stargazers over time
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Heistergand/fanfields2&type=Date)](https://star-history.com/#Heistergand/fanfields2&Date)
+
+---
