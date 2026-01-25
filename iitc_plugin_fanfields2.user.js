@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @name            Fan Fields 2
 // @category        Layer
-// @version         2.7.6.20260114
+// @version         2.7.6.20260125
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
@@ -25,13 +25,13 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-01-14-031142';
+  plugin_info.dateTimeVersion = '2026-01-25-051142';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin, formatDistance  -- eslint*/
   /* exported setup, changelog -- eslint */
 
-  let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
+  var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
       version: '2.7.6',
       changes: [
@@ -726,8 +726,7 @@ function wrapper(plugin_info) {
           if (window.plugin.LiveInventory.keyGuidCount) {
             availableKeys = window.plugin.LiveInventory.keyGuidCount[portal.guid] || 0;
           } else if (window.plugin.LiveInventory.keyCount) {
-            availableKeys = window.plugin.LiveInventory.keyCount.find(obj => obj.portalCoupler.portalGuid === portal.guid)
-              ?.count || 0;
+            availableKeys = window.plugin.LiveInventory.keyCount.find(obj => obj.portalCoupler.portalGuid === portal.guid)?.count || 0;
           }
         } else {
           availableKeys = window.plugin.keys.keys[portal.guid] || 0;
