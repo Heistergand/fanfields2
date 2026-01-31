@@ -989,6 +989,7 @@ function wrapper(plugin_info) {
   thisplugin.showManageOrderDialog = function () {
     var that = thisplugin;
     let manageOrderDialogTitle = 'Fan Fields 2 - Manage Portal Order';
+    var isMobile = L && L.Browser && L.Browser.mobile;
 
     if (!that.sortedFanpoints || that.sortedFanpoints.length === 0) {
       var widthEmpty = 350;
@@ -1009,6 +1010,9 @@ function wrapper(plugin_info) {
       html += '<table id="plugin_fanfields2_order_table" class="plugin_fanfields2_order_table">';
       html += '<thead><tr>';
       html += '<th class="plugin_fanfields2_order_gripcol" style="width:22px;"></th>';
+      if (isMobile) {
+        html += '<th class="plugin_fanfields2_order_move_col" style="width:36px;"></th>';
+      }
       html += '<th style="width:30px;">#</th>';
       html += '<th>Portal</th>';
       html += '<th style="width:60px;">Keys</th>';
@@ -1030,8 +1034,24 @@ function wrapper(plugin_info) {
           '<td class="plugin_fanfields2_order_gripcol"><span class="plugin_fanfields2_order_anchor_icon" title="Anchor row">&#9875;</span></td>' :
           '<td class="plugin_fanfields2_order_gripcol"><span class="plugin_fanfields2_order_handle" title="Drag to reorder">&#9776;</span></td>';
 
+        var moveCell = '';
+        if (isMobile) {
+          if (isAnchor) {
+            moveCell = '<td class="plugin_fanfields2_order_move_col">' +
+              '<button class="plugin_fanfields2_order_move plugin_fanfields2_order_move_up" disabled>&#9650;</button>' +
+              '<button class="plugin_fanfields2_order_move plugin_fanfields2_order_move_down" disabled>&#9660;</button>' +
+              '</td>';
+          } else {
+            moveCell = '<td class="plugin_fanfields2_order_move_col">' +
+              '<button class="plugin_fanfields2_order_move plugin_fanfields2_order_move_up" title="Move up">&#9650;</button>' +
+              '<button class="plugin_fanfields2_order_move plugin_fanfields2_order_move_down" title="Move down">&#9660;</button>' +
+              '</td>';
+          }
+        }
+
         html += '<tr class="' + trClass + '" data-guid="' + fp.guid + '">';
         html += gripCell;
+        html += moveCell;
         html += '<td class="plugin_fanfields2_order_idx">' + idx + '</td>';
         html += '<td>' + title + (isAnchor ? ' <span class="plugin_fanfields2_italic">(anchor)</span>' : '') + '</td>';
         html += '<td style="text-align:right;">' + keys + '</td>';
@@ -1041,7 +1061,11 @@ function wrapper(plugin_info) {
 
       html += '</tbody></table>';
       html += '<div class="plugin_fanfields2_order_hint">';
-      html += 'Drag &amp; drop rows to change visit order. First row (anchor) is fixed.<br>';
+      if (isMobile) {
+        html += 'Use ▲/▼ to change visit order. First row (anchor) is fixed.<br>';
+      } else {
+        html += 'Drag &amp; drop rows to change visit order. First row (anchor) is fixed.<br>';
+      }
       html += 'Click <b>Apply</b> to use this order for the fanfield calculation.';
       html += '</div>';
       html += '<div style="margin-top:5px;text-align:right;">';
@@ -1075,6 +1099,7 @@ function wrapper(plugin_info) {
               .find('td.plugin_fanfields2_order_idx')
               .text(i);
           });
+        updateMoveButtons();
       }
 
       function pinAnchorRow() {
@@ -1084,6 +1109,35 @@ function wrapper(plugin_info) {
           .first()[0] !== $anchor[0]) {
           $tbody.prepend($anchor);
         }
+      }
+
+      function updateMoveButtons() {
+        if (!isMobile) return;
+        var $rows = $tbody.find('tr.plugin_fanfields2_order_row');
+        $rows.find('.plugin_fanfields2_order_move')
+          .prop('disabled', false);
+        $rows.first()
+          .find('.plugin_fanfields2_order_move_up')
+          .prop('disabled', true);
+        $rows.last()
+          .find('.plugin_fanfields2_order_move_down')
+          .prop('disabled', true);
+      }
+
+      function moveRow($row, direction) {
+        if (!$row.length || !$row.hasClass('plugin_fanfields2_order_row')) return;
+        var $anchor = $tbody.find('> tr.plugin_fanfields2_order_anchor');
+        if (direction === 'up') {
+          var $prev = $row.prev('tr');
+          if ($prev.length === 0 || $prev.is($anchor)) return;
+          $row.insertBefore($prev);
+        } else {
+          var $next = $row.next('tr');
+          if ($next.length === 0) return;
+          $row.insertAfter($next);
+        }
+        pinAnchorRow();
+        renumberRows();
       }
 
       // Destroy old sortable if the dialog is rebuilt.
@@ -1145,6 +1199,21 @@ function wrapper(plugin_info) {
           renumberRows();
         }
       });
+
+      if (isMobile) {
+        $tbody
+          .off('click.plugin_fanfields2_order_move')
+          .on('click.plugin_fanfields2_order_move', '.plugin_fanfields2_order_move', function () {
+            var $row = $(this)
+              .closest('tr');
+            if ($(this)
+              .hasClass('plugin_fanfields2_order_move_up')) {
+              moveRow($row, 'up');
+            } else {
+              moveRow($row, 'down');
+            }
+          });
+      }
 
       // Rebind Reset and Apply buttons
       $('#plugin_fanfields2_order_reset')
@@ -1564,6 +1633,16 @@ function wrapper(plugin_info) {
       '  width: 100%;\n' +
       '  border-collapse: collapse;\n' +
       '  font-size: 11px;\n' +
+      '}\n' +
+      '.plugin_fanfields2_order_move_col {\n' +
+      '  width: 36px;\n' +
+      '  text-align: center;\n' +
+      '  white-space: nowrap;\n' +
+      '}\n' +
+      '.plugin_fanfields2_order_move {\n' +
+      '  min-width: 18px;\n' +
+      '  padding: 0 2px;\n' +
+      '  margin: 0 1px;\n' +
       '}\n' +
       '.plugin_fanfields2_order_table th,\n' +
       '.plugin_fanfields2_order_table td {\n' +
