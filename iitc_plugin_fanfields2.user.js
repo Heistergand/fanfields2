@@ -31,7 +31,7 @@ function wrapper(plugin_info) {
   /* global L, $, dialog, map, portals, links, plugin, formatDistance  -- eslint*/
   /* exported setup, changelog -- eslint */
 
-  let arcname = window.PLAYER.team === 'ENLIGHTENED' ? 'Arc' : '***';
+  var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
       version: '2.7.7',
       changes: [
