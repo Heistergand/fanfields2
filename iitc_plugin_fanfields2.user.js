@@ -613,7 +613,7 @@ function wrapper(plugin_info) {
         'Open <i>Task List</i> to get a step-by-step plan including per-portal key requirements, outgoing link counts, and (optional) link details. ' +
         'If you use a Keys/LiveInventory plugin, the task list can also show your available key counts. ' +
         'The task list includes a navigation link for Google Maps and a print-friendly view. ' +
-        'You can also export the plan to Drawtools/Bookmarks (and Arcs on ENL) to share or continue working with it.</p>' +
+        'You can also export the plan to Drawtools/Bookmarks to share or continue working with it.</p>' +
 
         '<hr noshade>' +
 
