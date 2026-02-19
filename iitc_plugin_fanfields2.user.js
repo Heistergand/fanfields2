@@ -37,7 +37,8 @@ function wrapper(plugin_info) {
       changes: [
         'NEW: Add user warning when trying to link impossible lengths from underneath a field.',
         'IMPROVE print design',
-        'FIX: minor code cleanup.'
+        'FIX: adjust label position to avoid overlapping with portal names',
+        'FIX: minor code cleanup.',
       ],
     },{
       version: '2.7.8',
@@ -434,6 +435,7 @@ function wrapper(plugin_info) {
 
   thisplugin.LABEL_WIDTH = 100;
   thisplugin.LABEL_HEIGHT = 49;
+  thisplugin.LABEL_PADDING_TOP = 27;
 
   // constants no longer present in leaflet 1.6.0
   thisplugin.DEG_TO_RAD = Math.PI / 180;
@@ -1749,14 +1751,14 @@ function wrapper(plugin_info) {
 
 
     addCSS('\n' +
-      '.plugin_fanfields {\n' +
+      '.plugin_fanfields2_label {\n' +
       '   color: #FFFFBB;\n' +
       '   font-size: 11px;\n' +
       '   line-height: 13px;\n' +
       '   text-align: left;\n' +
       '   vertical-align: bottom;\n' +
       '   padding: 2px;\n' +
-      '   padding-top: 15px;\n' +
+      '   padding-top: ' + thisplugin.LABEL_PADDING_TOP + 'px;\n' +
       '   overflow: hidden;\n' +
       '   text-shadow: 1px 1px #000, 1px -1px #000, -1px 1px #000, -1px -1px #000, 0 0 5px #000;\n' +
       '   pointer-events: none;\n' +
@@ -2075,7 +2077,7 @@ function wrapper(plugin_info) {
 
     var label = L.marker(latLng, {
       icon: L.divIcon({
-        className: 'plugin_fanfields',
+        className: 'plugin_fanfields2_label',
         iconAnchor: [0, 0],
         iconSize: [thisplugin.LABEL_WIDTH, thisplugin.LABEL_HEIGHT],
         html: labelText
