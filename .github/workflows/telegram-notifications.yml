@@ -20,21 +20,21 @@ jobs:
         if: ${{ github.event_name == 'issues' }}
         run: |
           ESCAPED_BODY=$(echo "${{ github.event.issue.body }}" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-          echo "ESCAPED_BODY=$ESCAPED_BODY" >> $GITHUB_ENV
+          echo "ESCAPED_BODY=$(echo "$ESCAPED_BODY" | tr -d '\r')" >> $GITHUB_ENV
 
       # --- Escape Comment Body ---
       - name: Escape Comment Body
         if: ${{ github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' }}
         run: |
           ESCAPED_COMMENT=$(echo "${{ github.event.comment.body }}" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-          echo "ESCAPED_COMMENT=$ESCAPED_COMMENT" >> $GITHUB_ENV
+          echo "ESCAPED_COMMENT=$(echo "$ESCAPED_COMMENT" | tr -d '\r')" >> $GITHUB_ENV
 
       # --- Escape PR Body ---
       - name: Escape PR Body
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           ESCAPED_PR_BODY=$(echo "${{ github.event.pull_request.body }}" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-          echo "ESCAPED_PR_BODY=$ESCAPED_PR_BODY" >> $GITHUB_ENV
+          echo "ESCAPED_PR_BODY=$(echo "$ESCAPED_PR_BODY" | tr -d '\r')" >> $GITHUB_ENV
 
       # --- Telegram: Issue ---
       - name: Send Telegram (Issue)
