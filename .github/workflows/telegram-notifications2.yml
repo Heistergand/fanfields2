@@ -1,4 +1,4 @@
-name: Telegram Notifications
+name: Telegram Notifications v2
 
 on:
   issues:
@@ -23,8 +23,7 @@ jobs:
         if: ${{ github.event_name == 'issues' }}
         shell: bash
         run: |
-          set -euo pipefail
-
+          
           ACTION="$(jq -r '.action // ""' "$GITHUB_EVENT_PATH")"
           ISSUE_URL="$(jq -r '.issue.html_url // ""' "$GITHUB_EVENT_PATH")"
           ISSUE_TITLE_RAW="$(jq -r '.issue.title // ""' "$GITHUB_EVENT_PATH")"
@@ -68,8 +67,7 @@ jobs:
         if: ${{ github.event_name == 'issue_comment' }}
         shell: bash
         run: |
-          set -euo pipefail
-
+          
           ISSUE_URL="$(jq -r '.issue.html_url // ""' "$GITHUB_EVENT_PATH")"
           ISSUE_TITLE_RAW="$(jq -r '.issue.title // ""' "$GITHUB_EVENT_PATH")"
           COMMENT_URL="$(jq -r '.comment.html_url // ""' "$GITHUB_EVENT_PATH")"
@@ -115,8 +113,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         shell: bash
         run: |
-          set -euo pipefail
-
+          
           ACTION="$(jq -r '.action // ""' "$GITHUB_EVENT_PATH")"
           PR_URL="$(jq -r '.pull_request.html_url // ""' "$GITHUB_EVENT_PATH")"
           PR_TITLE_RAW="$(jq -r '.pull_request.title // ""' "$GITHUB_EVENT_PATH")"
@@ -160,8 +157,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request_review_comment' }}
         shell: bash
         run: |
-          set -euo pipefail
-
+          
           PR_URL="$(jq -r '.pull_request.html_url // ""' "$GITHUB_EVENT_PATH")"
           PR_TITLE_RAW="$(jq -r '.pull_request.title // ""' "$GITHUB_EVENT_PATH")"
           COMMENT_URL="$(jq -r '.comment.html_url // ""' "$GITHUB_EVENT_PATH")"
