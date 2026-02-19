@@ -1,0 +1,304 @@
+name: Telegram Notifications
+
+on:
+  issues:
+    types: [opened, edited, closed]
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, edited, closed, reopened]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  send_notification:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ----------------------------
+      # Build message files
+      # ----------------------------
+
+      - name: Build Telegram message (Issue)
+        if: ${{ github.event_name == 'issues' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ACTION="$(jq -r '.action // ""' "$GITHUB_EVENT_PATH")"
+          ISSUE_URL="$(jq -r '.issue.html_url // ""' "$GITHUB_EVENT_PATH")"
+          ISSUE_TITLE_RAW="$(jq -r '.issue.title // ""' "$GITHUB_EVENT_PATH")"
+          ISSUE_BODY_RAW="$(jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH")"
+
+          esc() {
+            python3 - <<'PY'
+          import html, sys
+          text = sys.stdin.read()
+          text = text.replace("\r\n", "\n").replace("\r", "\n")
+          if text.strip() == "":
+            text = "(empty)"
+          sys.stdout.write(html.escape(text, quote=False))
+          PY
+          }
+
+          truncate_body() {
+            python3 - <<'PY'
+          import sys
+          s = sys.stdin.read()
+          max_len = 2500
+          if len(s) > max_len:
+            s = s[:max_len] + "\n…(truncated)…"
+          sys.stdout.write(s)
+          PY
+          }
+
+          ISSUE_TITLE="$(printf '%s' "$ISSUE_TITLE_RAW" | esc)"
+          ISSUE_URL_ESC="$(printf '%s' "$ISSUE_URL" | esc)"
+          ISSUE_BODY="$(printf '%s' "$ISSUE_BODY_RAW" | esc | truncate_body)"
+
+          cat > tg_issue.html <<EOF
+          🚨 Issue Notification 🚨
+          <b>Issue URL:</b> $ISSUE_URL_ESC
+          <b>${GITHUB_ACTOR}</b> triggered issue event: <b>$(printf '%s' "$ACTION" | esc)</b>
+          <b>Title:</b> $ISSUE_TITLE
+          <blockquote>$ISSUE_BODY</blockquote>
+          EOF
+
+      - name: Build Telegram message (Issue Comment)
+        if: ${{ github.event_name == 'issue_comment' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ISSUE_URL="$(jq -r '.issue.html_url // ""' "$GITHUB_EVENT_PATH")"
+          ISSUE_TITLE_RAW="$(jq -r '.issue.title // ""' "$GITHUB_EVENT_PATH")"
+          COMMENT_URL="$(jq -r '.comment.html_url // ""' "$GITHUB_EVENT_PATH")"
+          COMMENT_BODY_RAW="$(jq -r '.comment.body // ""' "$GITHUB_EVENT_PATH")"
+
+          esc() {
+            python3 - <<'PY'
+          import html, sys
+          text = sys.stdin.read()
+          text = text.replace("\r\n", "\n").replace("\r", "\n")
+          if text.strip() == "":
+            text = "(empty)"
+          sys.stdout.write(html.escape(text, quote=False))
+          PY
+          }
+
+          truncate_body() {
+            python3 - <<'PY'
+          import sys
+          s = sys.stdin.read()
+          max_len = 2500
+          if len(s) > max_len:
+            s = s[:max_len] + "\n…(truncated)…"
+          sys.stdout.write(s)
+          PY
+          }
+
+          ISSUE_TITLE="$(printf '%s' "$ISSUE_TITLE_RAW" | esc)"
+          ISSUE_URL_ESC="$(printf '%s' "$ISSUE_URL" | esc)"
+          COMMENT_URL_ESC="$(printf '%s' "$COMMENT_URL" | esc)"
+          COMMENT_BODY="$(printf '%s' "$COMMENT_BODY_RAW" | esc | truncate_body)"
+
+          cat > tg_issue_comment.html <<EOF
+          📝 Comment on Issue 📝
+          <b>Comment URL:</b> $COMMENT_URL_ESC
+          <b>Issue URL:</b> $ISSUE_URL_ESC
+          <b>Issue:</b> $ISSUE_TITLE
+          <b>${GITHUB_ACTOR}</b> commented:
+          <blockquote>$COMMENT_BODY</blockquote>
+          EOF
+
+      - name: Build Telegram message (Pull Request)
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ACTION="$(jq -r '.action // ""' "$GITHUB_EVENT_PATH")"
+          PR_URL="$(jq -r '.pull_request.html_url // ""' "$GITHUB_EVENT_PATH")"
+          PR_TITLE_RAW="$(jq -r '.pull_request.title // ""' "$GITHUB_EVENT_PATH")"
+          PR_BODY_RAW="$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH")"
+
+          esc() {
+            python3 - <<'PY'
+          import html, sys
+          text = sys.stdin.read()
+          text = text.replace("\r\n", "\n").replace("\r", "\n")
+          if text.strip() == "":
+            text = "(empty)"
+          sys.stdout.write(html.escape(text, quote=False))
+          PY
+          }
+
+          truncate_body() {
+            python3 - <<'PY'
+          import sys
+          s = sys.stdin.read()
+          max_len = 2500
+          if len(s) > max_len:
+            s = s[:max_len] + "\n…(truncated)…"
+          sys.stdout.write(s)
+          PY
+          }
+
+          PR_TITLE="$(printf '%s' "$PR_TITLE_RAW" | esc)"
+          PR_URL_ESC="$(printf '%s' "$PR_URL" | esc)"
+          PR_BODY="$(printf '%s' "$PR_BODY_RAW" | esc | truncate_body)"
+
+          cat > tg_pr.html <<EOF
+          🚀 Pull Request Notification 🚀
+          <b>PR URL:</b> $PR_URL_ESC
+          <b>${GITHUB_ACTOR}</b> triggered PR event: <b>$(printf '%s' "$ACTION" | esc)</b>
+          <b>Title:</b> $PR_TITLE
+          <blockquote>$PR_BODY</blockquote>
+          EOF
+
+      - name: Build Telegram message (PR Review Comment)
+        if: ${{ github.event_name == 'pull_request_review_comment' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PR_URL="$(jq -r '.pull_request.html_url // ""' "$GITHUB_EVENT_PATH")"
+          PR_TITLE_RAW="$(jq -r '.pull_request.title // ""' "$GITHUB_EVENT_PATH")"
+          COMMENT_URL="$(jq -r '.comment.html_url // ""' "$GITHUB_EVENT_PATH")"
+          COMMENT_BODY_RAW="$(jq -r '.comment.body // ""' "$GITHUB_EVENT_PATH")"
+
+          esc() {
+            python3 - <<'PY'
+          import html, sys
+          text = sys.stdin.read()
+          text = text.replace("\r\n", "\n").replace("\r", "\n")
+          if text.strip() == "":
+            text = "(empty)"
+          sys.stdout.write(html.escape(text, quote=False))
+          PY
+          }
+
+          truncate_body() {
+            python3 - <<'PY'
+          import sys
+          s = sys.stdin.read()
+          max_len = 2500
+          if len(s) > max_len:
+            s = s[:max_len] + "\n…(truncated)…"
+          sys.stdout.write(s)
+          PY
+          }
+
+          PR_TITLE="$(printf '%s' "$PR_TITLE_RAW" | esc)"
+          PR_URL_ESC="$(printf '%s' "$PR_URL" | esc)"
+          COMMENT_URL_ESC="$(printf '%s' "$COMMENT_URL" | esc)"
+          COMMENT_BODY="$(printf '%s' "$COMMENT_BODY_RAW" | esc | truncate_body)"
+
+          cat > tg_pr_comment.html <<EOF
+          💬 Comment on Pull Request 💬
+          <b>Comment URL:</b> $COMMENT_URL_ESC
+          <b>PR URL:</b> $PR_URL_ESC
+          <b>PR:</b> $PR_TITLE
+          <b>${GITHUB_ACTOR}</b> commented:
+          <blockquote>$COMMENT_BODY</blockquote>
+          EOF
+
+      # ----------------------------
+      # Send (with fallback)
+      # ----------------------------
+
+      - name: Send Telegram (Issue)
+        if: ${{ github.event_name == 'issues' }}
+        id: tg_issue
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message_file: tg_issue.html
+
+      - name: Send Telegram Fallback (Issue)
+        if: ${{ github.event_name == 'issues' && steps.tg_issue.outcome == 'failure' }}
+        uses: appleboy/telegram-action@v1.0.1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
+            🚨 Issue Notification 🚨
+            <blockquote>cannot parse message to telegram</blockquote>
+
+      - name: Send Telegram (Issue Comment)
+        if: ${{ github.event_name == 'issue_comment' }}
+        id: tg_issue_comment
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message_file: tg_issue_comment.html
+
+      - name: Send Telegram Fallback (Issue Comment)
+        if: ${{ github.event_name == 'issue_comment' && steps.tg_issue_comment.outcome == 'failure' }}
+        uses: appleboy/telegram-action@v1.0.1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
+            📝 Comment on Issue 📝
+            <blockquote>cannot parse message to telegram</blockquote>
+
+      - name: Send Telegram (Pull Request)
+        if: ${{ github.event_name == 'pull_request' }}
+        id: tg_pr
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message_file: tg_pr.html
+
+      - name: Send Telegram Fallback (Pull Request)
+        if: ${{ github.event_name == 'pull_request' && steps.tg_pr.outcome == 'failure' }}
+        uses: appleboy/telegram-action@v1.0.1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
+            🚀 Pull Request Notification 🚀
+            <blockquote>cannot parse message to telegram</blockquote>
+
+      - name: Send Telegram (PR Review Comment)
+        if: ${{ github.event_name == 'pull_request_review_comment' }}
+        id: tg_pr_comment
+        continue-on-error: true
+        uses: appleboy/telegram-action@v1.0.1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message_file: tg_pr_comment.html
+
+      - name: Send Telegram Fallback (PR Review Comment)
+        if: ${{ github.event_name == 'pull_request_review_comment' && steps.tg_pr_comment.outcome == 'failure' }}
+        uses: appleboy/telegram-action@v1.0.1
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: html
+          disable_web_page_preview: true
+          message: |
+            💬 Comment on Pull Request 💬
+            <blockquote>cannot parse message to telegram</blockquote>
