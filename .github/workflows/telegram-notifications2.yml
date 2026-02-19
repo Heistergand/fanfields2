@@ -1,4 +1,4 @@
-name: Telegram Notifications
+name: Telegram Notifications v2
 
 on:
   issues:
@@ -19,19 +19,39 @@ jobs:
         shell: bash
         env:
           BODY: ${{ github.event.issue.body }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ACTOR: ${{ github.actor }}
+          ACTION: ${{ github.event.action }}
+          TITLE: ${{ github.event.issue.title }}
         run: |
           ESCAPED_BODY=$(printf '%s' "$BODY" \
             | tr -d '\r' \
-            | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_ISSUE_URL=$(printf '%s' "$ISSUE_URL" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_ACTOR=$(printf '%s' "$ACTOR" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_ACTION=$(printf '%s' "$ACTION" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_TITLE=$(printf '%s' "$TITLE" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
 
           cat > tg_message.html <<'EOF'
           🚨 Issue Notification 🚨
           EOF
 
           {
-            echo "<b>Issue URL:</b> ${{ github.event.issue.html_url }}"
-            echo "<b>${{ github.actor }}</b> triggered issue event: <b>${{ github.event.action }}</b>"
-            echo "<b>Title:</b> ${{ github.event.issue.title }}"
+            echo "<b>Issue URL:</b> $ESCAPED_ISSUE_URL"
+            echo "<b>$ESCAPED_ACTOR</b> triggered issue event: <b>$ESCAPED_ACTION</b>"
+            echo "<b>Title:</b> $ESCAPED_TITLE"
             echo "<blockquote>$ESCAPED_BODY</blockquote>"
           } >> tg_message.html
 
@@ -50,19 +70,34 @@ jobs:
         shell: bash
         env:
           BODY: ${{ github.event.comment.body }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ACTOR: ${{ github.actor }}
         run: |
           ESCAPED_COMMENT=$(printf '%s' "$BODY" \
             | tr -d '\r' \
-            | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_COMMENT_URL=$(printf '%s' "$COMMENT_URL" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_ISSUE_URL=$(printf '%s' "$ISSUE_URL" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_ACTOR=$(printf '%s' "$ACTOR" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
 
           cat > tg_message.html <<'EOF'
           📝 Comment on Issue 📝
           EOF
 
           {
-            echo "<b>Comment URL:</b> ${{ github.event.comment.html_url }}"
-            echo "<b>Issue URL:</b> ${{ github.event.issue.html_url }}"
-            echo "<b>${{ github.actor }}</b> commented:"
+            echo "<b>Comment URL:</b> $ESCAPED_COMMENT_URL"
+            echo "<b>Issue URL:</b> $ESCAPED_ISSUE_URL"
+            echo "<b>$ESCAPED_ACTOR</b> commented:"
             echo "<blockquote>$ESCAPED_COMMENT</blockquote>"
           } >> tg_message.html
 
@@ -81,19 +116,39 @@ jobs:
         shell: bash
         env:
           BODY: ${{ github.event.pull_request.body }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          ACTOR: ${{ github.actor }}
+          ACTION: ${{ github.event.action }}
+          TITLE: ${{ github.event.pull_request.title }}
         run: |
           ESCAPED_PR_BODY=$(printf '%s' "$BODY" \
             | tr -d '\r' \
-            | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_PR_URL=$(printf '%s' "$PR_URL" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_ACTOR=$(printf '%s' "$ACTOR" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_ACTION=$(printf '%s' "$ACTION" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_TITLE=$(printf '%s' "$TITLE" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
 
           cat > tg_message.html <<'EOF'
           🚀 Pull Request Notification 🚀
           EOF
 
           {
-            echo "<b>PR URL:</b> ${{ github.event.pull_request.html_url }}"
-            echo "<b>${{ github.actor }}</b> triggered PR event: <b>${{ github.event.action }}</b>"
-            echo "<b>Title:</b> ${{ github.event.pull_request.title }}"
+            echo "<b>PR URL:</b> $ESCAPED_PR_URL"
+            echo "<b>$ESCAPED_ACTOR</b> triggered PR event: <b>$ESCAPED_ACTION</b>"
+            echo "<b>Title:</b> $ESCAPED_TITLE"
             echo "<blockquote>$ESCAPED_PR_BODY</blockquote>"
           } >> tg_message.html
 
@@ -112,19 +167,34 @@ jobs:
         shell: bash
         env:
           BODY: ${{ github.event.comment.body }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          ACTOR: ${{ github.actor }}
         run: |
           ESCAPED_COMMENT=$(printf '%s' "$BODY" \
             | tr -d '\r' \
-            | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_COMMENT_URL=$(printf '%s' "$COMMENT_URL" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_PR_URL=$(printf '%s' "$PR_URL" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
+
+          ESCAPED_ACTOR=$(printf '%s' "$ACTOR" \
+            | tr -d '\r' \
+            | sed -e 's/&/\&amp;amp;/g' -e 's/</\&amp;lt;/g' -e 's/>/\&amp;gt;/g')
 
           cat > tg_message.html <<'EOF'
           💬 Comment on Pull Request 💬
           EOF
 
           {
-            echo "<b>Comment URL:</b> ${{ github.event.comment.html_url }}"
-            echo "<b>PR URL:</b> ${{ github.event.pull_request.html_url }}"
-            echo "<b>${{ github.actor }}</b> commented:"
+            echo "<b>Comment URL:</b> $ESCAPED_COMMENT_URL"
+            echo "<b>PR URL:</b> $ESCAPED_PR_URL"
+            echo "<b>$ESCAPED_ACTOR</b> commented:"
             echo "<blockquote>$ESCAPED_COMMENT</blockquote>"
           } >> tg_message.html
 
