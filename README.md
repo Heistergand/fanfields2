@@ -51,7 +51,7 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
 
 
 ## Contribute
-Don't hesitate to send pull requests to the beta branch.
+Don't hesitate to send pull requests.
 
 
 ## Reviews
@@ -73,9 +73,11 @@ english: https://youtu.be/jwn6p5xFGNY
 german https://youtu.be/IFgYGUdHNcs
 
 ## Donations
-The best way to say thank you is writing reports about where you used it and let me know about it.
+ > [!NOTE]
+ > The best way to show your appreciation is to write reviews about where you've used it and tell me about it.
 
-_If you think this is great and you really like to donate something: I have all I need. But the world is not what it seems, so head out and **donate blood** in your area, register as a **bone marrow donor** or **donate money to other charities**. It will change lives._
+ > [!IMPORTANT]
+ > If you think this is great and you really like to donate something: I have all I need. But the world is not what it seems, so head out and **donate blood** in your area, register as a **bone marrow donor** or **donate money to other charities**. It will change lives.
 
 ## How it looks (on desktop)
 ### New sidebar design (no fieldset box anymore)
