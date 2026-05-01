@@ -13,6 +13,7 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
 - IITC plugin: Arc
 - IITC plugin: [Keys](https://iitc.app/download_desktop#keys-by-xelio) by xelio
 - IITC Plugin: [Live Inventory](https://github.com/IITC-CE/Community-plugins?tab=readme-ov-file#live-inventory-by-eisfrei---fork-by-danielondiordna) by EisFrei - fork by DanielOnDiordna
+- IITC Plugin: [Portal Route](https://iitc.app/community_plugins#portal-route-by-MikeDiehn) by Mike Diehn
 
 ## Features
 - Select portals in your area by drawing a polygon around them with DrawTools. 
@@ -31,7 +32,8 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
     - link order
     - target portal name
     - link distance
-- Open the path along the Portals in google maps.
+- Plot a route along the portals in IITC with Portal Route
+- Open the path along the portals in Google Maps.
 - Tweak your plan:
   - Move the anchor portal along the hull of the area.
   - Set a marker to a portal inside the hull to make it a possible anchor. _(Yes, you can actually make a 360° fan field. Still has issues though.)_

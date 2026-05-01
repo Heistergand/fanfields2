@@ -738,33 +738,17 @@ function wrapper(plugin_info) {
   }
 
 
-  thisplugin.isCompatiblePortalRoutePlugin = function (routePlugin) {
+  thisplugin.isCompatiblePortalRoutePlugin = function () {
+    var routePlugin = window.plugin && window.plugin.portalRoute;
     if (!routePlugin) return false;
     if (typeof routePlugin.replaceStops === 'function') return true;
     return (typeof routePlugin.clearStops === 'function' && typeof routePlugin.addStop === 'function');
   };
 
   thisplugin.getPortalRoutePlugin = function () {
-    if (!window.plugin) return null;
-
-    var candidates = [
-      window.plugin.portalRoute,
-      window.plugin.portalRoutes,
-      window.plugin.drivingRoute
-    ];
-
-    for (var i = 0; i < candidates.length; i++) {
-      if (thisplugin.isCompatiblePortalRoutePlugin(candidates[i])) {
-        return candidates[i];
-      }
-    }
-
-    return null;
-  };
-
-  thisplugin.getAnyPortalRoutePlugin = function () {
-    if (!window.plugin) return null;
-    return window.plugin.portalRoute || window.plugin.portalRoutes || window.plugin.drivingRoute || null;
+    return thisplugin.isCompatiblePortalRoutePlugin()
+      ? window.plugin.portalRoute
+      : null;
   };
 
   thisplugin.getPortalRouteStops = function () {
@@ -1016,7 +1000,10 @@ function wrapper(plugin_info) {
       '</div>';
 
     text += '<div style="margin-top:10px;">';
-    text += '<a id="plugin_fanfields2_portal_route_link" href="#">Route with Portal Route</a><br>';
+    if (thisplugin.isCompatiblePortalRoutePlugin()) {
+      text += '<a id="plugin_fanfields2_portal_route_link" href="#">Route with Portal Route</a><br>';
+    }
+    
     text += '<a target="_blank" href="' + gmnav + '">Navigate with Google Maps</a>';
     text += '</div>';
 
@@ -1072,16 +1059,16 @@ function wrapper(plugin_info) {
         thisplugin.exportTaskListToPDF();
       });
 
-    $('#plugin_fanfields2_portal_route_link')
-      .off('click')
-      .on('click', function (ev) {
-        ev.preventDefault();
-        thisplugin.routeWithPortalRoute();
-      });
-
+    if (thisplugin.isCompatiblePortalRoutePlugin()) {
+      $('#plugin_fanfields2_portal_route_link')
+        .off('click')
+        .on('click', function (ev) {
+          ev.preventDefault();
+          thisplugin.routeWithPortalRoute();
+        });
+    }
 
   };
-
 
   thisplugin.exportTaskListToPDF = function () {
     const id = 'plugin_fanfields2_alert_textExport';
