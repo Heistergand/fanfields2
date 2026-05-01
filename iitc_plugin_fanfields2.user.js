@@ -737,6 +737,88 @@ function wrapper(plugin_info) {
     else window.urlPortal = guid;
   }
 
+
+  thisplugin.isCompatiblePortalRoutePlugin = function () {
+    var routePlugin = window.plugin && window.plugin.portalRoute;
+    if (!routePlugin) return false;
+    if (typeof routePlugin.replaceStops === 'function') return true;
+    return (typeof routePlugin.clearStops === 'function' && typeof routePlugin.addStop === 'function');
+  };
+
+  thisplugin.getPortalRoutePlugin = function () {
+    return thisplugin.isCompatiblePortalRoutePlugin()
+      ? window.plugin.portalRoute
+      : null;
+  };
+
+  thisplugin.getPortalRouteStops = function () {
+    return thisplugin.sortedFanpoints.map(function (portal) {
+      var latlng = map.unproject(portal.point, thisplugin.PROJECT_ZOOM);
+      var p = portal.portal || window.portals[portal.guid];
+      var title = 'unknown title';
+
+      if (p && p.options && p.options.data && p.options.data.title) {
+        title = p.options.data.title;
+      }
+
+      return {
+        guid: portal.guid || null,
+        title: title,
+        lat: latlng.lat,
+        lng: latlng.lng
+      };
+    });
+  };
+
+  thisplugin.routeWithPortalRoute = function () {
+    var routePlugin = thisplugin.getPortalRoutePlugin();
+
+    if (!routePlugin) {
+      var anyRoutePlugin = thisplugin.getAnyPortalRoutePlugin();
+      dialog({
+        html: anyRoutePlugin
+          ? '<p>Portal Route is loaded, but does not expose a compatible route import function.</p>'
+          : '<p>Portal Route is not loaded.</p>',
+        id: anyRoutePlugin ? 'plugin_fanfields2_alert_portal_route_incompatible' : 'plugin_fanfields2_alert_portal_route_missing',
+        title: 'Fan Fields 2 - Portal Route',
+        width: anyRoutePlugin ? 400 : 350,
+        closeOnEscape: true
+      });
+      return;
+    }
+
+    var stops = thisplugin.getPortalRouteStops();
+    if (!stops.length) return;
+
+    if (typeof routePlugin.replaceStops === 'function') {
+      routePlugin.replaceStops(stops, { openPanel: true, clearRoute: true });
+      return;
+    }
+
+    if (typeof routePlugin.clearStops === 'function' && typeof routePlugin.addStop === 'function') {
+      routePlugin.clearStops();
+      stops.forEach(function (stop) {
+        routePlugin.addStop(stop);
+      });
+
+      if (routePlugin.state) routePlugin.state.panelOpen = true;
+      if (typeof routePlugin.savePanelOpen === 'function') routePlugin.savePanelOpen();
+      if (typeof routePlugin.renderPanel === 'function') routePlugin.renderPanel();
+      if (typeof routePlugin.showMessage === 'function') {
+        routePlugin.showMessage('Imported ' + stops.length + ' Fan Fields stops.');
+      }
+      return;
+    }
+
+    dialog({
+      html: '<p>Portal Route is loaded, but does not expose a compatible route import function.</p>',
+      id: 'plugin_fanfields2_alert_portal_route_incompatible',
+      title: 'Fan Fields 2 - Portal Route',
+      width: 400,
+      closeOnEscape: true
+    });
+  };
+
   // Show as list
   thisplugin.exportText = function () {
     var text = '<table><thead><tr>';
@@ -917,7 +999,13 @@ function wrapper(plugin_info) {
       '  <button id="plugin_fanfields2_export_pdf_btn">Print</button>' +
       '</div>';
 
+    text += '<div style="margin-top:10px;">';
+    if (thisplugin.isCompatiblePortalRoutePlugin()) {
+      text += '<a id="plugin_fanfields2_portal_route_link" href="#">Route with Portal Route</a><br>';
+    }
+    
     text += '<a target="_blank" href="' + gmnav + '">Navigate with Google Maps</a>';
+    text += '</div>';
 
     thisplugin.exportDialogWidth = 500;
 
@@ -971,9 +1059,16 @@ function wrapper(plugin_info) {
         thisplugin.exportTaskListToPDF();
       });
 
+    if (thisplugin.isCompatiblePortalRoutePlugin()) {
+      $('#plugin_fanfields2_portal_route_link')
+        .off('click')
+        .on('click', function (ev) {
+          ev.preventDefault();
+          thisplugin.routeWithPortalRoute();
+        });
+    }
 
   };
-
 
   thisplugin.exportTaskListToPDF = function () {
     const id = 'plugin_fanfields2_alert_textExport';
