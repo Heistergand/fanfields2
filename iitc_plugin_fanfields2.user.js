@@ -2024,6 +2024,111 @@ function wrapper(plugin_info) {
         `);
 
 
+
+
+    addCSS(`
+      .plugin_fanfields2_mini_control {
+        margin-top: 10px;
+      }
+
+      .plugin_fanfields2_mini_control a {
+        text-align: center;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .plugin_fanfields2_mini_control .plugin_fanfields2_mini_active {
+        text-decoration: underline;
+      }
+
+      .plugin_fanfields2_context_menu {
+        position: fixed;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 165px;
+        padding: 5px;
+        border: 1px solid rgba(32, 168, 204, 0.8);
+        background: rgba(8, 45, 62, 0.96);
+        color: #ffd800;
+        font-size: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+      }
+
+      .plugin_fanfields2_context_menu button {
+        display: block;
+        width: 100%;
+        padding: 4px 6px !important;
+        border: 0 !important;
+        background: transparent !important;
+        color: inherit !important;
+        font: inherit;
+        text-align: left;
+      }
+
+      .plugin_fanfields2_context_menu button:hover,
+      .plugin_fanfields2_context_menu button:focus {
+        background: rgba(255, 255, 255, 0.12) !important;
+        outline: none !important;
+      }
+
+      .plugin_fanfields2_context_menu button:disabled {
+        color: rgba(255, 255, 255, 0.42) !important;
+      }
+
+      .plugin_fanfields2_context_divider {
+        height: 1px;
+        margin: 3px 0;
+        background: rgba(32, 168, 204, 0.5);
+      }
+
+      .plugin_fanfields2_options_dialog {
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .plugin_fanfields2_options_dialog h4 {
+        margin: 8px 0 4px;
+      }
+
+      .plugin_fanfields2_options_dialog table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 4px 0 8px;
+      }
+
+      .plugin_fanfields2_options_dialog td {
+        padding: 3px 4px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .plugin_fanfields2_options_dialog td:first-child {
+        color: #ccc;
+        width: 45%;
+      }
+
+      .plugin_fanfields2_options_dialog select {
+        width: 100%;
+        max-width: 180px;
+      }
+
+      .plugin_fanfields2_options_dialog tr.plugin_fanfields2_options_disabled td {
+        color: rgba(255, 255, 255, 0.42);
+      }
+
+      .plugin_fanfields2_options_dialog tr.plugin_fanfields2_options_disabled select {
+        opacity: 0.55;
+      }
+
+      .plugin_fanfields2_options_actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 8px;
+      }
+    `);
+
     // Inject/update a single style tag
     var style = document.getElementById('plugin_fanfields2_css');
     if (!style) {
@@ -3487,6 +3592,265 @@ function wrapper(plugin_info) {
 
   };
 
+
+  thisplugin.optionsStorageKey = 'plugin_fanfields2_options';
+
+  thisplugin.getControlState = function () {
+    return {
+      is_clockwise: !!thisplugin.is_clockwise,
+      stardirection: thisplugin.stardirection,
+      availableSBUL: thisplugin.availableSBUL,
+      is_locked: !!thisplugin.is_locked,
+      respectIntelLinksMode: thisplugin.respectIntelLinksMode,
+      use_bookmarks_only: !!thisplugin.use_bookmarks_only,
+      indicateLinkDirection: !!thisplugin.indicateLinkDirection
+    };
+  };
+
+  thisplugin.applyControlState = function (state) {
+    if (!state) return;
+
+    if (typeof state.is_clockwise === 'boolean') thisplugin.is_clockwise = state.is_clockwise;
+    if (state.stardirection === thisplugin.starDirENUM.CENTRALIZING || state.stardirection === thisplugin.starDirENUM.RADIATING) {
+      thisplugin.stardirection = state.stardirection;
+    }
+    if (typeof state.availableSBUL === 'number') {
+      thisplugin.availableSBUL = Math.max(0, Math.min(4, state.availableSBUL));
+    }
+    if (typeof state.is_locked === 'boolean') thisplugin.is_locked = state.is_locked;
+    if (typeof state.respectIntelLinksMode === 'number') thisplugin.respectIntelLinksMode = state.respectIntelLinksMode;
+    if (typeof state.use_bookmarks_only === 'boolean') thisplugin.use_bookmarks_only = state.use_bookmarks_only;
+    if (typeof state.indicateLinkDirection === 'boolean') thisplugin.indicateLinkDirection = state.indicateLinkDirection;
+  };
+
+  thisplugin.loadSavedOptions = function () {
+    try {
+      var raw = localStorage.getItem(thisplugin.optionsStorageKey);
+      if (!raw) return;
+      thisplugin.applyControlState(JSON.parse(raw));
+    } catch (e) {
+      console.warn('Fan Fields 2: unable to load saved options', e);
+    }
+  };
+
+  thisplugin.getSavedOptionsState = function () {
+    return {
+      stardirection: thisplugin.stardirection,
+      availableSBUL: thisplugin.availableSBUL,
+      respectIntelLinksMode: thisplugin.respectIntelLinksMode,
+      use_bookmarks_only: !!thisplugin.use_bookmarks_only,
+      indicateLinkDirection: !!thisplugin.indicateLinkDirection
+    };
+  };
+
+  thisplugin.saveCurrentOptions = function () {
+    localStorage.setItem(thisplugin.optionsStorageKey, JSON.stringify(thisplugin.getSavedOptionsState()));
+  };
+
+  thisplugin.clearSavedOptions = function () {
+    localStorage.removeItem(thisplugin.optionsStorageKey);
+  };
+
+  thisplugin.controlButtonHtml = function (id, label, title, extraClass) {
+    return '<a id="' + id + '" href="javascript: void(0);" class="fanfields-control ' + (extraClass || '') + '" title="' + title + '">' + label + '</a>';
+  };
+
+  thisplugin.updateFfControlStates = function () {
+    $('#plugin_fanfields2_mini_clockwise')
+      .html(thisplugin.is_clockwise ? symbol_clockwise : symbol_counterclockwise)
+      .attr('title', thisplugin.is_clockwise ? 'FanFields clockwise' : 'FanFields counterclockwise');
+
+    $('#plugin_fanfields2_mini_lock')
+      .html(thisplugin.is_locked ? '&#128274;' : '&#128275;')
+      .attr('title', thisplugin.is_locked ? 'FanFields locked' : 'FanFields unlocked');
+
+    thisplugin.updateRespectIntelButton();
+
+    $('#plugin_fanfields2_direction_indicator_btn')
+      .html('Show link dir: ' + (thisplugin.indicateLinkDirection ? 'ON' : 'OFF'));
+
+    $('#plugin_fanfields2_lockbtn')
+      .html((thisplugin.is_locked ? '&#128274;&nbsp;Locked' : '&#128275;&nbsp;Unlocked'));
+
+    $('#plugin_fanfields2_bookarks_only_btn')
+      .html('&#128278;&nbsp;' + (thisplugin.use_bookmarks_only ? 'Bookmarks only' : 'All Portals'));
+
+    $('#plugin_fanfields2_clckwsbtn')
+      .html((thisplugin.is_clockwise ? 'Clockwise&nbsp;' + symbol_clockwise : 'Counterclockwise&nbsp;' + symbol_counterclockwise));
+
+    $('#plugin_fanfields2_stardirbtn')
+      .html(thisplugin.stardirection === thisplugin.starDirENUM.CENTRALIZING ? 'Inbounding' : 'Outbounding');
+
+    if (thisplugin.stardirection === thisplugin.starDirENUM.CENTRALIZING) {
+      $('#plugin_fanfields2_availablesbul').hide();
+    } else {
+      $('#plugin_fanfields2_availablesbul').show();
+    }
+
+    $('#plugin_fanfields2_availablesbul_count').html('' + thisplugin.availableSBUL + '');
+  };
+
+  thisplugin.menuButtonHtml = function (label, action, disabled) {
+    return '<button type="button" data-ff2-action="' + action + '"' + (disabled ? ' disabled' : '') + '>' + label + '</button>';
+  };
+
+  thisplugin.menuDividerHtml = function () {
+    return '<div class="plugin_fanfields2_context_divider"></div>';
+  };
+
+  thisplugin.contextMenuHtml = function () {
+    var html = '';
+    var hasBookmarks = typeof window.plugin.bookmarks !== 'undefined';
+
+    html += thisplugin.menuButtonHtml('Options', 'options');
+    html += thisplugin.menuButtonHtml(symbol_clipboard + ' Task list', 'task-list');
+    html += thisplugin.menuButtonHtml('Manage order', 'manage-order');
+    html += thisplugin.menuButtonHtml('Write draw tools', 'write-drawtools');
+    if (hasBookmarks) html += thisplugin.menuButtonHtml('Write bookmarks', 'write-bookmarks');
+    html += thisplugin.menuButtonHtml('Show stats', 'stats');
+    html += thisplugin.menuButtonHtml('Help', 'help');
+
+    return html;
+  };
+
+  thisplugin.closeContextMenu = function () {
+    $('.plugin_fanfields2_context_menu').remove();
+  };
+
+  thisplugin.positionContextMenu = function (menu, x, y) {
+    var rect = menu.getBoundingClientRect();
+    var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 320;
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 480;
+    menu.style.left = Math.max(6, Math.min(x, viewportWidth - rect.width - 6)) + 'px';
+    menu.style.top = Math.max(6, Math.min(y, viewportHeight - rect.height - 6)) + 'px';
+  };
+
+  thisplugin.openContextMenu = function (x, y) {
+    thisplugin.closeContextMenu();
+    var menu = document.createElement('div');
+    menu.className = 'plugin_fanfields2_context_menu';
+    menu.innerHTML = thisplugin.contextMenuHtml();
+    document.body.appendChild(menu);
+    thisplugin.positionContextMenu(menu, x, y);
+  };
+
+  thisplugin.refreshContextMenu = function () {
+    var menu = document.querySelector('.plugin_fanfields2_context_menu');
+    if (!menu) return;
+    menu.innerHTML = thisplugin.contextMenuHtml();
+  };
+
+  thisplugin.handleMenuAction = function (action) {
+    switch (action) {
+      case 'options': thisplugin.options(); thisplugin.closeContextMenu(); break;
+      case 'task-list': thisplugin.exportText(); thisplugin.closeContextMenu(); break;
+      case 'manage-order': thisplugin.showManageOrderDialog(); thisplugin.closeContextMenu(); break;
+      case 'write-drawtools': thisplugin.exportDrawtools(); thisplugin.closeContextMenu(); break;
+      case 'write-bookmarks': thisplugin.saveBookmarks(); thisplugin.closeContextMenu(); break;
+      case 'stats': thisplugin.showStatistics(); thisplugin.closeContextMenu(); break;
+      case 'help': thisplugin.help(); thisplugin.closeContextMenu(); break;
+      default: break;
+    }
+    thisplugin.updateFfControlStates();
+    thisplugin.refreshContextMenu();
+  };
+
+  thisplugin.selectOptionHtml = function (value, label, selectedValue) {
+    return '<option value="' + value + '"' + (String(value) === String(selectedValue) ? ' selected' : '') + '>' + label + '</option>';
+  };
+
+  thisplugin.optionsDialogHtml = function () {
+    var state = thisplugin.getControlState();
+    var html = '<div class="plugin_fanfields2_options_dialog">';
+    var sbulDisabled = state.stardirection === thisplugin.starDirENUM.CENTRALIZING;
+    html += '<h4>Controls</h4>';
+    html += '<table>';
+    html += '<tr><td>Fan direction</td><td><select id="plugin_fanfields2_opt_stardirection">';
+    html += thisplugin.selectOptionHtml(thisplugin.starDirENUM.CENTRALIZING, 'Inbounding', state.stardirection);
+    html += thisplugin.selectOptionHtml(thisplugin.starDirENUM.RADIATING, 'Outbounding', state.stardirection);
+    html += '</select></td></tr>';
+    html += '<tr id="plugin_fanfields2_opt_sbul_row"' + (sbulDisabled ? ' class="plugin_fanfields2_options_disabled"' : '') + '><td>Available SBUL</td><td><select id="plugin_fanfields2_opt_sbul"' + (sbulDisabled ? ' disabled' : '') + '>';
+    for (var i = 0; i <= 4; i++) html += thisplugin.selectOptionHtml(i, i, state.availableSBUL);
+    html += '</select></td></tr>';
+    html += '<tr><td>Respect Intel</td><td><select id="plugin_fanfields2_opt_respect">';
+    html += thisplugin.selectOptionHtml(thisplugin.respectIntelLinksModeENUM.NONE, 'NONE', state.respectIntelLinksMode);
+    html += thisplugin.selectOptionHtml(thisplugin.respectIntelLinksModeENUM.ALL, 'ALL', state.respectIntelLinksMode);
+    html += thisplugin.selectOptionHtml(thisplugin.respectIntelLinksModeENUM.ENL, 'ENL', state.respectIntelLinksMode);
+    html += thisplugin.selectOptionHtml(thisplugin.respectIntelLinksModeENUM.RES, 'RES', state.respectIntelLinksMode);
+    html += thisplugin.selectOptionHtml(thisplugin.respectIntelLinksModeENUM.ENL_AND_MAC, 'E&amp;M', state.respectIntelLinksMode);
+    html += thisplugin.selectOptionHtml(thisplugin.respectIntelLinksModeENUM.RES_AND_MAC, 'R&amp;M', state.respectIntelLinksMode);
+    html += thisplugin.selectOptionHtml(thisplugin.respectIntelLinksModeENUM.MAC, 'MAC', state.respectIntelLinksMode);
+    html += '</select></td></tr>';
+    html += '<tr><td>Portal selection</td><td><select id="plugin_fanfields2_opt_bookmarks">';
+    html += thisplugin.selectOptionHtml('false', 'All portals', state.use_bookmarks_only);
+    html += thisplugin.selectOptionHtml('true', 'Bookmarks only', state.use_bookmarks_only);
+    html += '</select></td></tr>';
+    html += '<tr><td>Link direction</td><td><select id="plugin_fanfields2_opt_linkdir">';
+    html += thisplugin.selectOptionHtml('true', 'Shown', state.indicateLinkDirection);
+    html += thisplugin.selectOptionHtml('false', 'Hidden', state.indicateLinkDirection);
+    html += '</select></td></tr>';
+    html += '</table>';
+    html += '<h4>Saved defaults</h4>';
+    html += '<p>Save the current options as the startup default for this browser, or clear the saved default and use FF2 built-in defaults.</p>';
+    html += '<div class="plugin_fanfields2_options_actions">';
+    html += '<button type="button" id="plugin_fanfields2_save_defaults">Save options as default</button>';
+    html += '<button type="button" id="plugin_fanfields2_clear_defaults">Clear saved default</button>';
+    html += '</div>';
+    html += '</div>';
+    return html;
+  };
+
+  thisplugin.readOptionsDialogState = function () {
+    return {
+      stardirection: parseInt($('#plugin_fanfields2_opt_stardirection').val(), 10),
+      availableSBUL: parseInt($('#plugin_fanfields2_opt_sbul').val(), 10),
+      respectIntelLinksMode: parseInt($('#plugin_fanfields2_opt_respect').val(), 10),
+      use_bookmarks_only: $('#plugin_fanfields2_opt_bookmarks').val() === 'true',
+      indicateLinkDirection: $('#plugin_fanfields2_opt_linkdir').val() === 'true'
+    };
+  };
+
+  thisplugin.syncOptionsDialogAvailability = function () {
+    var isInbounding = parseInt($('#plugin_fanfields2_opt_stardirection').val(), 10) === thisplugin.starDirENUM.CENTRALIZING;
+    $('#plugin_fanfields2_opt_sbul')
+      .prop('disabled', isInbounding);
+    $('#plugin_fanfields2_opt_sbul_row')
+      .toggleClass('plugin_fanfields2_options_disabled', isInbounding);
+  };
+
+  thisplugin.applyOptionsDialogState = function () {
+    var state = thisplugin.readOptionsDialogState();
+    thisplugin.applyControlState(state);
+    thisplugin.updateFfControlStates();
+    thisplugin.syncOptionsDialogAvailability();
+    thisplugin.delayedUpdateLayer(0.2);
+  };
+
+  thisplugin.options = function () {
+    var width = Math.min(420, thisplugin.getMaxDialogWidth());
+    dialog({
+      html: thisplugin.optionsDialogHtml(),
+      id: 'plugin_fanfields2_options_dialog',
+      title: 'Fan Fields 2 Opt',
+      width: width
+    });
+
+    $('.plugin_fanfields2_options_dialog select').on('change', function () {
+      thisplugin.applyOptionsDialogState();
+    });
+
+    $('#plugin_fanfields2_save_defaults').on('click', function () {
+      thisplugin.applyOptionsDialogState();
+      thisplugin.saveCurrentOptions();
+      alert('Fan Fields 2 defaults saved.');
+    });
+
+    $('#plugin_fanfields2_clear_defaults').on('click', function () {
+      thisplugin.clearSavedOptions();
+      alert('Fan Fields 2 saved defaults cleared.');
+    });
+  };
+
   var symbol_clockwise = '&#8635;';
   var symbol_counterclockwise = '&#8634;';
   var symbol_clipboard = '&#128203;';
@@ -3497,7 +3861,7 @@ function wrapper(plugin_info) {
         position: "topleft",
       },
       onAdd: function (map) {
-        var container = L.DomUtil.create("div", "leaflet-fanfields leaflet-bar");
+        var container = L.DomUtil.create("div", "leaflet-fanfields leaflet-bar plugin_fanfields2_mini_control");
 
         // Prevent clicks/double-clicks on this control from reaching the map (no dblclick zoom)
         L.DomEvent.disableClickPropagation(container);
@@ -3506,29 +3870,45 @@ function wrapper(plugin_info) {
         // hard-stop double click
         L.DomEvent.on(container, 'dblclick', L.DomEvent.stop);
 
-
         $(container)
-          .append(
-            '<a id="fanfieldShiftLeftButton" href="javascript: void(0);" class="fanfields-control" title="FanFields shift left">' +
-            symbol_counterclockwise + '</a>'
-          )
-          .on("click", "#fanfieldShiftLeftButton", function () {
+          .append(thisplugin.controlButtonHtml('plugin_fanfields2_mini_shift_left', '&#9664;', 'FanFields shift left'))
+          .append(thisplugin.controlButtonHtml('plugin_fanfields2_mini_shift_right', '&#9654;', 'FanFields shift right'))
+          .append(thisplugin.controlButtonHtml('plugin_fanfields2_mini_clockwise', thisplugin.is_clockwise ? symbol_clockwise : symbol_counterclockwise, 'FanFields direction'))
+          .append(thisplugin.controlButtonHtml('plugin_fanfields2_mini_lock', thisplugin.is_locked ? '&#128274;' : '&#128275;', 'FanFields lock'))
+          .append(thisplugin.controlButtonHtml('plugin_fanfields2_mini_menu', '&#9776;', 'Open Fan Fields 2 menu'))
+          .on('click', '#plugin_fanfields2_mini_shift_left', function () {
             thisplugin.previousStartingPoint();
-          });
-
-        $(container)
-          .append(
-            '<a id="fanfieldShiftRightButton" href="javascript: void(0);" class="fanfields-control" title="FanFields shift right">' + symbol_clockwise +
-            '</a>'
-          )
-          .on("click", "#fanfieldShiftRightButton", function () {
+          })
+          .on('click', '#plugin_fanfields2_mini_shift_right', function () {
             thisplugin.nextStartingPoint();
+          })
+          .on('click', '#plugin_fanfields2_mini_clockwise', function () {
+            thisplugin.toggleclockwise();
+            thisplugin.updateFfControlStates();
+          })
+          .on('click', '#plugin_fanfields2_mini_lock', function () {
+            thisplugin.lock();
+            thisplugin.updateFfControlStates();
+          })
+          .on('click', '#plugin_fanfields2_mini_menu', function () {
+            var rect = this.getBoundingClientRect();
+            thisplugin.openContextMenu(rect.left, rect.bottom + 4);
           });
 
         return container;
       },
     });
     map.addControl(new thisplugin.ffButtons());
+
+    $(document).on('click.plugin_fanfields2_menu', '.plugin_fanfields2_context_menu button[data-ff2-action]', function () {
+      thisplugin.handleMenuAction($(this).attr('data-ff2-action'));
+    });
+
+    $(document).on('click.plugin_fanfields2_menu_close', function (ev) {
+      if (!$(ev.target).closest('.plugin_fanfields2_context_menu, #plugin_fanfields2_mini_menu').length) {
+        thisplugin.closeContextMenu();
+      }
+    });
   };
 
   thisplugin.getMaxDialogWidth = function () {
@@ -3550,115 +3930,13 @@ function wrapper(plugin_info) {
     //Extend LatLng here to ensure it was created before
     thisplugin.initLatLng();
 
-    var buttonBookmarks = '';
-    var buttonBookmarksOnly = '';
-    if (typeof window.plugin.bookmarks !== 'undefined') {
-      // Write Bookmarks
-      buttonBookmarks =
-        '<a class="plugin_fanfields2_btn" onclick="window.plugin.fanfields.saveBookmarks();" title="Create New Portal Potential Future">Write&nbsp;Bookmarks</a> ';
+    thisplugin.loadSavedOptions();
 
-      // Only Use Bookmarked Portals
-      buttonBookmarksOnly =
-        '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_bookarks_only_btn" onclick="window.plugin.fanfields.useBookmarksOnly();" title="Help Enlightened Strong Victory">&#128278;&nbsp;All Portals</a> ';
-    }
-    // Show as list
-    var buttonPortalList = '<a class="plugin_fanfields2_btn" onclick="window.plugin.fanfields.exportText();" title="OpenAll Link Create Star">' +
-      symbol_clipboard + '&nbsp;Task&nbsp;List</a> ';
+    var fanfields_buttons = '<a id="plugin_fanfields2_optionsbtn" onclick="window.plugin.fanfields.options();" title="Fan Fields 2 options">Fan Fields</a>';
 
-    // Manage order
-    var buttonManageOrder =
-      '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_manageorderbtn" onclick="window.plugin.fanfields.showManageOrderDialog();" title="Use Restraint Follow Easy Path">Manage&nbsp;order</a> ';
-
-
-
-    // clockwise &#8635; ↻
-    // counterclockwise &#8634; ↺
-    // &#5123; ᐃ
-    // &#5121; ᐁ
-    // &#5130; ᐊ
-    // &#5125; ᐅ
-
-    // var symbol_up = '&#5123;';
-    // var symbol_down = '&#5121;';
-    var symbol_left = '&#5130;';
-    var symbol_right = '&#5125;';
-
-    var symbol_inc = symbol_right;
-    var symbol_dec = symbol_left;
-
-    var buttonClockwise =
-      '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();" title="Begin Journey Breathe XM ">Clockwise&nbsp;' +
-      symbol_clockwise + '</a> ';
-    var buttonLock =
-      '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_lockbtn" onclick="window.plugin.fanfields.lock();" title="Avoid XM Message Lie">&#128275;&nbsp;Unlocked</a> ';
-
-    var buttonStarDirection =
-      '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();" title="Change Perspective Technology">Inbounding</a> ';
-    // Available SBUL
-    var buttonSBUL =
-      '<span id="plugin_fanfields2_availablesbul" class="plugin_fanfields2_multibtn" style="display: none;">' +
-      '    <span class="plugin_fanfields2_availablesbul_label">Available&nbsp;SBUL:</span>' +
-      '    <span class="plugin_fanfields2_multibtn" style="flex: 50%">' +
-      '        <a id="plugin_fanfields2_inscsbulbtn" class="plugin_fanfields2_minibtn" onclick="window.plugin.fanfields.decreaseSBUL();" >' + symbol_dec +
-      '</a>' +
-      '        <span id="plugin_fanfields2_availablesbul_count" class="plugin_fanfields2_minibtn">' + (thisplugin.availableSBUL) + '</span>' +
-      '        <a id="plugin_fanfields2_decsbulbtn" class="plugin_fanfields2_minibtn" onclick="window.plugin.fanfields.increaseSBUL();">' + symbol_inc +
-      '</a>' +
-      '    </span>' +
-      '</span>';
-
-    // Respect Intel
-    var buttonRespect =
-      '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();" title="Question Conflict Data">Respect&nbsp;Intel:&nbsp;NONE</a> ';
-
-    // Show link dir
-    var buttonLinkDirectionIndicator =
-      '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_direction_indicator_btn" onclick="window.plugin.fanfields.toggleLinkDirIndicator();" title="Technology Intelligence See All">Show&nbsp;link&nbsp;dir:&nbsp;ON</a> ';
-
-    // Shift anchor
-    var buttonShiftAnchor =
-      '<a class="plugin_fanfields2_btn" onclick="window.plugin.fanfields.previousStartingPoint();" title="Less Chaos More Stability">Shift&nbsp;left&nbsp;' +
-      symbol_counterclockwise + '</a>' + // clockwise &#8635;
-      '<a class="plugin_fanfields2_btn" onclick="window.plugin.fanfields.nextStartingPoint();" title="Restraint Path Gain Harmony">Shift&nbsp;right&nbsp;' +
-      symbol_clockwise + '</a>';
-
-    var buttonStats =
-      '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_statsbtn" onclick="window.plugin.fanfields.showStatistics();" title="See Truth Now">Stats</a> ';
-
-    // Write Drawtools
-    var buttonDrawTools =
-      '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();" title="Help Shapers Create Future">Write&nbsp;DrawTools</a> ';
-
-    // Write Arcs
-    var buttonArcs = ''
-    if (typeof window.plugin.arcs !== 'undefined' && window.PLAYER.team === 'ENLIGHTENED') {
-      buttonArcs =
-        '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_exportArcsBtn" onclick="window.plugin.fanfields.exportArcs();" title="Field Together Improve Human Mind">Write&nbsp;Arcs</a> ';
-    };
-
-    var buttonHelp = '<a class="plugin_fanfields2_btn" id="plugin_fanfields2_helpbtn" onclick="window.plugin.fanfields.help();" title="Help" >Help</a> ';
-
-    var fanfields_buttons = '<span class="plugin_fanfields2_multibtn plugin_fanfields2_titlebar">Fan Fields 2</span>';
-
-    fanfields_buttons +=
-      buttonShiftAnchor +
-      buttonClockwise +
-      buttonStarDirection +
-      buttonSBUL +
-      buttonLock +
-      buttonRespect +
-      buttonBookmarksOnly +
-      buttonLinkDirectionIndicator +
-      buttonPortalList +
-      buttonManageOrder +
-      buttonDrawTools +
-      buttonBookmarks +
-      buttonArcs +
-      buttonStats +
-      buttonHelp;
-
-    $('#sidebar')
-      .append('<div id="fanfields2" class="plugin_fanfields2_sidebar"></div>');
+    $('#toolbox')
+      .append(' ')
+      .append(fanfields_buttons);
 
     thisplugin.addFfButtons();
 
@@ -3676,18 +3954,13 @@ function wrapper(plugin_info) {
         width: width
       });
 
-      $('#fanfields2')
-        .empty();
-      $('#fanfields2')
-        .append("<i>Fan Fields requires IITC drawtools plugin.</i>");
+      $('#plugin_fanfields2_optionsbtn')
+        .replaceWith('<span id="plugin_fanfields2_optionsbtn" title="Fan Fields requires IITC drawtools plugin">Fan Fields</span>');
 
       return;
     }
 
-
-
-    $('#fanfields2')
-      .append(fanfields_buttons);
+    thisplugin.updateFfControlStates();
 
     thisplugin.updateRespectIntelButton();
 
