@@ -1215,15 +1215,11 @@ function wrapper(plugin_info) {
     }
 
     // Mobile: the Task List covers most of the screen, so center the map on the portal, select
-    // it (highlight ring on the map, without opening the details pane) and close the list.
-    // Desktop keeps the list open and shows the portal details.
+    // it the same way a map tap does (name in the bottom bar, details ready behind it) and close
+    // the list. Desktop keeps the list open and shows the portal details.
     if (L && L.Browser && L.Browser.mobile) {
-      if (window.portals[guid]) {
-        if (typeof window.selectPortal === 'function') window.selectPortal(guid);
-        else window.renderPortalDetails(guid);
-      } else {
-        window.urlPortal = guid;
-      }
+      if (window.portals[guid]) window.renderPortalDetails(guid);
+      else window.urlPortal = guid;
       $('#plugin_fanfields3_exportText_inner')
         .closest('.ui-dialog-content')
         .dialog('close');
