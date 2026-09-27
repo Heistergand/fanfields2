@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         3.2.0.20260927
+// @version         3.2.1.20260927
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-09-27-144836';
+  plugin_info.dateTimeVersion = '2026-09-27-145757';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,11 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '3.2.1',
+      changes: [
+        'FIX: A finished portal (Action "Nothing") now always shows pale yellow and struck through in the Task List, like every other finished portal, even when it was green (moved earlier by Less walking) or carried the red cross of a blocking link it frees. The printed Task List follows the same rule.',
+      ],
+    },{
       version: '3.2.0',
       changes: [
         'NEW: Reroute button next to Refresh in the Task List: reorders the steps still to do so that, from your current position (GPS, else IITC\'s own location, else the map center), you walk as little as possible. Steps already done stay at the top, each portal is still captured and its keys gathered before anyone links to it (unless it is already yours with enough keys), and no field is lost. Links and fields stay the same, the map numbers, Destroy stops, Google Maps and Portal Route follow the new order, and it works while the plan is locked too. The new order holds until the plan changes or Reset link orders is used.',
@@ -1541,8 +1546,8 @@ function wrapper(plugin_info) {
         !!(thisplugin.relocatedForLessWalkingGuids && thisplugin.relocatedForLessWalkingGuids[portal.guid]);
 
       // Both classes can apply at once (a portal with nothing left to do that was also
-      // relocated): "relocated" is declared after "done" in the stylesheet, so its green color
-      // wins over "done"'s faded yellow, while "done"'s strikethrough still applies.
+      // relocated): "done" wins in the stylesheet, so a finished portal always shows faded
+      // yellow and struck through, like every other finished portal.
       var portalRowClasses = [];
       if (action === 'Nothing') portalRowClasses.push('plugin_fanfields3_portal_done');
       if (isRelocatedForLessWalking) portalRowClasses.push('plugin_fanfields3_portal_relocated');
@@ -2353,6 +2358,14 @@ function wrapper(plugin_info) {
           tr td span.plugin_fanfields3_blocker_tag {
             color: #C62828 !important;
             text-decoration: none !important;
+          }
+
+          tr.plugin_fanfields3_portal_done,
+          tr.plugin_fanfields3_portal_done td,
+          tr.plugin_fanfields3_portal_done td a,
+          tr.plugin_fanfields3_portal_done td span {
+            color: #828284 !important;
+            text-decoration: line-through !important;
           }
         `;
 
@@ -3678,10 +3691,19 @@ function wrapper(plugin_info) {
       'tr.plugin_fanfields3_blocker_row span {\n' +
       '  color: #FF6B6B !important;\n' +
       '}\n' +
-      // Always red, even on a row whose own text is green (relocated) or faded (done).
+      // Red, even on a row whose own text is green (relocated) — except on a finished portal (below).
       '#plugin_fanfields3_exportText_inner tr td span.plugin_fanfields3_blocker_tag {\n' +
       '  color: #FF4444 !important;\n' +
       '  text-decoration: none !important;\n' +
+      '}\n' +
+      // A finished portal (Action "Nothing") always reads as done: pale yellow and struck
+      // through, even when it's also relocated (green) or carries a blocker cross (red).
+      '#plugin_fanfields3_exportText_inner tr.plugin_fanfields3_portal_done,\n' +
+      '#plugin_fanfields3_exportText_inner tr.plugin_fanfields3_portal_done td,\n' +
+      '#plugin_fanfields3_exportText_inner tr.plugin_fanfields3_portal_done td a,\n' +
+      '#plugin_fanfields3_exportText_inner tr.plugin_fanfields3_portal_done td span {\n' +
+      '  color: rgba(255, 206, 0, 0.35) !important;\n' +
+      '  text-decoration: line-through !important;\n' +
       '}\n' +
       '.plugin_fanfields3_blocker_summary,\n' +
       '.plugin_fanfields3_route_summary {\n' +
