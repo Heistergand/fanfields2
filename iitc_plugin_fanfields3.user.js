@@ -1391,6 +1391,62 @@ function wrapper(plugin_info) {
     return 0;
   };
 
+  // Finished portals (Action "Nothing"), keyed by guid -> { partners: guids of the plan portals
+  // it was seen linked to in-game }. A finished portal stays finished — missing data (portal not
+  // loaded, links hidden at this zoom, key counts refreshing) doesn't bring it back — until:
+  //  - the plan changes (donePortalsPlanKey, see getPlanShapeKey);
+  //  - the portal itself is known to belong to another team (destroyed or flipped), or to have
+  //    fewer than 8 resonators;
+  //  - one of its in-game links is gone and the portal at its other end is known to belong to
+  //    another team.
+  thisplugin.donePortalGuids = {};
+  thisplugin.donePortalsPlanKey = null;
+
+  thisplugin.syncDonePortals = function () {
+    var key = thisplugin.getPlanShapeKey();
+    if (key !== thisplugin.donePortalsPlanKey) {
+      thisplugin.donePortalGuids = {};
+      thisplugin.donePortalsPlanKey = key;
+    }
+  };
+
+  // Whether the portal's loaded data says it's not ours; false while its data isn't known.
+  thisplugin.isPortalKnownLost = function (guid) {
+    var ownTeam = thisplugin.getOwnFactionTeam();
+    var team = thisplugin.getPortalTeam(window.portals[guid]);
+    return ownTeam !== undefined && team !== undefined && team !== ownTeam;
+  };
+
+  // Whether the portal's loaded data says it has fewer than 8 resonators; false while unknown.
+  thisplugin.isPortalKnownDamaged = function (guid) {
+    var marker = window.portals[guid];
+    var resCount = marker && marker.options && marker.options.data ? marker.options.data.resCount : undefined;
+    return resCount !== undefined && resCount < 8;
+  };
+
+  // Whether fp counts as finished: isNothingNow is what the live data says right now. Only a
+  // live "Nothing" marks the portal finished; see donePortalGuids for what unmarks it.
+  thisplugin.isPortalDone = function (fp, isNothingNow) {
+    var entry = thisplugin.donePortalGuids[fp.guid];
+    if (entry) {
+      var lost = thisplugin.isPortalKnownLost(fp.guid) || thisplugin.isPortalKnownDamaged(fp.guid) ||
+        Object.keys(entry.partners).some(function (partnerGuid) {
+        return !thisplugin.isLinkInGame(fp.guid, partnerGuid) && thisplugin.isPortalKnownLost(partnerGuid);
+      });
+      if (lost) {
+        delete thisplugin.donePortalGuids[fp.guid];
+        entry = null;
+      }
+    }
+    if (!entry && !isNothingNow) return false;
+
+    entry = entry || (thisplugin.donePortalGuids[fp.guid] = { partners: {} });
+    (fp.outgoing || []).concat(fp.incoming || []).forEach(function (partner) {
+      if (thisplugin.isLinkInGame(fp.guid, partner.guid)) entry.partners[partner.guid] = true;
+    });
+    return true;
+  };
+
   // Task List: build the HTML for the current plan. Used both to open the dialog and to
   // refresh it live (see thisplugin.refreshTaskListIfOpen) as the background plan changes.
   thisplugin.buildTaskListHTML = function () {
@@ -1424,6 +1480,8 @@ function wrapper(plugin_info) {
 
     // Blockers: extra Destroy rows slotted into the walk (see computeBlockerPlan).
     var blockerPlan = thisplugin.computeBlockerPlan();
+
+    thisplugin.syncDonePortals();
 
     displayOrder.forEach(function (portal, index) {
       blockerPlan.stops.forEach(function (stop) {
@@ -1527,6 +1585,7 @@ function wrapper(plugin_info) {
       // needed counts as outstanding since there's no way to know what's in the inventory.
       var needsKeys = hasKeysPluginData ? !hasEnoughKeys : keysNeeded > 0;
       var action = needsCapture ? 'Capture' : (remainingOutgoingCount > 0 ? 'Link' : (needsKeys ? 'Keys' : 'Nothing'));
+      if (thisplugin.isPortalDone(portal, action === 'Nothing')) action = 'Nothing';
 
       // Google Maps route: skip a portal with nothing left to do here — no point stopping
       // there again, and it only lengthens the route for everyone else on it.
@@ -2127,6 +2186,8 @@ function wrapper(plugin_info) {
       return !(meta && meta.invalidUnderField) && !thisplugin.isLinkInGame(srcFp.guid, dstGuid);
     }
 
+    thisplugin.syncDonePortals();
+
     var states = {};
     walk.forEach(function (fp) {
       var marker = window.portals[fp.guid] || fp.portal;
@@ -2139,7 +2200,7 @@ function wrapper(plugin_info) {
       var enoughKeys = hasKeysPlugin ? thisplugin.getAvailableKeys(fp.guid) >= keysNeeded : keysNeeded === 0;
 
       states[fp.guid] = {
-        pending: needsCapture || targets.length > 0 || !enoughKeys,
+        pending: needsCapture || targets.length > 0 || !enoughKeys ? !thisplugin.isPortalDone(fp, false) : false,
         ready: owned && enoughKeys,
         targets: targets
       };
