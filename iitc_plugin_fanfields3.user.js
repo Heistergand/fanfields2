@@ -1826,7 +1826,30 @@ function wrapper(plugin_info) {
 
     thisplugin.wireTaskListHandlers();
     thisplugin.addTaskListShiftButtons();
+    thisplugin.scrollTaskListToFirstPending();
 
+  };
+
+  // Scroll the open Task List so its first row with something still left to do (any row not
+  // marked done, Destroy stops included) sits at the top of the visible area, with the
+  // previous row kept just above it for context. Stays at the top when that's the very first
+  // row, or when every row is already done.
+  thisplugin.scrollTaskListToFirstPending = function () {
+    var $content = $('#dialog-plugin_fanfields3_alert_textExport');
+    if (!$content.length) return;
+
+    var $rows = $content.find('.plugin_fanfields3_exportText_Portal > tr');
+    var pendingIndex = -1;
+    $rows.each(function (i) {
+      if (!$(this).hasClass('plugin_fanfields3_portal_done')) {
+        pendingIndex = i;
+        return false;
+      }
+    });
+    if (pendingIndex <= 0) return;
+
+    var $target = $rows.eq(pendingIndex - 1);
+    $content.scrollTop($content.scrollTop() + $target.offset().top - $content.offset().top);
   };
 
   // Task List dialog: add the same anchor shift (rotation) controls as the map's own
