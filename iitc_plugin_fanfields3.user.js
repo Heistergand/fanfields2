@@ -1776,14 +1776,46 @@ function wrapper(plugin_info) {
     });
   };
 
+  // The Task List toggle for a given guid, and whether its portal row is finished (Action "Nothing").
+  thisplugin.findTaskListToggle = function (guid) {
+    return $('#plugin_fanfields3_exportText_inner [plugin_fanfields3_exportText_toggle="toggle"][data-guid="' + guid + '"]');
+  };
+
+  thisplugin.isTaskListToggleDone = function ($toggle) {
+    return $toggle.closest('tr').hasClass('plugin_fanfields3_portal_done');
+  };
+
   // Rebuild the Task List dialog's content in place, preserving the expanded/collapsed
   // per-portal link lists. Used after a flip/reset, and to auto-refresh live as the
   // background plan changes (new links appearing in-game, fan field rotation, etc.).
+  // An expanded portal that has just become finished is collapsed, and the next unfinished
+  // row below it with link details is expanded instead, so the list follows the walk.
   thisplugin.refreshTaskListDialog = function () {
     var expandedGuids = thisplugin.getTaskListExpandedGuids();
+    var doneBefore = {};
+    expandedGuids.forEach(function (guid) {
+      doneBefore[guid] = thisplugin.isTaskListToggleDone(thisplugin.findTaskListToggle(guid));
+    });
+
     $('#plugin_fanfields3_exportText_inner').html(thisplugin.buildTaskListHTML());
     thisplugin.wireTaskListHandlers();
-    thisplugin.restoreTaskListExpandedGuids(expandedGuids);
+
+    var guidsToExpand = [];
+    expandedGuids.forEach(function (guid) {
+      var $toggle = thisplugin.findTaskListToggle(guid);
+      if (doneBefore[guid] || !$toggle.length || !thisplugin.isTaskListToggleDone($toggle)) {
+        if (guidsToExpand.indexOf(guid) === -1) guidsToExpand.push(guid);
+        return;
+      }
+      $toggle.closest('tbody').nextAll('tbody.plugin_fanfields3_exportText_Portal').each(function () {
+        var $nextToggle = $(this).find('[plugin_fanfields3_exportText_toggle="toggle"]');
+        if (!$nextToggle.length || thisplugin.isTaskListToggleDone($nextToggle)) return true;
+        var nextGuid = $nextToggle.attr('data-guid');
+        if (guidsToExpand.indexOf(nextGuid) === -1) guidsToExpand.push(nextGuid);
+        return false;
+      });
+    });
+    thisplugin.restoreTaskListExpandedGuids(guidsToExpand);
   };
 
   // Whether the Task List dialog is currently open and visible.
@@ -1912,8 +1944,20 @@ function wrapper(plugin_info) {
 
     thisplugin.wireTaskListHandlers();
     thisplugin.addTaskListShiftButtons();
+    thisplugin.expandTaskListFirstPending();
     thisplugin.scrollTaskListToFirstPending();
 
+  };
+
+  // Expand the link details of the first row with something still left to do (any row not
+  // marked done, Destroy stops included) that has link details to show.
+  thisplugin.expandTaskListFirstPending = function () {
+    $('#plugin_fanfields3_exportText_inner tbody.plugin_fanfields3_exportText_Portal').each(function () {
+      var $toggle = $(this).find('[plugin_fanfields3_exportText_toggle="toggle"]');
+      if (!$toggle.length || thisplugin.isTaskListToggleDone($toggle)) return true;
+      thisplugin.restoreTaskListExpandedGuids([$toggle.attr('data-guid')]);
+      return false;
+    });
   };
 
   // Scroll the open Task List so its first row with something still left to do (any row not
