@@ -2455,6 +2455,11 @@ function wrapper(plugin_info) {
             text-align: center !important;
           }
 
+          tr td[plugin_fanfields3_notEnoughKeys] {
+            color: #C62828 !important;
+            font-weight: bold;
+          }
+
           td[plugin_fanfields3_enoughKeys],
           div[plugin_fanfields3_enoughKeys] {
             color: #828284;
@@ -3886,8 +3891,12 @@ function wrapper(plugin_info) {
            text-align: center;
         }
         td[plugin_fanfields3_notEnoughKeys] {
-            /* color: #FFBBBB; */
             text-align: center;
+        }
+        /* Fewer keys held than the plan needs: red, even on a green (relocated) row. */
+        #plugin_fanfields3_exportText_inner tr td[plugin_fanfields3_notEnoughKeys] {
+            color: #FF4444 !important;
+            font-weight: bold;
         }
 
       `);
@@ -4849,6 +4858,7 @@ function wrapper(plugin_info) {
       width: Math.min(560, thisplugin.getMaxDialogWidth()),
       closeCallback: function () { cancelled = true; }
     });
+    thisplugin.pinKeysVideoDialogToTop();
 
     var $status = $('#plugin_fanfields3_keysvideo_status');
     $('#plugin_fanfields3_keysvideo_file').on('change', function () {
@@ -4870,6 +4880,20 @@ function wrapper(plugin_info) {
         })
         .then(function () { $input.prop('disabled', false); });
     });
+  };
+
+  // Keeps the Keys video dialog at the top of the screen, capped to the screen height with its
+  // content scrolling, so the review table that grows it never pushes it off the bottom.
+  thisplugin.pinKeysVideoDialogToTop = function () {
+    var $content = $('#dialog-plugin_fanfields3_keysvideo');
+    if (!$content.length) return;
+    var $ui = $content.closest('.ui-dialog');
+    var chrome = $ui.outerHeight() - $content.outerHeight();
+    $content.css({
+      'max-height': Math.max(100, thisplugin.getMaxDialogHeight() - chrome) + 'px',
+      'overflow-y': 'auto'
+    });
+    $content.dialog('option', 'position', { my: 'top', at: 'top+10', of: window });
   };
 
   thisplugin.showKeysVideoReview = function (candidates, counts) {
@@ -4900,6 +4924,7 @@ function wrapper(plugin_info) {
       '<p><button type="button" id="plugin_fanfields3_keysvideo_applybtn">Apply to Keys plugin</button></p>';
 
     var $result = $('#plugin_fanfields3_keysvideo_result').html(html);
+    thisplugin.pinKeysVideoDialogToTop();
 
     // Editing a count ticks that row; the "not found → 0" option ticks/unticks the unseen rows.
     $result.on('input', '.plugin_fanfields3_keysvideo_count', function () {
