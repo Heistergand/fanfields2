@@ -4538,7 +4538,8 @@ function wrapper(plugin_info) {
 
   thisplugin.TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
   thisplugin.KEYS_VIDEO_FRAME_STEP = 0.4;   // seconds between two sampled video frames
-  thisplugin.KEYS_VIDEO_MAX_WIDTH = 1280;   // frames are scaled down to this width before OCR
+  thisplugin.KEYS_VIDEO_WIDTH = 1080;       // frames are scaled to this width before OCR
+  thisplugin.KEYS_VIDEO_WHITE_MIN = 180;    // a pixel is text when its R, G and B are all above this
   thisplugin.KEYS_VIDEO_MATCH_MIN = 0.78;   // minimum name similarity (0..1) to accept a match
 
   thisplugin.loadTesseract = function () {
@@ -4591,20 +4592,33 @@ function wrapper(plugin_info) {
     return 1 - thisplugin.levenshtein(ocrName, target) / Math.max(ocrName.length, target.length);
   };
 
-  // Splits one OCR'd line into a name and a key count, if any ("x3", "×3", "3" at either end).
+  // Ingress Prime's key list: one card per portal, its name on the first line (after the portal
+  // level, a red digit), then its address, then "<distance>  <key icon>  x<count>". Long names and
+  // addresses are cut with "..". A count glued to the name ("Name x3") is read as well.
+
+  // Key count in one OCR'd line: the last "x<count>" in it, or the whole line when it is only a
+  // number. A "1" is often read as l, I, | or ].
+  thisplugin.readKeyCount = function (line) {
+    var toNumber = function (s) { return parseInt(s.replace(/[lI|\]!]/g, '1'), 10); };
+    var re = /(?:^|\s)[x×X]\s?([0-9lI|\]!]{1,3})(?=\s|$)/g, m, last = null;
+    while ((m = re.exec(line))) last = m;
+    if (last) return { count: toNumber(last[1]), index: last.index };
+    m = String(line).trim().match(/^([0-9]{1,3})$/);
+    return m ? { count: toNumber(m[1]), index: 0 } : null;
+  };
+
+  // Name variants to try for one OCR'd line: the line without any "x<count>" at its end, and the
+  // same without a leading portal level digit (1–8), when OCR picked it up.
   thisplugin.parseKeyLine = function (line) {
     var raw = String(line || '').trim();
-    var count = null;
-    var m = raw.match(/(?:^|\s)[x×X*]\s?(\d{1,3})\s*$/) || raw.match(/\s(\d{1,3})\s*$/);
-    if (m) {
-      count = parseInt(m[1], 10);
-      raw = raw.slice(0, m.index).trim();
-    } else if ((m = raw.match(/^(\d{1,3})\s*[x×X*]?\s+(?=\D)/))) {
-      count = parseInt(m[1], 10);
-      raw = raw.slice(m[0].length).trim();
-    }
-    var truncated = /(\.\.\.|…)\s*$/.test(raw);
-    return { name: thisplugin.normalizeKeyName(raw), count: count, truncated: truncated };
+    var count = thisplugin.readKeyCount(raw);
+    if (count && count.index > 0) raw = raw.slice(0, count.index).trim();
+    else count = null;
+    var truncated = /(\.\.+|…)\s*$/.test(raw);
+    var names = [thisplugin.normalizeKeyName(raw)];
+    var noLevel = raw.replace(/^[1-8](?=\s|[A-Za-zÀ-ÿ])\s*/, '');
+    if (noLevel !== raw) names.push(thisplugin.normalizeKeyName(noLevel));
+    return { names: names, count: count ? count.count : null, truncated: truncated };
   };
 
   // Plan portals to look for: guid, title, normalized title, keys still needed there.
@@ -4620,83 +4634,83 @@ function wrapper(plugin_info) {
     }).filter(function (c) { return c.norm && c.title !== 'unknown title'; });
   };
 
+  // The plan portal an OCR'd line names, or null: close enough to one portal, and clearly closer
+  // to it than to any other.
+  thisplugin.matchKeyLine = function (parsed, candidates) {
+    var best = null, bestScore = 0, second = 0;
+    parsed.names.forEach(function (name) {
+      if (name.length < 3) return;
+      candidates.forEach(function (c) {
+        var score = thisplugin.keyNameSimilarity(name, c.norm, parsed.truncated);
+        if (c === best) bestScore = Math.max(bestScore, score);
+        else if (score > bestScore) { second = bestScore; bestScore = score; best = c; }
+        else if (score > second) second = score;
+      });
+    });
+    if (!best || bestScore < thisplugin.KEYS_VIDEO_MATCH_MIN || bestScore - second < 0.05) return null;
+    return best;
+  };
+
   // Matches the OCR'd text of one frame against the plan portals. Returns guid -> count seen.
-  // A row without a count on its own line takes it from the next/previous line when that line is
-  // only a number (count badge read apart from the name), else counts as 1 key.
+  // The count is taken from the name's own line, else from the next few lines up to the next
+  // card's name. A card whose count isn't visible (cut off at the screen edge) gives nothing:
+  // another frame of the recording will show it.
   thisplugin.matchKeysInText = function (text, candidates) {
     var lines = String(text || '').split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean);
     var parsed = lines.map(thisplugin.parseKeyLine);
-    var bareCount = function (i) {
-      if (i < 0 || i >= lines.length) return null;
-      var m = lines[i].match(/^[x×X*]?\s?(\d{1,3})$/);
-      return m ? parseInt(m[1], 10) : null;
-    };
+    var matches = parsed.map(function (p) { return thisplugin.matchKeyLine(p, candidates); });
     var found = {};
-    parsed.forEach(function (p, i) {
-      // A name can itself end with a number ("Borne 12"): also try the whole line as the name.
-      var whole = { name: thisplugin.normalizeKeyName(lines[i].replace(/\s*[x×X*]\s?\d{1,3}\s*$/, '')), count: null };
-      whole.truncated = /(\.\.\.|…)\s*$/.test(lines[i]);
-      var best = null, bestScore = 0, second = 0, bestParse = p;
-      [p, whole].forEach(function (variant) {
-        if (variant.name.length < 3) return;
-        candidates.forEach(function (c) {
-          var score = thisplugin.keyNameSimilarity(variant.name, c.norm, variant.truncated);
-          if (c === best) {
-            if (score > bestScore) { bestScore = score; bestParse = variant; }
-          } else if (score > bestScore) {
-            second = bestScore; bestScore = score; best = c; bestParse = variant;
-          } else if (score > second) second = score;
-        });
-      });
-      // Too far from any plan portal, or too close to two of them to tell which one it is.
-      if (!best || bestScore < thisplugin.KEYS_VIDEO_MATCH_MIN || bestScore - second < 0.05) return;
-      var count = bestParse.count;
-      if (count === null) count = bareCount(i + 1);
-      if (count === null) count = bareCount(i - 1);
-      if (count === null) count = 1;
-      if (count < 1 || count > 999) return;
-      found[best.guid] = count;
+    matches.forEach(function (portal, i) {
+      if (!portal) return;
+      var count = parsed[i].count;
+      for (var j = i + 1; count === null && j < lines.length && j <= i + 3 && !matches[j]; j++) {
+        var c = thisplugin.readKeyCount(lines[j]);
+        if (c) count = c.count;
+      }
+      if (count === null || count < 1 || count > 999) return;
+      found[portal.guid] = count;
     });
     return found;
   };
 
-  // Draws one image/video frame into a canvas prepared for OCR: grayscale, inverted when the
-  // background is dark (Ingress shows light text on dark), so the text ends up dark on light.
-  // Returns null when the frame looks the same as the previous one (nothing new to read).
+  // Draws one image/video frame into a canvas prepared for OCR, scaled to KEYS_VIDEO_WIDTH:
+  // Ingress writes names and counts in white over darkened photos, so only near-white pixels are
+  // kept, as black text on white. This also drops the red level digit, the blue resonator bars
+  // and most of the photo. Returns null when the frame looks the same as the previous one read.
   thisplugin.prepareKeysOcrFrame = function (source, width, height, state) {
-    var scale = Math.min(1, thisplugin.KEYS_VIDEO_MAX_WIDTH / width);
+    var scale = thisplugin.KEYS_VIDEO_WIDTH / width;
     var w = Math.max(1, Math.round(width * scale)), h = Math.max(1, Math.round(height * scale));
     var canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
     var ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(source, 0, 0, w, h);
     var img = ctx.getImageData(0, 0, w, h);
-    var d = img.data, sum = 0, n = d.length / 4;
+    var d = img.data;
     for (var i = 0; i < d.length; i += 4) {
-      var y = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-      d[i] = d[i + 1] = d[i + 2] = y;
-      sum += y;
+      d[i] = d[i + 1] = d[i + 2] = Math.min(d[i], d[i + 1], d[i + 2]) > thisplugin.KEYS_VIDEO_WHITE_MIN ? 0 : 255;
     }
-    var invert = sum / n < 128;
 
     // Small signature of the frame to skip frames identical to the last one read.
-    var sig = [], gx = 16, gy = 32;
+    var sig = [], gx = 16, gy = 64;
     for (var sy = 0; sy < gy; sy++) {
       for (var sx = 0; sx < gx; sx++) {
-        sig.push(d[(Math.floor((sy + 0.5) * h / gy) * w + Math.floor((sx + 0.5) * w / gx)) * 4]);
+        var x0 = Math.floor(sx * w / gx), y0 = Math.floor(sy * h / gy);
+        var x1 = Math.floor((sx + 1) * w / gx), y1 = Math.floor((sy + 1) * h / gy), dark = 0;
+        for (var y = y0; y < y1; y += 2) {
+          for (var x = x0; x < x1; x += 2) if (!d[(y * w + x) * 4]) dark++;
+        }
+        sig.push(dark);
       }
     }
     if (state.lastSig) {
-      var diff = 0;
-      for (var k = 0; k < sig.length; k++) diff += Math.abs(sig[k] - state.lastSig[k]);
-      if (diff / sig.length < 2) return null;
+      var diff = 0, total = 1;
+      for (var k = 0; k < sig.length; k++) { diff += Math.abs(sig[k] - state.lastSig[k]); total += sig[k]; }
+      if (diff / total < 0.05) return null;
     }
     state.lastSig = sig;
 
-    if (invert) {
-      for (i = 0; i < d.length; i += 4) d[i] = d[i + 1] = d[i + 2] = 255 - d[i];
-    }
     ctx.putImageData(img, 0, 0);
     return canvas;
   };
@@ -4820,8 +4834,8 @@ function wrapper(plugin_info) {
 
     var cancelled = false;
     var html =
-      '<p>Record your phone screen while slowly scrolling through your keys in Ingress (inventory list ' +
-      'with portal names and counts), then pick the recording here. Screenshots work too.</p>' +
+      '<p>In Ingress, open your inventory on <i>Portal Keys</i>, record your phone screen while slowly ' +
+      'scrolling through the list, then pick the recording here. Screenshots work too.</p>' +
       '<p>Only the ' + candidates.length + ' portals of the current plan are looked for. ' +
       'Everything is read on this device; nothing is sent anywhere.</p>' +
       '<p><input type="file" id="plugin_fanfields3_keysvideo_file" accept="video/*,image/*" multiple></p>' +
