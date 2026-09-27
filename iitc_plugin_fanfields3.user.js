@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         3.2.0.20260927
+// @version         3.2.1.20260927
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-09-27-144836';
+  plugin_info.dateTimeVersion = '2026-09-27-145757';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,11 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '3.2.1',
+      changes: [
+        'FIX: A finished portal (Action "Nothing") now always shows pale yellow and struck through in the Task List, like every other finished portal, even when it was green (moved earlier by Less walking) or carried the red cross of a blocking link it frees. The printed Task List follows the same rule.',
+      ],
+    },{
       version: '3.2.0',
       changes: [
         'NEW: Reroute button next to Refresh in the Task List: reorders the steps still to do so that, from your current position (GPS, else IITC\'s own location, else the map center), you walk as little as possible. Steps already done stay at the top, each portal is still captured and its keys gathered before anyone links to it (unless it is already yours with enough keys), and no field is lost. Links and fields stay the same, the map numbers, Destroy stops, Google Maps and Portal Route follow the new order, and it works while the plan is locked too. The new order holds until the plan changes or Reset link orders is used.',
