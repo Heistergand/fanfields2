@@ -1047,7 +1047,7 @@ function wrapper(plugin_info) {
         'To drop every automatic and manual override at once and go back to the plain algorithm, use the Task List\'s <i>Reset&nbsp;link&nbsp;orders</i> button.</p>' +
 
         '<p><b>Freeze recalculation</b><br>' +
-        'The plan locks itself as soon as a new plan is completely calculated (including the automatic anchor search), so it no longer moves while you pan, zoom or the map data refreshes. ' +
+        'The plan locks itself as soon as a new plan is completely calculated (once IITC has finished loading the map, and including the automatic anchor search), so it no longer moves while you pan, zoom or the map data refreshes. ' +
         'Changing something about the plan itself — a menu option, the drawn polygon, a map layer — recalculates it and locks it again. ' +
         'Use <i>🔒&nbsp;Locked</i> to prevent the script from recalculating the plan while you zoom into details or work with large areas. ' +
         'The Task List keeps reflecting portal captures and links thrown in-game while locked — only the plan itself (link/field order) stays frozen. ' +
@@ -3254,11 +3254,18 @@ function wrapper(plugin_info) {
     thisplugin.updateLockButton();
   };
 
-  // Locks the plan once a new plan is complete: drawn, link order optimized, and the automatic
+  // Whether IITC is still loading portals and links for the map (between its mapDataRefreshStart
+  // and mapDataRefreshEnd hooks). True until its first load is over.
+  thisplugin._mapDataLoading = true;
+
+  // Locks the plan once a new plan is complete: IITC done loading the map data, drawn from that
+  // data with no recalculation still waiting, link order optimized, and the automatic
   // anchor/direction search either done or not going to happen (a search still scheduled,
-  // running, or waiting to retry while links load in means the plan may still change).
+  // running, or waiting to retry while links load in means the plan may still change). When IITC
+  // finishes loading, the mapDataRefreshEnd hook recalculates the plan, which checks again.
   thisplugin.lockIfPlanComplete = function () {
     if (!thisplugin._lockWhenPlanComplete) return;
+    if (thisplugin._mapDataLoading || thisplugin.timer !== undefined) return;
     if (thisplugin._orientationSearchPending || thisplugin._orientationSearchTimer !== null) return;
 
     thisplugin._lockWhenPlanComplete = false;
@@ -6654,7 +6661,11 @@ function wrapper(plugin_info) {
     window.addHook('pluginDrawTools', function (e) {
       thisplugin.delayedUpdateLayer(0.5, true);
     });
+    window.addHook('mapDataRefreshStart', function () {
+      thisplugin._mapDataLoading = true;
+    });
     window.addHook('mapDataRefreshEnd', function () {
+      thisplugin._mapDataLoading = false;
       thisplugin.onLiveDataChanged(0.5);
     });
     window.addHook('requestFinished', function () {
