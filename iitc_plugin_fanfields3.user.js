@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         3.3.0.20260927
+// @version         3.3.1.20260927
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-09-27-195826';
+  plugin_info.dateTimeVersion = '2026-09-27-201446';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,12 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '3.3.1',
+      changes: [
+        'FIX: On mobile, tapping a portal name in the Task List now selects that portal the same way a tap on the map does: tapping its name in the bottom bar opens its own details, instead of those of the last portal opened by hand, or just the menu.',
+        'FIX: The plan no longer locks itself while IITC is still loading the map: it waits until all portals and links are loaded and the plan is calculated from them.',
+      ],
+    },{
       version: '3.3.0',
       changes: [
         'NEW: The Task List opens with the links of the first portal still to do already unfolded.',
@@ -1047,7 +1053,7 @@ function wrapper(plugin_info) {
         'To drop every automatic and manual override at once and go back to the plain algorithm, use the Task List\'s <i>Reset&nbsp;link&nbsp;orders</i> button.</p>' +
 
         '<p><b>Freeze recalculation</b><br>' +
-        'The plan locks itself as soon as a new plan is completely calculated (including the automatic anchor search), so it no longer moves while you pan, zoom or the map data refreshes. ' +
+        'The plan locks itself as soon as a new plan is completely calculated (once IITC has finished loading the map, and including the automatic anchor search), so it no longer moves while you pan, zoom or the map data refreshes. ' +
         'Changing something about the plan itself — a menu option, the drawn polygon, a map layer — recalculates it and locks it again. ' +
         'Use <i>🔒&nbsp;Locked</i> to prevent the script from recalculating the plan while you zoom into details or work with large areas. ' +
         'The Task List keeps reflecting portal captures and links thrown in-game while locked — only the plan itself (link/field order) stays frozen. ' +
@@ -1215,15 +1221,11 @@ function wrapper(plugin_info) {
     }
 
     // Mobile: the Task List covers most of the screen, so center the map on the portal, select
-    // it (highlight ring on the map, without opening the details pane) and close the list.
-    // Desktop keeps the list open and shows the portal details.
+    // it the same way a map tap does (name in the bottom bar, details ready behind it) and close
+    // the list. Desktop keeps the list open and shows the portal details.
     if (L && L.Browser && L.Browser.mobile) {
-      if (window.portals[guid]) {
-        if (typeof window.selectPortal === 'function') window.selectPortal(guid);
-        else window.renderPortalDetails(guid);
-      } else {
-        window.urlPortal = guid;
-      }
+      if (window.portals[guid]) window.renderPortalDetails(guid);
+      else window.urlPortal = guid;
       $('#plugin_fanfields3_exportText_inner')
         .closest('.ui-dialog-content')
         .dialog('close');
@@ -3258,11 +3260,18 @@ function wrapper(plugin_info) {
     thisplugin.updateLockButton();
   };
 
-  // Locks the plan once a new plan is complete: drawn, link order optimized, and the automatic
+  // Whether IITC is still loading portals and links for the map (between its mapDataRefreshStart
+  // and mapDataRefreshEnd hooks). True until its first load is over.
+  thisplugin._mapDataLoading = true;
+
+  // Locks the plan once a new plan is complete: IITC done loading the map data, drawn from that
+  // data with no recalculation still waiting, link order optimized, and the automatic
   // anchor/direction search either done or not going to happen (a search still scheduled,
-  // running, or waiting to retry while links load in means the plan may still change).
+  // running, or waiting to retry while links load in means the plan may still change). When IITC
+  // finishes loading, the mapDataRefreshEnd hook recalculates the plan, which checks again.
   thisplugin.lockIfPlanComplete = function () {
     if (!thisplugin._lockWhenPlanComplete) return;
+    if (thisplugin._mapDataLoading || thisplugin.timer !== undefined) return;
     if (thisplugin._orientationSearchPending || thisplugin._orientationSearchTimer !== null) return;
 
     thisplugin._lockWhenPlanComplete = false;
@@ -6658,7 +6667,11 @@ function wrapper(plugin_info) {
     window.addHook('pluginDrawTools', function (e) {
       thisplugin.delayedUpdateLayer(0.5, true);
     });
+    window.addHook('mapDataRefreshStart', function () {
+      thisplugin._mapDataLoading = true;
+    });
     window.addHook('mapDataRefreshEnd', function () {
+      thisplugin._mapDataLoading = false;
       thisplugin.onLiveDataChanged(0.5);
     });
     window.addHook('requestFinished', function () {
