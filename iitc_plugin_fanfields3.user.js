@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         3.2.1.20260927
+// @version         3.3.0.20260927
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-09-27-145757';
+  plugin_info.dateTimeVersion = '2026-09-27-195826';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,13 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '3.3.0',
+      changes: [
+        'NEW: The Task List opens with the links of the first portal still to do already unfolded.',
+        'NEW: When the portal whose links are unfolded in the Task List becomes finished (Action "Nothing"), its links fold away and the next portal still to do unfolds instead.',
+        'FIX: A finished portal (Action "Nothing") now stays finished in the Task List and for Reroute, even when its data is briefly missing, its links are hidden at the current zoom or key counts refresh. It only goes back when the plan changes, when the portal is destroyed, flipped or drops under 8 resonators, or when one of its links disappears because the portal at the other end was lost.',
+      ],
+    },{
       version: '3.2.1',
       changes: [
         'FIX: A finished portal (Action "Nothing") now always shows pale yellow and struck through in the Task List, like every other finished portal, even when it was green (moved earlier by Less walking) or carried the red cross of a blocking link it frees. The printed Task List follows the same rule.',
@@ -1391,6 +1398,62 @@ function wrapper(plugin_info) {
     return 0;
   };
 
+  // Finished portals (Action "Nothing"), keyed by guid -> { partners: guids of the plan portals
+  // it was seen linked to in-game }. A finished portal stays finished — missing data (portal not
+  // loaded, links hidden at this zoom, key counts refreshing) doesn't bring it back — until:
+  //  - the plan changes (donePortalsPlanKey, see getPlanShapeKey);
+  //  - the portal itself is known to belong to another team (destroyed or flipped), or to have
+  //    fewer than 8 resonators;
+  //  - one of its in-game links is gone and the portal at its other end is known to belong to
+  //    another team.
+  thisplugin.donePortalGuids = {};
+  thisplugin.donePortalsPlanKey = null;
+
+  thisplugin.syncDonePortals = function () {
+    var key = thisplugin.getPlanShapeKey();
+    if (key !== thisplugin.donePortalsPlanKey) {
+      thisplugin.donePortalGuids = {};
+      thisplugin.donePortalsPlanKey = key;
+    }
+  };
+
+  // Whether the portal's loaded data says it's not ours; false while its data isn't known.
+  thisplugin.isPortalKnownLost = function (guid) {
+    var ownTeam = thisplugin.getOwnFactionTeam();
+    var team = thisplugin.getPortalTeam(window.portals[guid]);
+    return ownTeam !== undefined && team !== undefined && team !== ownTeam;
+  };
+
+  // Whether the portal's loaded data says it has fewer than 8 resonators; false while unknown.
+  thisplugin.isPortalKnownDamaged = function (guid) {
+    var marker = window.portals[guid];
+    var resCount = marker && marker.options && marker.options.data ? marker.options.data.resCount : undefined;
+    return resCount !== undefined && resCount < 8;
+  };
+
+  // Whether fp counts as finished: isNothingNow is what the live data says right now. Only a
+  // live "Nothing" marks the portal finished; see donePortalGuids for what unmarks it.
+  thisplugin.isPortalDone = function (fp, isNothingNow) {
+    var entry = thisplugin.donePortalGuids[fp.guid];
+    if (entry) {
+      var lost = thisplugin.isPortalKnownLost(fp.guid) || thisplugin.isPortalKnownDamaged(fp.guid) ||
+        Object.keys(entry.partners).some(function (partnerGuid) {
+        return !thisplugin.isLinkInGame(fp.guid, partnerGuid) && thisplugin.isPortalKnownLost(partnerGuid);
+      });
+      if (lost) {
+        delete thisplugin.donePortalGuids[fp.guid];
+        entry = null;
+      }
+    }
+    if (!entry && !isNothingNow) return false;
+
+    entry = entry || (thisplugin.donePortalGuids[fp.guid] = { partners: {} });
+    (fp.outgoing || []).concat(fp.incoming || []).forEach(function (partner) {
+      if (thisplugin.isLinkInGame(fp.guid, partner.guid)) entry.partners[partner.guid] = true;
+    });
+    return true;
+  };
+
   // Task List: build the HTML for the current plan. Used both to open the dialog and to
   // refresh it live (see thisplugin.refreshTaskListIfOpen) as the background plan changes.
   thisplugin.buildTaskListHTML = function () {
@@ -1424,6 +1487,8 @@ function wrapper(plugin_info) {
 
     // Blockers: extra Destroy rows slotted into the walk (see computeBlockerPlan).
     var blockerPlan = thisplugin.computeBlockerPlan();
+
+    thisplugin.syncDonePortals();
 
     displayOrder.forEach(function (portal, index) {
       blockerPlan.stops.forEach(function (stop) {
@@ -1527,6 +1592,7 @@ function wrapper(plugin_info) {
       // needed counts as outstanding since there's no way to know what's in the inventory.
       var needsKeys = hasKeysPluginData ? !hasEnoughKeys : keysNeeded > 0;
       var action = needsCapture ? 'Capture' : (remainingOutgoingCount > 0 ? 'Link' : (needsKeys ? 'Keys' : 'Nothing'));
+      if (thisplugin.isPortalDone(portal, action === 'Nothing')) action = 'Nothing';
 
       // Google Maps route: skip a portal with nothing left to do here — no point stopping
       // there again, and it only lengthens the route for everyone else on it.
@@ -1776,14 +1842,46 @@ function wrapper(plugin_info) {
     });
   };
 
+  // The Task List toggle for a given guid, and whether its portal row is finished (Action "Nothing").
+  thisplugin.findTaskListToggle = function (guid) {
+    return $('#plugin_fanfields3_exportText_inner [plugin_fanfields3_exportText_toggle="toggle"][data-guid="' + guid + '"]');
+  };
+
+  thisplugin.isTaskListToggleDone = function ($toggle) {
+    return $toggle.closest('tr').hasClass('plugin_fanfields3_portal_done');
+  };
+
   // Rebuild the Task List dialog's content in place, preserving the expanded/collapsed
   // per-portal link lists. Used after a flip/reset, and to auto-refresh live as the
   // background plan changes (new links appearing in-game, fan field rotation, etc.).
+  // An expanded portal that has just become finished is collapsed, and the next unfinished
+  // row below it with link details is expanded instead, so the list follows the walk.
   thisplugin.refreshTaskListDialog = function () {
     var expandedGuids = thisplugin.getTaskListExpandedGuids();
+    var doneBefore = {};
+    expandedGuids.forEach(function (guid) {
+      doneBefore[guid] = thisplugin.isTaskListToggleDone(thisplugin.findTaskListToggle(guid));
+    });
+
     $('#plugin_fanfields3_exportText_inner').html(thisplugin.buildTaskListHTML());
     thisplugin.wireTaskListHandlers();
-    thisplugin.restoreTaskListExpandedGuids(expandedGuids);
+
+    var guidsToExpand = [];
+    expandedGuids.forEach(function (guid) {
+      var $toggle = thisplugin.findTaskListToggle(guid);
+      if (doneBefore[guid] || !$toggle.length || !thisplugin.isTaskListToggleDone($toggle)) {
+        if (guidsToExpand.indexOf(guid) === -1) guidsToExpand.push(guid);
+        return;
+      }
+      $toggle.closest('tbody').nextAll('tbody.plugin_fanfields3_exportText_Portal').each(function () {
+        var $nextToggle = $(this).find('[plugin_fanfields3_exportText_toggle="toggle"]');
+        if (!$nextToggle.length || thisplugin.isTaskListToggleDone($nextToggle)) return true;
+        var nextGuid = $nextToggle.attr('data-guid');
+        if (guidsToExpand.indexOf(nextGuid) === -1) guidsToExpand.push(nextGuid);
+        return false;
+      });
+    });
+    thisplugin.restoreTaskListExpandedGuids(guidsToExpand);
   };
 
   // Whether the Task List dialog is currently open and visible.
@@ -1912,8 +2010,20 @@ function wrapper(plugin_info) {
 
     thisplugin.wireTaskListHandlers();
     thisplugin.addTaskListShiftButtons();
+    thisplugin.expandTaskListFirstPending();
     thisplugin.scrollTaskListToFirstPending();
 
+  };
+
+  // Expand the link details of the first row with something still left to do (any row not
+  // marked done, Destroy stops included) that has link details to show.
+  thisplugin.expandTaskListFirstPending = function () {
+    $('#plugin_fanfields3_exportText_inner tbody.plugin_fanfields3_exportText_Portal').each(function () {
+      var $toggle = $(this).find('[plugin_fanfields3_exportText_toggle="toggle"]');
+      if (!$toggle.length || thisplugin.isTaskListToggleDone($toggle)) return true;
+      thisplugin.restoreTaskListExpandedGuids([$toggle.attr('data-guid')]);
+      return false;
+    });
   };
 
   // Scroll the open Task List so its first row with something still left to do (any row not
@@ -2083,6 +2193,8 @@ function wrapper(plugin_info) {
       return !(meta && meta.invalidUnderField) && !thisplugin.isLinkInGame(srcFp.guid, dstGuid);
     }
 
+    thisplugin.syncDonePortals();
+
     var states = {};
     walk.forEach(function (fp) {
       var marker = window.portals[fp.guid] || fp.portal;
@@ -2095,7 +2207,7 @@ function wrapper(plugin_info) {
       var enoughKeys = hasKeysPlugin ? thisplugin.getAvailableKeys(fp.guid) >= keysNeeded : keysNeeded === 0;
 
       states[fp.guid] = {
-        pending: needsCapture || targets.length > 0 || !enoughKeys,
+        pending: needsCapture || targets.length > 0 || !enoughKeys ? !thisplugin.isPortalDone(fp, false) : false,
         ready: owned && enoughKeys,
         targets: targets
       };
