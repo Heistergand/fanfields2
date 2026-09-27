@@ -4,7 +4,7 @@
 // @name            Fan Fields 3
 // @category        Layer
 // @version         3.4.0.20260927
-// @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, and route export to Google Maps / Portal Route. Enable from the layer chooser.
+// @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, a Task List that follows your progress and can Reroute the steps left from where you stand, key counts read from a screen recording of your keys in Ingress (Keys plugin), and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
 // @icon            https://raw.githubusercontent.com/Avataar120/fanfields3/master/fanfields3-32.png
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-09-27-224006';
+  plugin_info.dateTimeVersion = '2026-09-27-224858';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
