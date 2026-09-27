@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         3.3.1.20260927
+// @version         3.4.0.20260927
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -33,6 +33,11 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '3.4.0',
+      changes: [
+        'NEW: "Keys video" button in the Task List (Keys plugin only): record your phone screen while scrolling through your keys in Ingress, pick the recording (or screenshots), and the key counts of the plan\'s portals are read from it and written into the Keys plugin once you have checked them. The text is read on your device (the recognition library is downloaded once from a CDN); nothing is sent anywhere.',
+      ],
+    },{
       version: '3.3.1',
       changes: [
         'FIX: On mobile, tapping a portal name in the Task List now selects that portal the same way a tap on the map does: tapping its name in the bottom bar opens its own details, instead of those of the last portal opened by hand, or just the menu.',
@@ -1062,6 +1067,7 @@ function wrapper(plugin_info) {
         '<p><b>Task list & exports</b><br>' +
         'Open <i>Task List</i> to get a step-by-step plan including per-portal key requirements, outgoing link counts, and (optional) link details. ' +
         'If you use a Keys/LiveInventory plugin, the task list can also show your available key counts. ' +
+        'With the Keys plugin, its <i>Keys video</i> button fills in your key counts from a screen recording of your keys in Ingress. ' +
         'The task list includes a navigation link for Google Maps and a print-friendly view. ' +
         'Its <i>Reroute</i> button reorders the steps still to do, starting from your current position (GPS, else IITC\'s own location, else the map center), so you walk as little as possible — while still capturing each portal, and getting its keys, before anyone links to it, and without losing a field. ' +
         'The links and fields stay the same, it works while the plan is locked too, and the new order holds until the plan itself changes (or <i>Reset&nbsp;link&nbsp;orders</i>). ' +
@@ -1384,6 +1390,23 @@ function wrapper(plugin_info) {
     return text;
   };
 
+  // Keys still needed at a plan portal: one per incoming link, except those already made in-game
+  // (when "Grey out done links" is on) — that key was already spent to make the link.
+  thisplugin.getKeysStillNeeded = function (portal) {
+    var alreadyLinkedIncomingCount = 0;
+    if (thisplugin.greyOutExistingLinks && portal.incoming && portal.incoming.length > 0) {
+      portal.incoming.forEach(function (srcPortal) {
+        var srcMeta = srcPortal.outgoingMeta && srcPortal.outgoingMeta[portal.guid];
+        var isInvalid = srcMeta && srcMeta.invalidUnderField;
+        if (!isInvalid && thisplugin.isLinkInGame(srcPortal.guid, portal.guid)) {
+          alreadyLinkedIncomingCount++;
+        }
+      });
+    }
+    var total = (portal.incomingValidCount !== undefined) ? portal.incomingValidCount : (portal.incoming || []).length;
+    return total - alreadyLinkedIncomingCount;
+  };
+
   // Keys held for a portal, per the LiveInventory plugin, or else the Keys plugin; 0 without either.
   thisplugin.getAvailableKeys = function (guid) {
     if (window.plugin.LiveInventory) {
@@ -1544,20 +1567,7 @@ function wrapper(plugin_info) {
       var totalOutgoingCount = (portal.outgoingValidCount !== undefined) ? portal.outgoingValidCount : portal.outgoing.length;
       var remainingOutgoingCount = totalOutgoingCount - alreadyDoneOutgoingCount;
 
-      // Incoming links that already exist in-game don't need a key anymore: that key was
-      // already spent to make the link. Subtract them from the portal's remaining key count.
-      var alreadyLinkedIncomingCount = 0;
-      if (thisplugin.greyOutExistingLinks && portal.incoming && portal.incoming.length > 0) {
-        portal.incoming.forEach(function (srcPortal) {
-          var srcMeta = srcPortal.outgoingMeta && srcPortal.outgoingMeta[portal.guid];
-          var isInvalid = srcMeta && srcMeta.invalidUnderField;
-          if (!isInvalid && thisplugin.isLinkInGame(srcPortal.guid, portal.guid)) {
-            alreadyLinkedIncomingCount++;
-          }
-        });
-      }
-
-      var keysNeeded = ((portal.incomingValidCount !== undefined) ? portal.incomingValidCount : portal.incoming.length) - alreadyLinkedIncomingCount;
+      var keysNeeded = thisplugin.getKeysStillNeeded(portal);
 
       let availableKeys = 0;
       let hasKeysPluginData = !!(window.plugin.keys || window.plugin.LiveInventory);
@@ -2097,6 +2107,9 @@ function wrapper(plugin_info) {
       symbol_clockwise + '</button>' +
       '<button type="button" id="plugin_fanfields3_tasklist_refresh" class="plugin_fanfields3_tasklist_shift_btn" title="Force an IITC map data refresh">Refresh</button>' +
       '<button type="button" id="plugin_fanfields3_tasklist_reroute" class="plugin_fanfields3_tasklist_shift_btn" title="Reorder the steps still to do, starting from your current position, to walk as little as possible">Reroute</button>';
+    if (window.plugin.keys) {
+      buttonsHtml += '<button type="button" id="plugin_fanfields3_tasklist_keysvideo" class="plugin_fanfields3_tasklist_shift_btn" title="Update the Keys plugin from a screen recording of your keys in Ingress">Keys video</button>';
+    }
 
     var $buttonset = $buttonpane.find('.ui-dialog-buttonset');
     if ($buttonset.length) {
@@ -2129,6 +2142,11 @@ function wrapper(plugin_info) {
         thisplugin.rerouteFromPlayerPosition(function () {
           $btn.prop('disabled', false).text('Reroute');
         });
+      });
+    $buttonpane.find('#plugin_fanfields3_tasklist_keysvideo')
+      .off('click')
+      .on('click', function () {
+        thisplugin.openKeysVideoDialog();
       });
   };
 
@@ -4509,6 +4527,395 @@ function wrapper(plugin_info) {
     var current = window.plugin.keys.keys[guid] || 0;
     var delta = (current >= keysNeeded) ? -current : (keysNeeded - current);
     if (delta !== 0) window.plugin.keys.addKey(delta, guid);
+  };
+
+  // ---------------------------------------------------------------------
+  // Task List "Keys video" button: reads the player's key counts from a phone screen recording
+  // (or screenshots) of Ingress's key inventory list, where each row shows a portal name and its
+  // key count, and writes them into the keys plugin. Every frame is OCR'd in the browser by
+  // Tesseract.js (loaded from a CDN on first use); only the plan's own portals are looked for,
+  // which keeps name matching reliable. Nothing is written before the player checks the result.
+
+  thisplugin.TESSERACT_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+  thisplugin.KEYS_VIDEO_FRAME_STEP = 0.4;   // seconds between two sampled video frames
+  thisplugin.KEYS_VIDEO_MAX_WIDTH = 1280;   // frames are scaled down to this width before OCR
+  thisplugin.KEYS_VIDEO_MATCH_MIN = 0.78;   // minimum name similarity (0..1) to accept a match
+
+  thisplugin.loadTesseract = function () {
+    if (window.Tesseract) return Promise.resolve(window.Tesseract);
+    if (!thisplugin._tesseractPromise) {
+      thisplugin._tesseractPromise = new Promise(function (resolve, reject) {
+        var script = document.createElement('script');
+        script.src = thisplugin.TESSERACT_URL;
+        script.onload = function () { resolve(window.Tesseract); };
+        script.onerror = function () {
+          thisplugin._tesseractPromise = null;
+          reject(new Error('Could not load the text recognition library (no network?)'));
+        };
+        document.head.appendChild(script);
+      });
+    }
+    return thisplugin._tesseractPromise;
+  };
+
+  // Lowercase, no accents, only letters/digits separated by single spaces.
+  thisplugin.normalizeKeyName = function (s) {
+    return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ').trim();
+  };
+
+  thisplugin.levenshtein = function (a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    var prev = new Array(b.length + 1), cur = new Array(b.length + 1);
+    for (var j = 0; j <= b.length; j++) prev[j] = j;
+    for (var i = 1; i <= a.length; i++) {
+      cur[0] = i;
+      for (j = 1; j <= b.length; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      }
+      var tmp = prev; prev = cur; cur = tmp;
+    }
+    return prev[b.length];
+  };
+
+  // Similarity (0..1) between an OCR'd name and a portal name, both normalized. Ingress cuts long
+  // names with an ellipsis, so a truncated OCR name is compared to the same-length start of the name.
+  thisplugin.keyNameSimilarity = function (ocrName, portalName, truncated) {
+    if (!ocrName || !portalName) return 0;
+    var target = portalName;
+    if (truncated && ocrName.length >= 6 && ocrName.length < portalName.length) {
+      target = portalName.slice(0, ocrName.length);
+    }
+    return 1 - thisplugin.levenshtein(ocrName, target) / Math.max(ocrName.length, target.length);
+  };
+
+  // Splits one OCR'd line into a name and a key count, if any ("x3", "×3", "3" at either end).
+  thisplugin.parseKeyLine = function (line) {
+    var raw = String(line || '').trim();
+    var count = null;
+    var m = raw.match(/(?:^|\s)[x×X*]\s?(\d{1,3})\s*$/) || raw.match(/\s(\d{1,3})\s*$/);
+    if (m) {
+      count = parseInt(m[1], 10);
+      raw = raw.slice(0, m.index).trim();
+    } else if ((m = raw.match(/^(\d{1,3})\s*[x×X*]?\s+(?=\D)/))) {
+      count = parseInt(m[1], 10);
+      raw = raw.slice(m[0].length).trim();
+    }
+    var truncated = /(\.\.\.|…)\s*$/.test(raw);
+    return { name: thisplugin.normalizeKeyName(raw), count: count, truncated: truncated };
+  };
+
+  // Plan portals to look for: guid, title, normalized title, keys still needed there.
+  thisplugin.getKeysVideoCandidates = function () {
+    return thisplugin.getDisplayOrder().map(function (portal) {
+      var title = thisplugin.getPortalTitleByGuid(portal.guid);
+      return {
+        guid: portal.guid,
+        title: title,
+        norm: thisplugin.normalizeKeyName(title),
+        needed: thisplugin.getKeysStillNeeded(portal)
+      };
+    }).filter(function (c) { return c.norm && c.title !== 'unknown title'; });
+  };
+
+  // Matches the OCR'd text of one frame against the plan portals. Returns guid -> count seen.
+  // A row without a count on its own line takes it from the next/previous line when that line is
+  // only a number (count badge read apart from the name), else counts as 1 key.
+  thisplugin.matchKeysInText = function (text, candidates) {
+    var lines = String(text || '').split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean);
+    var parsed = lines.map(thisplugin.parseKeyLine);
+    var bareCount = function (i) {
+      if (i < 0 || i >= lines.length) return null;
+      var m = lines[i].match(/^[x×X*]?\s?(\d{1,3})$/);
+      return m ? parseInt(m[1], 10) : null;
+    };
+    var found = {};
+    parsed.forEach(function (p, i) {
+      // A name can itself end with a number ("Borne 12"): also try the whole line as the name.
+      var whole = { name: thisplugin.normalizeKeyName(lines[i].replace(/\s*[x×X*]\s?\d{1,3}\s*$/, '')), count: null };
+      whole.truncated = /(\.\.\.|…)\s*$/.test(lines[i]);
+      var best = null, bestScore = 0, second = 0, bestParse = p;
+      [p, whole].forEach(function (variant) {
+        if (variant.name.length < 3) return;
+        candidates.forEach(function (c) {
+          var score = thisplugin.keyNameSimilarity(variant.name, c.norm, variant.truncated);
+          if (c === best) {
+            if (score > bestScore) { bestScore = score; bestParse = variant; }
+          } else if (score > bestScore) {
+            second = bestScore; bestScore = score; best = c; bestParse = variant;
+          } else if (score > second) second = score;
+        });
+      });
+      // Too far from any plan portal, or too close to two of them to tell which one it is.
+      if (!best || bestScore < thisplugin.KEYS_VIDEO_MATCH_MIN || bestScore - second < 0.05) return;
+      var count = bestParse.count;
+      if (count === null) count = bareCount(i + 1);
+      if (count === null) count = bareCount(i - 1);
+      if (count === null) count = 1;
+      if (count < 1 || count > 999) return;
+      found[best.guid] = count;
+    });
+    return found;
+  };
+
+  // Draws one image/video frame into a canvas prepared for OCR: grayscale, inverted when the
+  // background is dark (Ingress shows light text on dark), so the text ends up dark on light.
+  // Returns null when the frame looks the same as the previous one (nothing new to read).
+  thisplugin.prepareKeysOcrFrame = function (source, width, height, state) {
+    var scale = Math.min(1, thisplugin.KEYS_VIDEO_MAX_WIDTH / width);
+    var w = Math.max(1, Math.round(width * scale)), h = Math.max(1, Math.round(height * scale));
+    var canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    var ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(source, 0, 0, w, h);
+    var img = ctx.getImageData(0, 0, w, h);
+    var d = img.data, sum = 0, n = d.length / 4;
+    for (var i = 0; i < d.length; i += 4) {
+      var y = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      d[i] = d[i + 1] = d[i + 2] = y;
+      sum += y;
+    }
+    var invert = sum / n < 128;
+
+    // Small signature of the frame to skip frames identical to the last one read.
+    var sig = [], gx = 16, gy = 32;
+    for (var sy = 0; sy < gy; sy++) {
+      for (var sx = 0; sx < gx; sx++) {
+        sig.push(d[(Math.floor((sy + 0.5) * h / gy) * w + Math.floor((sx + 0.5) * w / gx)) * 4]);
+      }
+    }
+    if (state.lastSig) {
+      var diff = 0;
+      for (var k = 0; k < sig.length; k++) diff += Math.abs(sig[k] - state.lastSig[k]);
+      if (diff / sig.length < 2) return null;
+    }
+    state.lastSig = sig;
+
+    if (invert) {
+      for (i = 0; i < d.length; i += 4) d[i] = d[i + 1] = d[i + 2] = 255 - d[i];
+    }
+    ctx.putImageData(img, 0, 0);
+    return canvas;
+  };
+
+  thisplugin.loadKeysVideo = function (file) {
+    return new Promise(function (resolve, reject) {
+      var video = document.createElement('video');
+      video.muted = true;
+      video.playsInline = true;
+      video.setAttribute('playsinline', '');
+      video.preload = 'auto';
+      video.onloadeddata = function () {
+        if (isFinite(video.duration)) { resolve(video); return; }
+        // Some recordings (e.g. WebM) don't state their length: seeking far past the end makes
+        // the browser work it out.
+        video.ondurationchange = function () {
+          if (!isFinite(video.duration)) return;
+          video.ondurationchange = null;
+          video.currentTime = 0;
+          resolve(video);
+        };
+        video.currentTime = 1e101;
+      };
+      video.onerror = function () { reject(new Error('Could not read the video ' + file.name)); };
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  thisplugin.seekKeysVideo = function (video, time) {
+    return new Promise(function (resolve) {
+      var done = function () { video.removeEventListener('seeked', done); resolve(); };
+      video.addEventListener('seeked', done);
+      video.currentTime = time;
+    });
+  };
+
+  thisplugin.loadKeysImage = function (file) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('Could not read the image ' + file.name)); };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // OCRs every file (videos: one frame every KEYS_VIDEO_FRAME_STEP seconds) and returns
+  // guid -> the count read most often for that portal (the highest one on a tie).
+  thisplugin.readKeysFromFiles = async function (files, candidates, onProgress, isCancelled) {
+    var Tesseract = await thisplugin.loadTesseract();
+    onProgress('Loading text recognition…');
+    var worker = await Tesseract.createWorker('eng');
+    var votes = {};
+    var framesRead = 0;
+    var ocr = async function (canvas) {
+      var result = await worker.recognize(canvas);
+      framesRead++;
+      var found = thisplugin.matchKeysInText(result.data.text, candidates);
+      Object.keys(found).forEach(function (guid) {
+        votes[guid] = votes[guid] || {};
+        votes[guid][found[guid]] = (votes[guid][found[guid]] || 0) + 1;
+      });
+    };
+    try {
+      for (var f = 0; f < files.length && !isCancelled(); f++) {
+        var file = files[f];
+        var label = files.length > 1 ? ' (file ' + (f + 1) + '/' + files.length + ')' : '';
+        var state = {};
+        if (/^image\//.test(file.type)) {
+          onProgress('Reading image' + label + '…');
+          var img = await thisplugin.loadKeysImage(file);
+          await ocr(thisplugin.prepareKeysOcrFrame(img, img.naturalWidth, img.naturalHeight, state));
+          URL.revokeObjectURL(img.src);
+          continue;
+        }
+        var video = await thisplugin.loadKeysVideo(file);
+        var duration = isFinite(video.duration) ? video.duration : 0;
+        for (var t = 0; t <= duration && !isCancelled(); t += thisplugin.KEYS_VIDEO_FRAME_STEP) {
+          await thisplugin.seekKeysVideo(video, Math.min(t, Math.max(0, duration - 0.05)));
+          onProgress('Reading video' + label + ': ' + Math.min(100, Math.round(100 * t / (duration || 1))) +
+            '% — ' + Object.keys(votes).length + '/' + candidates.length + ' plan portals found');
+          var canvas = thisplugin.prepareKeysOcrFrame(video, video.videoWidth, video.videoHeight, state);
+          if (canvas) await ocr(canvas);
+        }
+        URL.revokeObjectURL(video.src);
+      }
+    } finally {
+      await worker.terminate();
+    }
+
+    var counts = {};
+    Object.keys(votes).forEach(function (guid) {
+      var bestCount = 0, bestVotes = 0;
+      Object.keys(votes[guid]).forEach(function (c) {
+        var v = votes[guid][c], n = parseInt(c, 10);
+        if (v > bestVotes || (v === bestVotes && n > bestCount)) { bestVotes = v; bestCount = n; }
+      });
+      counts[guid] = bestCount;
+    });
+    return { counts: counts, framesRead: framesRead };
+  };
+
+  // Dialog: pick the recording, read it, then review the counts before writing them.
+  thisplugin.openKeysVideoDialog = function () {
+    if (!window.plugin.keys || typeof window.plugin.keys.addKey !== 'function') {
+      dialog({
+        html: '<p>This needs the <i>Keys</i> plugin, whose counts it updates.</p>',
+        id: 'plugin_fanfields3_keysvideo',
+        title: 'Fan Fields 3 - Keys video'
+      });
+      return;
+    }
+    var candidates = thisplugin.getKeysVideoCandidates();
+    if (!candidates.length) {
+      dialog({
+        html: '<p>No plan portal to look for yet: set up a fanfield first.</p>',
+        id: 'plugin_fanfields3_keysvideo',
+        title: 'Fan Fields 3 - Keys video'
+      });
+      return;
+    }
+
+    var cancelled = false;
+    var html =
+      '<p>Record your phone screen while slowly scrolling through your keys in Ingress (inventory list ' +
+      'with portal names and counts), then pick the recording here. Screenshots work too.</p>' +
+      '<p>Only the ' + candidates.length + ' portals of the current plan are looked for. ' +
+      'Everything is read on this device; nothing is sent anywhere.</p>' +
+      '<p><input type="file" id="plugin_fanfields3_keysvideo_file" accept="video/*,image/*" multiple></p>' +
+      '<p id="plugin_fanfields3_keysvideo_status"></p>' +
+      '<div id="plugin_fanfields3_keysvideo_result"></div>';
+
+    dialog({
+      html: html,
+      id: 'plugin_fanfields3_keysvideo',
+      title: 'Fan Fields 3 - Keys video',
+      width: Math.min(560, thisplugin.getMaxDialogWidth()),
+      closeCallback: function () { cancelled = true; }
+    });
+
+    var $status = $('#plugin_fanfields3_keysvideo_status');
+    $('#plugin_fanfields3_keysvideo_file').on('change', function () {
+      var files = Array.prototype.slice.call(this.files || []);
+      if (!files.length) return;
+      var $input = $(this).prop('disabled', true);
+      $('#plugin_fanfields3_keysvideo_result').empty();
+      thisplugin.readKeysFromFiles(files, candidates, function (msg) { $status.text(msg); },
+        function () { return cancelled; })
+        .then(function (res) {
+          if (cancelled) return;
+          $status.text(res.framesRead + ' frame(s) read, ' + Object.keys(res.counts).length + '/' +
+            candidates.length + ' plan portals found. Check the counts, then Apply.');
+          thisplugin.showKeysVideoReview(candidates, res.counts);
+        })
+        .catch(function (err) {
+          console.error('Fan Fields 3 - Keys video', err);
+          $status.text('Error: ' + (err && err.message ? err.message : err));
+        })
+        .then(function () { $input.prop('disabled', false); });
+    });
+  };
+
+  thisplugin.showKeysVideoReview = function (candidates, counts) {
+    var esc = window.escapeHtmlSpecialChars;
+    var rows = candidates.map(function (c) {
+      var current = window.plugin.keys.keys[c.guid] || 0;
+      var seen = Object.prototype.hasOwnProperty.call(counts, c.guid);
+      var value = seen ? counts[c.guid] : current;
+      return '<tr data-guid="' + c.guid + '"' + (seen ? '' : ' class="plugin_fanfields3_keysvideo_unseen"') + '>' +
+        '<td><input type="checkbox" class="plugin_fanfields3_keysvideo_apply"' +
+        (seen && value !== current ? ' checked' : '') + '></td>' +
+        '<td>' + esc(c.title) + '</td>' +
+        '<td style="text-align:right">' + c.needed + '</td>' +
+        '<td style="text-align:right">' + current + '</td>' +
+        '<td><input type="number" min="0" max="999" class="plugin_fanfields3_keysvideo_count" value="' + value + '"' +
+        ' data-seen="' + (seen ? '1' : '0') + '" style="width:4em"></td>' +
+        '</tr>';
+    }).join('');
+
+    var html =
+      '<table class="plugin_fanfields3_keysvideo_table"><thead><tr>' +
+      '<th></th><th style="text-align:left">Portal</th><th title="Keys still needed">Need</th>' +
+      '<th title="Keys plugin count now">Now</th><th title="Count read in the recording">Read</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<p><label><input type="checkbox" id="plugin_fanfields3_keysvideo_zero"> ' +
+      'Set plan portals not found in the recording to 0 (only if you scrolled through all your keys)</label></p>' +
+      (window.plugin.LiveInventory ? '<p><i>LiveInventory is installed: the Task List shows its counts first.</i></p>' : '') +
+      '<p><button type="button" id="plugin_fanfields3_keysvideo_applybtn">Apply to Keys plugin</button></p>';
+
+    var $result = $('#plugin_fanfields3_keysvideo_result').html(html);
+
+    // Editing a count ticks that row; the "not found → 0" option ticks/unticks the unseen rows.
+    $result.on('input', '.plugin_fanfields3_keysvideo_count', function () {
+      $(this).closest('tr').find('.plugin_fanfields3_keysvideo_apply').prop('checked', true);
+    });
+    $result.on('change', '#plugin_fanfields3_keysvideo_zero', function () {
+      var on = $(this).prop('checked');
+      $result.find('tr.plugin_fanfields3_keysvideo_unseen').each(function () {
+        var guid = $(this).attr('data-guid');
+        var current = window.plugin.keys.keys[guid] || 0;
+        $(this).find('.plugin_fanfields3_keysvideo_count').val(on ? 0 : current);
+        $(this).find('.plugin_fanfields3_keysvideo_apply').prop('checked', on && current !== 0);
+      });
+    });
+    $result.on('click', '#plugin_fanfields3_keysvideo_applybtn', function () {
+      var changed = 0;
+      $result.find('tbody tr').each(function () {
+        if (!$(this).find('.plugin_fanfields3_keysvideo_apply').prop('checked')) return;
+        var guid = $(this).attr('data-guid');
+        var target = Math.max(0, parseInt($(this).find('.plugin_fanfields3_keysvideo_count').val(), 10) || 0);
+        var delta = target - (window.plugin.keys.keys[guid] || 0);
+        if (delta !== 0) {
+          window.plugin.keys.addKey(delta, guid);
+          changed++;
+        }
+      });
+      $('#plugin_fanfields3_keysvideo_status').text(changed + ' portal(s) updated in the Keys plugin.');
+      $result.empty();
+      thisplugin.refreshTaskListIfOpen();
+    });
   };
 
   // Marks the active link order optimization (if any) as needing to be recomputed at the next

@@ -27,6 +27,7 @@ Use this plugin to easily plan your fanfields. It tells you how many keys you ne
   - in the order to visit them
   - with the amount of keys you need
   - with the keys you already have _(if the Keys plugin is used and maintained)_
+  - fill in the Keys plugin from a screen recording of your keys in Ingress _(Task List "Keys video" button)_
   - count of outgoing links per portal
   - detailed link information:
     - link order
