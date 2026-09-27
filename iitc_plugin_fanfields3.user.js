@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-09-27-201446';
+  plugin_info.dateTimeVersion = '2026-09-27-221217';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -36,6 +36,7 @@ function wrapper(plugin_info) {
       version: '3.4.0',
       changes: [
         'NEW: "Keys video" button in the Task List (Keys plugin only): record your phone screen while scrolling through your keys in Ingress, pick the recording (or screenshots), and the key counts of the plan\'s portals are read from it and written into the Keys plugin once you have checked them. The text is read on your device (the recognition library is downloaded once from a CDN); nothing is sent anywhere.',
+        'NEW: In the Task List, the Keys cell turns red when you hold fewer keys for a portal than the plan needs, on the printed Task List too.',
       ],
     },{
       version: '3.3.1',
