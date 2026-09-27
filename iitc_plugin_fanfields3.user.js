@@ -1476,8 +1476,8 @@ function wrapper(plugin_info) {
       let isRelocatedForLessWalking = !!(thisplugin.relocatedForLessWalkingGuids && thisplugin.relocatedForLessWalkingGuids[portal.guid]);
 
       // Both classes can apply at once (a portal with nothing left to do that was also
-      // relocated): "relocated" is declared after "done" in the stylesheet, so its green color
-      // wins over "done"'s faded yellow, while "done"'s strikethrough still applies.
+      // relocated): "done" wins in the stylesheet, so a finished portal always shows faded
+      // yellow and struck through, like every other finished portal.
       var portalRowClasses = [];
       if (action === 'Nothing') portalRowClasses.push('plugin_fanfields3_portal_done');
       if (isRelocatedForLessWalking) portalRowClasses.push('plugin_fanfields3_portal_relocated');
@@ -2023,6 +2023,14 @@ function wrapper(plugin_info) {
           tr td span.plugin_fanfields3_blocker_tag {
             color: #C62828 !important;
             text-decoration: none !important;
+          }
+
+          tr.plugin_fanfields3_portal_done,
+          tr.plugin_fanfields3_portal_done td,
+          tr.plugin_fanfields3_portal_done td a,
+          tr.plugin_fanfields3_portal_done td span {
+            color: #828284 !important;
+            text-decoration: line-through !important;
           }
         `;
 
@@ -3348,10 +3356,19 @@ function wrapper(plugin_info) {
       'tr.plugin_fanfields3_blocker_row span {\n' +
       '  color: #FF6B6B !important;\n' +
       '}\n' +
-      // Always red, even on a row whose own text is green (relocated) or faded (done).
+      // Red, even on a row whose own text is green (relocated) — except on a finished portal (below).
       '#plugin_fanfields3_exportText_inner tr td span.plugin_fanfields3_blocker_tag {\n' +
       '  color: #FF4444 !important;\n' +
       '  text-decoration: none !important;\n' +
+      '}\n' +
+      // A finished portal (Action "Nothing") always reads as done: pale yellow and struck
+      // through, even when it's also relocated (green) or carries a blocker cross (red).
+      '#plugin_fanfields3_exportText_inner tr.plugin_fanfields3_portal_done,\n' +
+      '#plugin_fanfields3_exportText_inner tr.plugin_fanfields3_portal_done td,\n' +
+      '#plugin_fanfields3_exportText_inner tr.plugin_fanfields3_portal_done td a,\n' +
+      '#plugin_fanfields3_exportText_inner tr.plugin_fanfields3_portal_done td span {\n' +
+      '  color: rgba(255, 206, 0, 0.35) !important;\n' +
+      '  text-decoration: line-through !important;\n' +
       '}\n' +
       '.plugin_fanfields3_blocker_summary {\n' +
       '  margin-top: 8px;\n' +
