@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         3.2.1.20260927
+// @version         3.3.0.20260927
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-09-27-145757';
+  plugin_info.dateTimeVersion = '2026-09-27-195826';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,13 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '3.3.0',
+      changes: [
+        'NEW: The Task List opens with the links of the first portal still to do already unfolded.',
+        'NEW: When the portal whose links are unfolded in the Task List becomes finished (Action "Nothing"), its links fold away and the next portal still to do unfolds instead.',
+        'FIX: A finished portal (Action "Nothing") now stays finished in the Task List and for Reroute, even when its data is briefly missing, its links are hidden at the current zoom or key counts refresh. It only goes back when the plan changes, when the portal is destroyed, flipped or drops under 8 resonators, or when one of its links disappears because the portal at the other end was lost.',
+      ],
+    },{
       version: '3.2.1',
       changes: [
         'FIX: A finished portal (Action "Nothing") now always shows pale yellow and struck through in the Task List, like every other finished portal, even when it was green (moved earlier by Less walking) or carried the red cross of a blocking link it frees. The printed Task List follows the same rule.',
