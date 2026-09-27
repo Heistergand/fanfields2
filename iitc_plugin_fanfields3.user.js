@@ -3763,6 +3763,21 @@ function wrapper(plugin_info) {
       '}\n'
     );
 
+    // Map topleft Keys video control: a key, with a camera partly over its lower right corner.
+    addCSS('\n' +
+      '.plugin_fanfields3_keysvideo_icon {\n' +
+      '  position: relative;\n' +
+      '  display: inline-block;\n' +
+      '  line-height: 1;\n' +
+      '}\n' +
+      '.plugin_fanfields3_keysvideo_icon > span {\n' +
+      '  position: absolute;\n' +
+      '  right: -3px;\n' +
+      '  bottom: -3px;\n' +
+      '  font-size: 12px;\n' +
+      '}\n'
+    );
+
     // Map topleft Lock/Unlock control: green open padlock while the plan still recalculates
     // freely, red closed padlock once it's frozen (thisplugin.is_locked) — the SVG icon uses
     // fill="currentColor", so its color follows this element's own color.
@@ -3903,7 +3918,38 @@ function wrapper(plugin_info) {
       `);
     };
 
-
+    // Keys video review table: every cell, checkbox and count field on the same line, numbers
+    // centered under their headers.
+    addCSS('\n' +
+      '.plugin_fanfields3_keysvideo_table {\n' +
+      '  border-collapse: collapse;\n' +
+      '  width: 100%;\n' +
+      '}\n' +
+      '.plugin_fanfields3_keysvideo_table th,\n' +
+      '.plugin_fanfields3_keysvideo_table td {\n' +
+      '  vertical-align: middle;\n' +
+      '  padding: 2px 4px;\n' +
+      '  line-height: 20px;\n' +
+      '  text-align: center !important;\n' +
+      '}\n' +
+      '.plugin_fanfields3_keysvideo_table th:nth-child(2),\n' +
+      '.plugin_fanfields3_keysvideo_table td:nth-child(2) {\n' +
+      '  text-align: left !important;\n' +
+      '}\n' +
+      '.plugin_fanfields3_keysvideo_table input {\n' +
+      '  margin: 0;\n' +
+      '  vertical-align: middle;\n' +
+      '}\n' +
+      '.plugin_fanfields3_keysvideo_count {\n' +
+      '  box-sizing: border-box;\n' +
+      '  width: 4em;\n' +
+      '  height: 20px;\n' +
+      '  padding: 0 2px;\n' +
+      '  line-height: 18px;\n' +
+      '  text-align: center;\n' +
+      '  border: 1px solid #555;\n' +
+      '}\n'
+    );
 
     // Manage-Order-Dialog (ghi#23)
     addCSS('\n' +
@@ -4883,12 +4929,14 @@ function wrapper(plugin_info) {
     });
   };
 
-  // Keeps the Keys video dialog at the top of the screen, capped to the screen height with its
-  // content scrolling, so the review table that grows it never pushes it off the bottom.
+  // Keeps the Keys video dialog at the top of the screen, fully opaque so the map doesn't show
+  // through the counts, and capped to the screen height with its content scrolling, so the
+  // review table that grows it never pushes it off the bottom.
   thisplugin.pinKeysVideoDialogToTop = function () {
     var $content = $('#dialog-plugin_fanfields3_keysvideo');
     if (!$content.length) return;
     var $ui = $content.closest('.ui-dialog');
+    $ui.css({ 'background': 'rgb(8, 48, 78)', 'opacity': 1 });
     var chrome = $ui.outerHeight() - $content.outerHeight();
     $content.css({
       'max-height': Math.max(100, thisplugin.getMaxDialogHeight() - chrome) + 'px',
@@ -4907,16 +4955,16 @@ function wrapper(plugin_info) {
         '<td><input type="checkbox" class="plugin_fanfields3_keysvideo_apply"' +
         (seen && value !== current ? ' checked' : '') + '></td>' +
         '<td>' + esc(c.title) + '</td>' +
-        '<td style="text-align:right">' + c.needed + '</td>' +
-        '<td style="text-align:right">' + current + '</td>' +
+        '<td>' + c.needed + '</td>' +
+        '<td>' + current + '</td>' +
         '<td><input type="number" min="0" max="999" class="plugin_fanfields3_keysvideo_count" value="' + value + '"' +
-        ' data-seen="' + (seen ? '1' : '0') + '" style="width:4em"></td>' +
+        ' data-seen="' + (seen ? '1' : '0') + '"></td>' +
         '</tr>';
     }).join('');
 
     var html =
       '<table class="plugin_fanfields3_keysvideo_table"><thead><tr>' +
-      '<th></th><th style="text-align:left">Portal</th><th title="Keys still needed">Need</th>' +
+      '<th></th><th>Portal</th><th title="Keys still needed">Need</th>' +
       '<th title="Keys plugin count now">Now</th><th title="Count read in the recording">Read</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table>' +
       '<p><label><input type="checkbox" id="plugin_fanfields3_keysvideo_zero"> ' +
@@ -6809,6 +6857,8 @@ function wrapper(plugin_info) {
   var symbol_counterclockwise = '&#8634;';
   var symbol_clipboard = '&#128203;';
   var symbol_target = '&#127919;';
+  // A key with a small camera in its lower right corner (Keys video).
+  var symbol_keysVideo = '<span class="plugin_fanfields3_keysvideo_icon">&#128273;<span>&#128247;</span></span>';
 
   // Padlock icons for the Lock/Unlock control (map topleft button and, via CSS color, the
   // sidebar Lock/Unlock button's icon too): plain SVG rather than the 🔒/🔓 emoji, since an
@@ -6866,6 +6916,15 @@ function wrapper(plugin_info) {
           )
           .on("click", "#fanfieldPickAnchorButton", function () {
             thisplugin.toggleAnchorPicking();
+          });
+
+        $(container)
+          .append(
+            '<a id="fanfieldKeysVideoButton" href="javascript: void(0);" class="fanfields-control" title="Keys video: update the Keys plugin from a screen recording of your keys in Ingress">' +
+            symbol_keysVideo + '</a>'
+          )
+          .on("click", "#fanfieldKeysVideoButton", function () {
+            thisplugin.openKeysVideoDialog();
           });
 
         $(container)
