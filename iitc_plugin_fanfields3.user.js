@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         3.4.0.20260927
+// @version         3.4.1.20260928
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, a Task List that follows your progress and can Reroute the steps left from where you stand, key counts read from a screen recording of your keys in Ingress (Keys plugin), and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-09-27-224858';
+  plugin_info.dateTimeVersion = '2026-09-28-192638';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,11 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '3.4.1',
+      changes: [
+        'FIX: Picking an anchor portal inside the selection (Pick anchor, or the automatic search choosing one) could sometimes miss the widest gap between the surrounding portals when it fell across due north, leading to a less efficient starting order for the fan.',
+      ],
+    },{
       version: '3.4.0',
       changes: [
         'NEW: "Keys video" button in the Task List (Keys plugin only): record your phone screen while scrolling through your keys in Ingress, pick the recording (or screenshots), and the key counts of the plan\'s portals are read from it and written into the Keys plugin once you have checked them. The text is read on your device (the recognition library is downloaded once from a CDN); nothing is sent anywhere.',
@@ -6113,7 +6118,7 @@ function wrapper(plugin_info) {
     if (thisplugin.startingMarker !== undefined) {
       // extend perimeter by Marker.
       // You might ask: "why? It's inside the hull?" - Well, yes.
-      // But givegiving the player as much freedom as possible is key.
+      // But giving the player as much freedom as possible is key.
       // Maybe it's a home portal or they already have tons of keys for it.
       // therefore you can force a starting point portal by adding a marker.
       thisplugin.perimeterpoints = extendperimeter(thisplugin.perimeterpoints, thisplugin.startingMarkerGUID, thisplugin.startingMarker)
@@ -6220,19 +6225,21 @@ function wrapper(plugin_info) {
         return a.bearing - b.bearing;
       });
 
-      // rotate localSorted until the bearing to the anchor has the longest gap to the previous
-      // one. if no gap bigger 90° is present, start with the longest link.
+      // rotate localSorted until the point right after the widest angular gap between the
+      // portals themselves becomes the new start of the ring. Index 0 is always the anchor
+      // (its bearing to itself is exactly 0, the minimum possible value, so it sorts first) —
+      // it's excluded from this search, since its phantom 0° bearing would otherwise split the
+      // true wraparound gap between the last and first real portal into two smaller ones,
+      // making the widest gap go undetected whenever it happens to straddle due north (most
+      // noticeable with an anchor picked inside the hull, surrounded on all sides).
       var currentBearing, lastBearing;
-      var gap, lastGap, maxGap, maxGapIndex, maxGapBearing;
-      for (i in localSorted) {
-        if (lastBearing === undefined) {
-          lastBearing = localSorted[localSorted.length - 1].bearing;
-          gap = 0;
-          lastGap = 0;
-          maxGap = 0;
-          maxGapIndex = 0;
-          maxGapBearing = 0;
-        }
+      var gap, maxGap, maxGapIndex;
+      maxGap = 0;
+      maxGapIndex = 1;
+      for (i = 1; i < localSorted.length; i++) {
+        lastBearing = (i === 1) ?
+          localSorted[localSorted.length - 1].bearing :
+          localSorted[i - 1].bearing;
         currentBearing = localSorted[i].bearing;
         gap = lastBearing - currentBearing;
         if (gap < 0) gap *= -1;
@@ -6241,10 +6248,7 @@ function wrapper(plugin_info) {
         if (gap > maxGap) {
           maxGap = gap;
           maxGapIndex = i;
-          maxGapBearing = currentBearing;
         }
-        lastBearing = currentBearing;
-        lastGap = gap;
       }
 
       localSorted = localSorted.concat(localSorted.splice(1, maxGapIndex - 1));
