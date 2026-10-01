@@ -4,7 +4,7 @@
 // @name            Fan Fields 3
 // @category        Layer
 // @version         4.0.0.20261001
-// @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, a Task List that follows your progress and can Reroute the steps left from where you stand, key counts read from a screen recording of your keys in Ingress (Keys plugin), and route export to Google Maps / Portal Route. Sends anonymous usage stats (a one-way hash of your nickname, your faction, time active — never your nickname itself, never what you click or plan). Enable from the layer chooser.
+// @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, a Task List that follows your progress and can Reroute the steps left from where you stand, key counts read from a screen recording of your keys in Ingress (Keys plugin), and route export to Google Maps / Portal Route. Sends anonymous usage stats (faction, rough region, time active), while keeping agents fully anonymous. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
 // @icon            https://raw.githubusercontent.com/Avataar120/fanfields3/master/fanfields3-32.png
@@ -35,7 +35,7 @@ function wrapper(plugin_info) {
   var changelog = [{
       version: '4.0.0',
       changes: [
-        'NEW: Sends anonymous usage stats to a small server: a one-way hash of your nickname (never the nickname itself — it never leaves your device), your faction, and how long the plugin stayed active. The server works out a rough region (continent-level) from your connection itself, nothing more. Used only to see how the plugin is actually used overall — which faction, which region, how much — never what you specifically click, plan or build. Always on, with no setting to turn it off.',
+        'NEW: Sends anonymous usage stats (faction, rough region, time active) to help understand how the plugin is actually used, while keeping agents fully anonymous.',
       ],
     },{
       version: '3.4.1',
@@ -6978,9 +6978,19 @@ function wrapper(plugin_info) {
   // from the request's IP itself (never sent by this code) and never sees anything else. Used
   // only to gauge how the plugin is actually used (which faction, which region, how much) —
   // there is no per-feature tracking of what you click or plan.
-  const STATS_ENDPOINT = 'https://fanfieldsstats.avataar120.com/collect';
+  //
+  // In the field, IITC is often only open for a few seconds at a time (check the next step,
+  // close it again), so there's no accumulating active time client-side on a timer: a ping this
+  // short could easily end before any timer fires. Instead each ping just reports "I'm here
+  // now"; the server turns consecutive pings from the same agent into a duration itself (see
+  // STATS_PING_INTERVAL_MS below and SESSION_GAP_MS server-side) — a gap short enough to be the
+  // same look at the map counts as active time, a long gap (plugin actually closed) doesn't.
+  const STATS_ENDPOINT = 'https://fanfields.avataar120.com/collect';
   const STATS_PROTOCOL_VERSION = 1;
-  const STATS_HEARTBEAT_MS = 5 * 60 * 1000;
+  // While visible, re-ping often enough that consecutive pings always fall well under the
+  // server's same-session cutoff — this is what lets a long, continuously open session still
+  // accumulate active time, instead of only the instant open/close pings below.
+  const STATS_PING_INTERVAL_MS = 60 * 1000;
   // Public, fixed HMAC key: this plugin is open source, so it can never be a real secret. Its
   // only purpose is to stop the stored hash from matching a generic, precomputed SHA-256(nickname)
   // rainbow table — it does not and cannot stop someone with the plugin's source from testing
@@ -6990,7 +7000,7 @@ function wrapper(plugin_info) {
   const STATS_HMAC_SALT = 'fanfields3-stats-v1';
 
   thisplugin._statsAgentHash = null;
-  thisplugin._statsActiveSince = null;
+  thisplugin._statsPingTimer = null;
 
   function computeStatsAgentHash(nickname) {
     const enc = new TextEncoder();
@@ -7005,23 +7015,17 @@ function wrapper(plugin_info) {
     });
   }
 
-  // Sends whatever active time has accumulated since the last flush. `keepTracking` restarts
-  // the clock right away (periodic heartbeat); otherwise tracking stops until the tab is
-  // visible again (tab hidden) or the plugin re-initializes (page unload). Best-effort only:
-  // any failure here must never surface to the player or affect the plugin itself.
-  thisplugin._statsFlush = function (keepTracking) {
-    if (!thisplugin._statsAgentHash || thisplugin._statsActiveSince === null) return;
-    const now = Date.now();
-    const seconds = Math.round((now - thisplugin._statsActiveSince) / 1000);
-    thisplugin._statsActiveSince = keepTracking ? now : null;
-    if (seconds <= 0) return;
-
+  // A single "I'm here now" ping — no duration, no timestamp even (the server uses its own
+  // clock, both to avoid clock-skew issues and because sendBeacon can't guarantee *when* it
+  // actually goes out). Best-effort only: any failure here must never surface to the player or
+  // affect the plugin itself.
+  thisplugin._statsPing = function () {
+    if (!thisplugin._statsAgentHash) return;
     try {
       const payload = JSON.stringify({
         v: STATS_PROTOCOL_VERSION,
         agent: thisplugin._statsAgentHash,
-        faction: (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'ENL' : 'RES',
-        seconds: seconds
+        faction: (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'ENL' : 'RES'
       });
       if (navigator.sendBeacon) {
         navigator.sendBeacon(STATS_ENDPOINT, new Blob([payload], { type: 'text/plain' }));
@@ -7036,18 +7040,30 @@ function wrapper(plugin_info) {
 
     computeStatsAgentHash(window.PLAYER.nickname).then(function (hash) {
       thisplugin._statsAgentHash = hash;
-      if (document.visibilityState === 'visible') thisplugin._statsActiveSince = Date.now();
+      thisplugin._statsPing();
+      if (document.visibilityState === 'visible') thisplugin._statsStartPinging();
     }).catch(function () { /* Web Crypto unavailable or failed: no stats this session */ });
 
     document.addEventListener('visibilitychange', function () {
+      thisplugin._statsPing();
       if (document.visibilityState === 'visible') {
-        thisplugin._statsActiveSince = Date.now();
+        thisplugin._statsStartPinging();
       } else {
-        thisplugin._statsFlush(false);
+        thisplugin._statsStopPinging();
       }
     });
-    setInterval(function () { thisplugin._statsFlush(true); }, STATS_HEARTBEAT_MS);
-    window.addEventListener('pagehide', function () { thisplugin._statsFlush(false); });
+    // Belt and suspenders alongside visibilitychange above: on some mobile WebViews, closing or
+    // backgrounding the app doesn't reliably fire visibilitychange first.
+    window.addEventListener('pagehide', function () { thisplugin._statsPing(); });
+  };
+
+  thisplugin._statsStartPinging = function () {
+    if (thisplugin._statsPingTimer) return;
+    thisplugin._statsPingTimer = setInterval(thisplugin._statsPing, STATS_PING_INTERVAL_MS);
+  };
+  thisplugin._statsStopPinging = function () {
+    clearInterval(thisplugin._statsPingTimer);
+    thisplugin._statsPingTimer = null;
   };
 
   thisplugin.setup = function () {

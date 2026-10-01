@@ -1,6 +1,13 @@
-// FanFields 3 usage stats server : collects anonymous usage pings from the plugin (hashed
-// agent id, faction, active seconds) and serves an admin dashboard to review them.
+// FanFields 3 usage stats server : collects anonymous presence pings from the plugin (hashed
+// agent id, faction — nothing else) and serves an admin dashboard to review them.
 // Aucune dépendance externe (Node >= 18), même approche que le serveur iitc-sync voisin.
+//
+// Le plugin envoie un ping "je suis là" à chaque changement de visibilité (visible/caché) et
+// toutes les STATS_PING_INTERVAL_MS tant qu'il reste visible, plutôt qu'une durée déjà calculée
+// côté client : en usage réel, IITC n'est souvent ouvert que quelques secondes (vérifier la
+// prochaine action), pas assez pour qu'un minuteur côté client ait le temps de se déclencher.
+// C'est donc ici, dans handleCollect, que l'écart entre deux pings consécutifs d'un même agent
+// devient une durée — voir SESSION_GAP_MS.
 'use strict';
 
 const http = require('http');
@@ -28,10 +35,12 @@ const MAX_BODY = 4 * 1024;
 const PROTOCOL_VERSION = 1;
 const AGENT_HASH_RE = /^[0-9a-f]{64}$/; // HMAC-SHA256 hex, calculé côté client (voir le plugin)
 const FACTIONS = ['ENL', 'RES'];
-const MIN_SECONDS_PER_EVENT = 1;
-// Plafond large par rapport à l'intervalle d'envoi du plugin (5 min) : une ping tardive ou
-// fusionnée reste légitime, on l'écrête plutôt que de la rejeter.
-const MAX_SECONDS_PER_EVENT = 900;
+// Écart maximum entre deux pings consécutifs d'un même agent pour que l'écart compte comme du
+// temps actif continu (le plugin re-ping toutes les 60 s tant qu'il est visible, donc une marge
+// large face à la gigue réseau/du minuteur). Au-delà, le plugin a été refermé entre les deux :
+// cet intervalle ne doit pas compter.
+const SESSION_GAP_MS = 3 * 60 * 1000;
+const MAX_SECONDS_PER_EVENT = Math.round(SESSION_GAP_MS / 1000);
 const WINDOW_MS = 60 * 1000;
 const MAX_EVENTS_PER_IP = 30; // large : plusieurs agents peuvent partager une IP (NAT, 4G...)
 const MAX_LOGIN_FAILURES_PER_IP = 10;
@@ -112,7 +121,20 @@ function makeCounter(windowMs) {
 }
 const collectLimiter = makeCounter(WINDOW_MS);
 const loginFailures = makeCounter(LOGIN_WINDOW_MS);
-setInterval(function () { collectLimiter.purge(); loginFailures.purge(); purgeSessions(); }, 60 * 1000).unref();
+
+// Dernier ping vu par agent (hash -> ts), pour transformer deux pings consécutifs en durée dans
+// handleCollect. Purgé ci-dessous comme les autres : une entrée plus vieille que SESSION_GAP_MS
+// aurait de toute façon donné 0 seconde au prochain ping, la purge ne fait qu'éviter de la
+// garder en mémoire indéfiniment pour un agent qui ne revient jamais.
+const lastSeen = new Map();
+
+setInterval(function () {
+  collectLimiter.purge();
+  loginFailures.purge();
+  purgeSessions();
+  const cutoff = Date.now() - SESSION_GAP_MS;
+  lastSeen.forEach(function (ts, agent) { if (ts < cutoff) lastSeen.delete(agent); });
+}, 60 * 1000).unref();
 
 // ---- Mots de passe (admin uniquement : un seul compte) ----
 const SCRYPT = { N: 32768, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };
@@ -302,15 +324,21 @@ function handleCollect(req, res, body) {
   const faction = String(body.faction || '');
   if (FACTIONS.indexOf(faction) === -1) return send(res, 400, { error: 'invalid faction' });
 
-  let seconds = Math.round(Number(body.seconds));
-  if (!isFinite(seconds) || seconds < MIN_SECONDS_PER_EVENT) return send(res, 400, { error: 'invalid seconds' });
-  if (seconds > MAX_SECONDS_PER_EVENT) seconds = MAX_SECONDS_PER_EVENT;
-
   const ip = clientIp(req);
   if (collectLimiter.count(ip) >= MAX_EVENTS_PER_IP) return send(res, 429, { error: 'too many events' });
   collectLimiter.add(ip);
 
-  appendEvent({ ts: Date.now(), agent: agent, faction: faction, region: regionForIp(ip), seconds: seconds });
+  // Le client n'envoie ni durée ni horodatage : juste "je suis là, maintenant" (l'horloge du
+  // serveur fait foi). Un écart avec le ping précédent du même agent assez court pour être le
+  // même coup d'œil compte comme actif ; un écart plus long veut dire que le plugin a été
+  // refermé entre les deux, et ce temps-là ne compte pas.
+  const now = Date.now();
+  const previous = lastSeen.get(agent);
+  const gap = previous ? now - previous : 0;
+  const seconds = (gap > 0 && gap <= SESSION_GAP_MS) ? Math.min(MAX_SECONDS_PER_EVENT, Math.round(gap / 1000)) : 0;
+  lastSeen.set(agent, now);
+
+  appendEvent({ ts: now, agent: agent, faction: faction, region: regionForIp(ip), seconds: seconds });
   send(res, 204);
 }
 
