@@ -3,8 +3,8 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         3.4.1.20260928
-// @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, a Task List that follows your progress and can Reroute the steps left from where you stand, key counts read from a screen recording of your keys in Ingress (Keys plugin), and route export to Google Maps / Portal Route. Enable from the layer chooser.
+// @version         4.0.0.20261001
+// @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, a Task List that follows your progress and can Reroute the steps left from where you stand, key counts read from a screen recording of your keys in Ingress (Keys plugin), and route export to Google Maps / Portal Route. Sends anonymous usage stats (a one-way hash of your nickname, your faction, time active — never your nickname itself, never what you click or plan). Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
 // @icon            https://raw.githubusercontent.com/Avataar120/fanfields3/master/fanfields3-32.png
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-09-28-192638';
+  plugin_info.dateTimeVersion = '2026-10-01-095028';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,11 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '4.0.0',
+      changes: [
+        'NEW: Sends anonymous usage stats to a small server: a one-way hash of your nickname (never the nickname itself — it never leaves your device), your faction, and how long the plugin stayed active. The server works out a rough region (continent-level) from your connection itself, nothing more. Used only to see how the plugin is actually used overall — which faction, which region, how much — never what you specifically click, plan or build. Always on, with no setting to turn it off.',
+      ],
+    },{
       version: '3.4.1',
       changes: [
         'FIX: Picking an anchor portal inside the selection (Pick anchor, or the automatic search choosing one) could sometimes miss the widest gap between the surrounding portals when it fell across due north, leading to a less efficient starting order for the fan.',
@@ -6965,6 +6970,86 @@ function wrapper(plugin_info) {
     return Math.max(200, Math.floor(vh) - bottomClearance);
   };
 
+  // ---- Usage stats -------------------------------------------------------------------------
+  //
+  // Anonymous usage ping, sent to a small server this plugin's author runs: a one-way hash of
+  // the agent's nickname (never the nickname itself — see computeStatsAgentHash below), the
+  // faction, and how many seconds the plugin was active. The server derives a coarse region
+  // from the request's IP itself (never sent by this code) and never sees anything else. Used
+  // only to gauge how the plugin is actually used (which faction, which region, how much) —
+  // there is no per-feature tracking of what you click or plan.
+  const STATS_ENDPOINT = 'https://fanfieldsstats.avataar120.com/collect';
+  const STATS_PROTOCOL_VERSION = 1;
+  const STATS_HEARTBEAT_MS = 5 * 60 * 1000;
+  // Public, fixed HMAC key: this plugin is open source, so it can never be a real secret. Its
+  // only purpose is to stop the stored hash from matching a generic, precomputed SHA-256(nickname)
+  // rainbow table — it does not and cannot stop someone with the plugin's source from testing
+  // one specific candidate nickname against a known hash themselves. That limit is inherent to
+  // any scheme where the hashing method has to be public; there's no way around it short of the
+  // server seeing the raw nickname, which is exactly what this avoids.
+  const STATS_HMAC_SALT = 'fanfields3-stats-v1';
+
+  thisplugin._statsAgentHash = null;
+  thisplugin._statsActiveSince = null;
+
+  function computeStatsAgentHash(nickname) {
+    const enc = new TextEncoder();
+    return window.crypto.subtle.importKey(
+      'raw', enc.encode(STATS_HMAC_SALT), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    ).then(function (key) {
+      return window.crypto.subtle.sign('HMAC', key, enc.encode(nickname.toLowerCase()));
+    }).then(function (sig) {
+      return Array.prototype.map.call(new Uint8Array(sig), function (b) {
+        return b.toString(16).padStart(2, '0');
+      }).join('');
+    });
+  }
+
+  // Sends whatever active time has accumulated since the last flush. `keepTracking` restarts
+  // the clock right away (periodic heartbeat); otherwise tracking stops until the tab is
+  // visible again (tab hidden) or the plugin re-initializes (page unload). Best-effort only:
+  // any failure here must never surface to the player or affect the plugin itself.
+  thisplugin._statsFlush = function (keepTracking) {
+    if (!thisplugin._statsAgentHash || thisplugin._statsActiveSince === null) return;
+    const now = Date.now();
+    const seconds = Math.round((now - thisplugin._statsActiveSince) / 1000);
+    thisplugin._statsActiveSince = keepTracking ? now : null;
+    if (seconds <= 0) return;
+
+    try {
+      const payload = JSON.stringify({
+        v: STATS_PROTOCOL_VERSION,
+        agent: thisplugin._statsAgentHash,
+        faction: (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'ENL' : 'RES',
+        seconds: seconds
+      });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(STATS_ENDPOINT, new Blob([payload], { type: 'text/plain' }));
+      } else {
+        fetch(STATS_ENDPOINT, { method: 'POST', body: payload, keepalive: true }).catch(function () {});
+      }
+    } catch (e) { /* stats are best-effort, never break the plugin over this */ }
+  };
+
+  thisplugin.initUsageStats = function () {
+    if (!window.crypto || !window.crypto.subtle || !window.PLAYER || !window.PLAYER.nickname) return;
+
+    computeStatsAgentHash(window.PLAYER.nickname).then(function (hash) {
+      thisplugin._statsAgentHash = hash;
+      if (document.visibilityState === 'visible') thisplugin._statsActiveSince = Date.now();
+    }).catch(function () { /* Web Crypto unavailable or failed: no stats this session */ });
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        thisplugin._statsActiveSince = Date.now();
+      } else {
+        thisplugin._statsFlush(false);
+      }
+    });
+    setInterval(function () { thisplugin._statsFlush(true); }, STATS_HEARTBEAT_MS);
+    window.addEventListener('pagehide', function () { thisplugin._statsFlush(false); });
+  };
+
   thisplugin.setup = function () {
     thisplugin.setupCSS();
     thisplugin.linksLayerGroup = new L.LayerGroup();
@@ -7264,6 +7349,8 @@ function wrapper(plugin_info) {
     window.addLayerGroup('Fanfields links', thisplugin.linksLayerGroup, false);
     window.addLayerGroup('Fanfields fields', thisplugin.fieldsLayerGroup, false);
     window.addLayerGroup('Fanfields numbers', thisplugin.numbersLayerGroup, false);
+
+    thisplugin.initUsageStats();
 
     //window.map.on('zoomend', thisplugin.clearAllPortalLabels );
   };

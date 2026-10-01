@@ -1,0 +1,40 @@
+version: "3.8"
+
+# Déploiement : ./deploy.sh
+services:
+  app:
+    image: 127.0.0.1:5000/fanfields-stats:latest
+    # Pas de .env : aucun secret à fournir au démarrage. Le compte admin est créé tout seul au
+    # premier lancement avec un mot de passe aléatoire affiché une seule fois dans les logs
+    # (voir docker service logs fanfieldsstats_app).
+    volumes:
+      - /home/ubuntu/fanfields-stats/data:/data
+    read_only: true
+    cap_drop:
+      - ALL
+    networks:
+      - traefik_web
+    deploy:
+      restart_policy:
+        condition: any
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik_web
+        - traefik.http.routers.fanfieldsstats-http.entrypoints=insecure
+        - traefik.http.routers.fanfieldsstats-http.rule=Host(`fanfields.avataar120.com`)
+        - traefik.http.routers.fanfieldsstats-http.middlewares=https-redirect@file
+        - traefik.http.routers.fanfieldsstats-http.service=fanfieldsstats-app
+        - traefik.http.routers.fanfieldsstats-https.entrypoints=secure
+        - traefik.http.routers.fanfieldsstats-https.rule=Host(`fanfields.avataar120.com`)
+        - traefik.http.routers.fanfieldsstats-https.service=fanfieldsstats-app
+        - traefik.http.routers.fanfieldsstats-https.tls=true
+        - traefik.http.routers.fanfieldsstats-https.tls.certresolver=letsencrypt
+        - traefik.http.services.fanfieldsstats-app.loadbalancer.server.port=8080
+
+networks:
+  traefik_web:
+    external: true
