@@ -142,7 +142,7 @@ const MIN_NEW_PASSWORD = 12;
 const MAX_PASSWORD = 200;
 const GENERATED_PASSWORD_LENGTH = 20;
 const GENERATED_ALPHABET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const SESSION_TTL = 8 * 60 * 60 * 1000;
+const SESSION_TTL = 30 * 24 * 60 * 60 * 1000;
 
 function scrypt(password, salt, N) {
   return new Promise(function (resolve, reject) {
