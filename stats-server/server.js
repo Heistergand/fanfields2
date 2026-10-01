@@ -39,7 +39,7 @@ const FACTIONS = ['ENL', 'RES'];
 // temps actif continu (le plugin re-ping toutes les 60 s tant qu'il est visible, donc une marge
 // large face à la gigue réseau/du minuteur). Au-delà, le plugin a été refermé entre les deux :
 // cet intervalle ne doit pas compter.
-const SESSION_GAP_MS = 3 * 60 * 1000;
+const SESSION_GAP_MS = 30 * 60 * 1000;
 const MAX_SECONDS_PER_EVENT = Math.round(SESSION_GAP_MS / 1000);
 const WINDOW_MS = 60 * 1000;
 const MAX_EVENTS_PER_IP = 30; // large : plusieurs agents peuvent partager une IP (NAT, 4G...)
