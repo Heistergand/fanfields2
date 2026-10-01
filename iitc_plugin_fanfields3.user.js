@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         3.4.1.20260928
+// @version         4.0.0.20261001
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, a Task List that follows your progress and can Reroute the steps left from where you stand, key counts read from a screen recording of your keys in Ingress (Keys plugin), and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-09-28-192638';
+  plugin_info.dateTimeVersion = '2026-10-01-095028';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,11 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '4.0.0',
+      changes: [
+        'NEW: Sends anonymous usage stats (faction, rough region, time active) to help understand how the plugin is actually used, while keeping agents fully anonymous.',
+      ],
+    },{
       version: '3.4.1',
       changes: [
         'FIX: Picking an anchor portal inside the selection (Pick anchor, or the automatic search choosing one) could sometimes miss the widest gap between the surrounding portals when it fell across due north, leading to a less efficient starting order for the fan.',
@@ -6965,6 +6970,102 @@ function wrapper(plugin_info) {
     return Math.max(200, Math.floor(vh) - bottomClearance);
   };
 
+  // ---- Usage stats -------------------------------------------------------------------------
+  //
+  // Anonymous usage ping, sent to a small server this plugin's author runs: a one-way hash of
+  // the agent's nickname (never the nickname itself — see computeStatsAgentHash below), the
+  // faction, and how many seconds the plugin was active. The server derives a coarse region
+  // from the request's IP itself (never sent by this code) and never sees anything else. Used
+  // only to gauge how the plugin is actually used (which faction, which region, how much) —
+  // there is no per-feature tracking of what you click or plan.
+  //
+  // In the field, IITC is often only open for a few seconds at a time (check the next step,
+  // close it again), so there's no accumulating active time client-side on a timer: a ping this
+  // short could easily end before any timer fires. Instead each ping just reports "I'm here
+  // now"; the server turns consecutive pings from the same agent into a duration itself (see
+  // STATS_PING_INTERVAL_MS below and SESSION_GAP_MS server-side) — a gap short enough to be the
+  // same look at the map counts as active time, a long gap (plugin actually closed) doesn't.
+  const STATS_ENDPOINT = 'https://fanfields.avataar120.com/collect';
+  const STATS_PROTOCOL_VERSION = 1;
+  // While visible, re-ping often enough that consecutive pings always fall well under the
+  // server's same-session cutoff — this is what lets a long, continuously open session still
+  // accumulate active time, instead of only the instant open/close pings below.
+  const STATS_PING_INTERVAL_MS = 60 * 1000;
+  // Public, fixed HMAC key: this plugin is open source, so it can never be a real secret. Its
+  // only purpose is to stop the stored hash from matching a generic, precomputed SHA-256(nickname)
+  // rainbow table — it does not and cannot stop someone with the plugin's source from testing
+  // one specific candidate nickname against a known hash themselves. That limit is inherent to
+  // any scheme where the hashing method has to be public; there's no way around it short of the
+  // server seeing the raw nickname, which is exactly what this avoids.
+  const STATS_HMAC_SALT = 'fanfields3-stats-v1';
+
+  thisplugin._statsAgentHash = null;
+  thisplugin._statsPingTimer = null;
+
+  function computeStatsAgentHash(nickname) {
+    const enc = new TextEncoder();
+    return window.crypto.subtle.importKey(
+      'raw', enc.encode(STATS_HMAC_SALT), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    ).then(function (key) {
+      return window.crypto.subtle.sign('HMAC', key, enc.encode(nickname.toLowerCase()));
+    }).then(function (sig) {
+      return Array.prototype.map.call(new Uint8Array(sig), function (b) {
+        return b.toString(16).padStart(2, '0');
+      }).join('');
+    });
+  }
+
+  // A single "I'm here now" ping — no duration, no timestamp even (the server uses its own
+  // clock, both to avoid clock-skew issues and because sendBeacon can't guarantee *when* it
+  // actually goes out). Best-effort only: any failure here must never surface to the player or
+  // affect the plugin itself.
+  thisplugin._statsPing = function () {
+    if (!thisplugin._statsAgentHash) return;
+    try {
+      const payload = JSON.stringify({
+        v: STATS_PROTOCOL_VERSION,
+        agent: thisplugin._statsAgentHash,
+        faction: (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'ENL' : 'RES'
+      });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(STATS_ENDPOINT, new Blob([payload], { type: 'text/plain' }));
+      } else {
+        fetch(STATS_ENDPOINT, { method: 'POST', body: payload, keepalive: true }).catch(function () {});
+      }
+    } catch (e) { /* stats are best-effort, never break the plugin over this */ }
+  };
+
+  thisplugin.initUsageStats = function () {
+    if (!window.crypto || !window.crypto.subtle || !window.PLAYER || !window.PLAYER.nickname) return;
+
+    computeStatsAgentHash(window.PLAYER.nickname).then(function (hash) {
+      thisplugin._statsAgentHash = hash;
+      thisplugin._statsPing();
+      if (document.visibilityState === 'visible') thisplugin._statsStartPinging();
+    }).catch(function () { /* Web Crypto unavailable or failed: no stats this session */ });
+
+    document.addEventListener('visibilitychange', function () {
+      thisplugin._statsPing();
+      if (document.visibilityState === 'visible') {
+        thisplugin._statsStartPinging();
+      } else {
+        thisplugin._statsStopPinging();
+      }
+    });
+    // Belt and suspenders alongside visibilitychange above: on some mobile WebViews, closing or
+    // backgrounding the app doesn't reliably fire visibilitychange first.
+    window.addEventListener('pagehide', function () { thisplugin._statsPing(); });
+  };
+
+  thisplugin._statsStartPinging = function () {
+    if (thisplugin._statsPingTimer) return;
+    thisplugin._statsPingTimer = setInterval(thisplugin._statsPing, STATS_PING_INTERVAL_MS);
+  };
+  thisplugin._statsStopPinging = function () {
+    clearInterval(thisplugin._statsPingTimer);
+    thisplugin._statsPingTimer = null;
+  };
+
   thisplugin.setup = function () {
     thisplugin.setupCSS();
     thisplugin.linksLayerGroup = new L.LayerGroup();
@@ -7264,6 +7365,8 @@ function wrapper(plugin_info) {
     window.addLayerGroup('Fanfields links', thisplugin.linksLayerGroup, false);
     window.addLayerGroup('Fanfields fields', thisplugin.fieldsLayerGroup, false);
     window.addLayerGroup('Fanfields numbers', thisplugin.numbersLayerGroup, false);
+
+    thisplugin.initUsageStats();
 
     //window.map.on('zoomend', thisplugin.clearAllPortalLabels );
   };
