@@ -2711,7 +2711,7 @@ function wrapper(plugin_info) {
   // Loading an op replaces EVERYTHING currently drawn with that op's own drawing.
   // ---------------------------------------------------------------------
 
-  thisplugin.OPS_STORAGE_KEY = 'plugin_fanfields3_saved_ops';
+  thisplugin.OPS_STORAGE_KEY = 'plugin-fanfields3-saved-ops';
   thisplugin.OPS_MAX_COUNT = 15;
 
   // JSON snapshot of the drawing that matches whatever is currently considered "saved" (the op
@@ -7180,7 +7180,7 @@ function wrapper(plugin_info) {
   };
 
   // Settings persisted across sessions via "Save options as default" in the Options dialog.
-  thisplugin.OPTIONS_STORAGE_KEY = 'plugin_fanfields3_saved_defaults';
+  thisplugin.OPTIONS_STORAGE_KEY = 'plugin-fanfields3-saved-defaults';
 
   thisplugin.getSavedOptionsDefault = function () {
     try {
