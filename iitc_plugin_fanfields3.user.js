@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         5.0.0.20261002
+// @version         5.1.0.20261002
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, a Task List that follows your progress and can Reroute the steps left from where you stand, key counts read from a screen recording of your keys in Ingress (Keys plugin), and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-10-02-165727';
+  plugin_info.dateTimeVersion = '2026-10-02-202543';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,11 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '5.1.0',
+      changes: [
+        'NEW: Manage Ops menu item lets you save your current drawing under a name, and reload, rename, update or delete it later. Loading a saved op replaces everything currently drawn and moves the map to it; a warning appears before any of these actions would discard unsaved changes. A Clear drawing button is also added there to wipe the current drawing.',
+      ],
+    },{
       version: '5.0.0',
       changes: [
         'NEW: Redesigned menu. A hamburger icon on the map opens a simple menu (Options, Manage order, Stats, Help), and a new Options dialog gathers all the settings (Direction, Fan mode, Available SBUL, Respect Intel, Blockers, Blockers max detour, Portal selection) in one place. Every change there is saved automatically and remembered the next time you open the plugin.',
@@ -2698,6 +2703,447 @@ function wrapper(plugin_info) {
 
   // ghi#23 end (3)
 
+
+  // ---------------------------------------------------------------------
+  // Manage Ops: save/load/rename/delete named snapshots of the current DrawTools drawing
+  // (polygons, markers, lines, circles), stored in this plugin's own localStorage — never in
+  // DrawTools' own storage, which always only holds whatever is currently drawn on the map.
+  // Loading an op replaces EVERYTHING currently drawn with that op's own drawing.
+  // ---------------------------------------------------------------------
+
+  thisplugin.OPS_STORAGE_KEY = 'plugin-fanfields3-saved-ops';
+  thisplugin.OPS_MAX_COUNT = 15;
+
+  // JSON snapshot of the drawing that matches whatever is currently considered "saved" (the op
+  // just loaded, saved or updated) — null until the player has loaded, saved or updated an op
+  // this session, in which case anything already on the map counts as unsaved. Used only to
+  // warn before an op load would silently discard drawing changes; never persisted itself.
+  thisplugin.opsBaselineJSON = null;
+
+  thisplugin.getSavedOps = function () {
+    try {
+      var raw = localStorage.getItem(thisplugin.OPS_STORAGE_KEY);
+      var ops = raw ? JSON.parse(raw) : [];
+      return Array.isArray(ops) ? ops : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  thisplugin.setSavedOps = function (ops) {
+    localStorage.setItem(thisplugin.OPS_STORAGE_KEY, JSON.stringify(ops));
+  };
+
+  thisplugin.generateOpId = function () {
+    return 'op_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  };
+
+  // Serializes one DrawTools layer into a plain object — written directly against Leaflet's
+  // own layer classes (the same way thisplugin already recognizes a drawn polygon elsewhere,
+  // e.g. findFanpoints()'s "instanceof L.GeodesicPolygon" check) rather than through any
+  // DrawTools-internal helper. DrawTools' own save/import/serializeLayer functions differ
+  // across installed versions (some lack a per-layer serializeLayer entirely, or don't fire
+  // the hook this plugin listens on when importing), which is what silently turned an op into
+  // an empty save, or a load into nothing being drawn. This has no such version dependency:
+  // only drawnItems (a plain Leaflet FeatureGroup) and the Geodesic layer classes/factories are
+  // used, both already required unconditionally elsewhere in this file.
+  thisplugin.serializeDrawLayer = function (layer) {
+    if (layer instanceof L.GeodesicCircle || layer instanceof L.Circle) {
+      return { type: 'circle', latLng: layer.getLatLng(), radius: layer.getRadius(), color: layer.options.color };
+    }
+    if (layer instanceof L.GeodesicPolygon || layer instanceof L.Polygon) {
+      return { type: 'polygon', latLngs: layer.getLatLngs(), color: layer.options.color };
+    }
+    if (layer instanceof L.GeodesicPolyline || layer instanceof L.Polyline) {
+      return { type: 'polyline', latLngs: layer.getLatLngs(), color: layer.options.color };
+    }
+    if (layer instanceof L.Marker) {
+      var icon = layer.options.icon;
+      var color = (icon && icon.options && icon.options.color) || undefined;
+      return { type: 'marker', latLng: layer.getLatLng(), color: color };
+    }
+    return null;
+  };
+
+  // The mirror of serializeDrawLayer: builds a fresh Leaflet layer from a stored item, using
+  // the same Geodesic factories DrawTools itself uses to draw. Picks up DrawTools' own default
+  // style options (polygonOptions/lineOptions/markerOptions) when available, so a reloaded op
+  // looks the same as a freshly drawn shape; falls back to plain defaults otherwise.
+  thisplugin.buildDrawLayerFromItem = function (item) {
+    var dt = window.plugin.drawTools;
+    var extraOpt = {};
+    if (item.color) extraOpt.color = item.color;
+
+    switch (item.type) {
+      case 'polygon':
+        return L.geodesicPolygon(item.latLngs, L.extend({}, (dt && dt.polygonOptions) || {}, extraOpt));
+      case 'polyline':
+        return L.geodesicPolyline(item.latLngs, L.extend({}, (dt && dt.lineOptions) || {}, extraOpt));
+      case 'circle':
+        return L.geodesicCircle(item.latLng, item.radius, L.extend({}, (dt && dt.polygonOptions) || {}, extraOpt));
+      case 'marker': {
+        var markerOpt = L.extend({}, (dt && dt.markerOptions) || {});
+        if (item.color && dt && typeof dt.getMarkerIcon === 'function') markerOpt.icon = dt.getMarkerIcon(item.color);
+        var marker = new L.Marker(item.latLng, markerOpt);
+        if (typeof window.registerMarkerForOMS === 'function') window.registerMarkerForOMS(marker);
+        return marker;
+      }
+      default:
+        return null;
+    }
+  };
+
+  // The current DrawTools drawing, as a plain-object array in the same shape DrawTools itself
+  // uses for its own storage/export.
+  thisplugin.serializeCurrentDraw = function () {
+    var items = [];
+    if (window.plugin.drawTools && window.plugin.drawTools.drawnItems) {
+      window.plugin.drawTools.drawnItems.eachLayer(function (layer) {
+        var item = thisplugin.serializeDrawLayer(layer);
+        if (item) items.push(item);
+      });
+    }
+    return items;
+  };
+
+  // Whether the current drawing differs from whichever op was last loaded/saved/updated this
+  // session (or, with none yet, whether anything at all is currently drawn).
+  thisplugin.isDrawDirty = function () {
+    return JSON.stringify(thisplugin.serializeCurrentDraw()) !== thisplugin.opsBaselineJSON;
+  };
+
+  // Replaces the entire current drawing with the op's own drawing. Builds the new layers
+  // itself (buildDrawLayerFromItem) instead of calling DrawTools' own import(), then fires the
+  // same 'pluginDrawTools' hook import() would have fired, so this plugin's existing listener
+  // recalculates the fan field plan exactly as it would for a hand-drawn polygon. Also updates
+  // DrawTools' own localStorage (when its save() is available) so a page reload restores the
+  // same drawing, the same way DrawTools' own "Reset" does — best-effort, since this plugin's
+  // own op storage is already the source of truth either way.
+  thisplugin.loadOp = function (op) {
+    var dt = window.plugin.drawTools;
+    dt.drawnItems.clearLayers();
+    (op.data || []).forEach(function (item) {
+      var layer = thisplugin.buildDrawLayerFromItem(item);
+      if (layer) dt.drawnItems.addLayer(layer);
+    });
+    if (typeof dt.save === 'function') dt.save();
+    window.runHooks('pluginDrawTools', { event: 'import' });
+    thisplugin.opsBaselineJSON = JSON.stringify(thisplugin.serializeCurrentDraw());
+
+    if (dt.drawnItems.getLayers().length) {
+      map.fitBounds(dt.drawnItems.getBounds(), { maxZoom: 15, padding: [20, 20] });
+    }
+  };
+
+  // Wipes everything currently drawn and resets the baseline to this empty state, so clearing
+  // is itself treated as an accepted state: loading an op right after, with nothing redrawn
+  // since, won't trigger an "unsaved changes" warning.
+  thisplugin.clearCurrentDraw = function () {
+    var dt = window.plugin.drawTools;
+    dt.drawnItems.clearLayers();
+    if (typeof dt.save === 'function') dt.save();
+    window.runHooks('pluginDrawTools', { event: 'import' });
+    thisplugin.opsBaselineJSON = JSON.stringify(thisplugin.serializeCurrentDraw());
+  };
+
+  // Returns true on success, or a string identifying why it failed ('limit', 'duplicate').
+  thisplugin.saveNewOp = function (name) {
+    var ops = thisplugin.getSavedOps();
+    if (ops.length >= thisplugin.OPS_MAX_COUNT) return 'limit';
+    if (ops.some(function (o) { return o.name === name; })) return 'duplicate';
+
+    var data = thisplugin.serializeCurrentDraw();
+    ops.push({ id: thisplugin.generateOpId(), name: name, data: data, savedAt: Date.now() });
+    thisplugin.setSavedOps(ops);
+    thisplugin.opsBaselineJSON = JSON.stringify(data);
+    return true;
+  };
+
+  // Overwrites an existing op's drawing with the current one, without creating a new op or
+  // touching its name.
+  thisplugin.updateOp = function (opId) {
+    var ops = thisplugin.getSavedOps();
+    var op = ops.find(function (o) { return o.id === opId; });
+    if (!op) return false;
+
+    var data = thisplugin.serializeCurrentDraw();
+    op.data = data;
+    op.savedAt = Date.now();
+    thisplugin.setSavedOps(ops);
+    thisplugin.opsBaselineJSON = JSON.stringify(data);
+    return true;
+  };
+
+  // Returns true on success, or 'duplicate' when another op already has that name.
+  thisplugin.renameOp = function (opId, newName) {
+    var ops = thisplugin.getSavedOps();
+    if (ops.some(function (o) { return o.id !== opId && o.name === newName; })) return 'duplicate';
+
+    var op = ops.find(function (o) { return o.id === opId; });
+    if (!op) return false;
+
+    op.name = newName;
+    thisplugin.setSavedOps(ops);
+    return true;
+  };
+
+  thisplugin.deleteOp = function (opId) {
+    thisplugin.setSavedOps(thisplugin.getSavedOps().filter(function (o) { return o.id !== opId; }));
+  };
+
+  // A small Yes/No confirmation dialog — for anything in Manage Ops that can't be undone.
+  // IITC's dialog() wrapper deep-merges whatever "buttons" option it's given on top of its own
+  // default ({ OK: ... }), rather than replacing it, so passing { Yes, No } straight to dialog()
+  // ends up showing OK, Yes AND No. Instead, the dialog is created with its plain default OK
+  // button, then jQuery UI's own buttons setter (.dialog('option', 'buttons', ...)) replaces the
+  // whole button set outright — that setter assigns directly, with no such merging.
+  thisplugin.confirmDialog = function (title, message, onConfirm) {
+    var id = 'plugin_fanfields3_ops_confirm';
+    var width = Math.min(380, thisplugin.getMaxDialogWidth());
+    dialog({
+      html: '<p>' + message + '</p>',
+      id: id,
+      title: title,
+      width: width,
+      closeOnEscape: true
+    });
+
+    $('#dialog-' + id).dialog('option', 'buttons', {
+      Yes: function () {
+        $(this).dialog('close');
+        onConfirm();
+      },
+      No: function () {
+        $(this).dialog('close');
+      }
+    });
+  };
+
+  thisplugin.formatOpSavedAt = function (timestamp) {
+    try {
+      return new Date(timestamp).toLocaleString();
+    } catch (e) {
+      return '';
+    }
+  };
+
+  thisplugin.buildManageOpsHTML = function () {
+    var ops = thisplugin.getSavedOps();
+    var atLimit = ops.length >= thisplugin.OPS_MAX_COUNT;
+
+    var html = '<div style="text-align:right;">' +
+      '<button type="button" id="plugin_fanfields3_ops_clear_btn" title="Clear everything currently drawn">Clear drawing</button>' +
+      '</div>';
+    html += '<div class="plugin_fanfields3_ops_save_row">';
+    html += '<input type="text" id="plugin_fanfields3_ops_newname" maxlength="60" placeholder="New op name"' + (atLimit ? ' disabled' : '') + '>';
+    html += '<button type="button" id="plugin_fanfields3_ops_save_btn"' + (atLimit ? ' disabled' : '') + '>Save current draw</button>';
+    html += '</div>';
+    html += '<div id="plugin_fanfields3_ops_save_error" class="plugin_fanfields3_warn"></div>';
+    html += '<div class="plugin_fanfields3_ops_count">' + ops.length + ' / ' + thisplugin.OPS_MAX_COUNT + ' ops saved' +
+      (atLimit ? ' &mdash; delete one to save another' : '') + '</div>';
+
+    if (!ops.length) {
+      html += '<p class="plugin_fanfields3_italic">No op saved yet.</p>';
+    } else {
+      html += '<table class="plugin_fanfields3_order_table plugin_fanfields3_ops_table"><thead><tr>';
+      html += '<th style="text-align:left;">Name</th><th>Saved</th><th colspan="4"></th>';
+      html += '</tr></thead><tbody>';
+
+      ops.slice().sort(function (a, b) { return b.savedAt - a.savedAt; }).forEach(function (op) {
+        html += '<tr data-op-id="' + op.id + '">';
+        html += '<td class="plugin_fanfields3_ops_name_cell">' +
+          '<a href="#" class="plugin_fanfields3_ops_load_link" title="Load this op (replaces the current drawing)">' +
+          window.escapeHtmlSpecialChars(op.name) + '</a></td>';
+        html += '<td class="plugin_fanfields3_italic">' + thisplugin.formatOpSavedAt(op.savedAt) + '</td>';
+        html += '<td><button type="button" class="plugin_fanfields3_ops_btn plugin_fanfields3_ops_open_btn" title="Open (replaces the current drawing)">&#128194;</button></td>';
+        html += '<td><button type="button" class="plugin_fanfields3_ops_btn plugin_fanfields3_ops_rename_btn" title="Rename">&#9998;</button></td>';
+        html += '<td><button type="button" class="plugin_fanfields3_ops_btn plugin_fanfields3_ops_update_btn" title="Overwrite this op with the current drawing">&#128190;</button></td>';
+        html += '<td><button type="button" class="plugin_fanfields3_ops_btn plugin_fanfields3_ops_delete_btn" title="Delete">&#10006;</button></td>';
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+    }
+
+    html += '<div class="plugin_fanfields3_order_hint">Click an op\'s name to load it &mdash; this replaces everything currently drawn.</div>';
+
+    return html;
+  };
+
+  thisplugin.refreshManageOpsDialog = function () {
+    $('#plugin_fanfields3_ops_dialog_inner').html(thisplugin.buildManageOpsHTML());
+    thisplugin.wireManageOpsHandlers();
+  };
+
+  thisplugin.wireManageOpsHandlers = function () {
+    var $inner = $('#plugin_fanfields3_ops_dialog_inner');
+
+    $inner.find('#plugin_fanfields3_ops_clear_btn').off('click').on('click', function () {
+      function doClear() {
+        thisplugin.clearCurrentDraw();
+        thisplugin.refreshManageOpsDialog();
+      }
+
+      if (thisplugin.isDrawDirty()) {
+        thisplugin.confirmDialog('Fan Fields 3 - Manage Ops',
+          'The current drawing has unsaved changes that will be lost. Clear it anyway?',
+          doClear);
+      } else {
+        doClear();
+      }
+    });
+
+    function doSave() {
+      var $input = $('#plugin_fanfields3_ops_newname');
+      var name = ($input.val() || '').trim();
+      var $error = $('#plugin_fanfields3_ops_save_error');
+      $error.text('');
+
+      if (!name) {
+        $error.text('Enter a name for this op.');
+        return;
+      }
+
+      var result = thisplugin.saveNewOp(name);
+      if (result === 'limit') {
+        $error.text('Maximum of ' + thisplugin.OPS_MAX_COUNT + ' ops reached — delete one first.');
+        return;
+      }
+      if (result === 'duplicate') {
+        $error.text('An op named "' + name + '" already exists — choose another name.');
+        return;
+      }
+
+      thisplugin.refreshManageOpsDialog();
+    }
+
+    $inner.find('#plugin_fanfields3_ops_save_btn').off('click').on('click', doSave);
+    $inner.find('#plugin_fanfields3_ops_newname').off('keydown').on('keydown', function (e) {
+      if (e.key === 'Enter') doSave();
+    });
+
+    // Shared by the name link and the "Open" button: loading an op works the same way from
+    // either (warn first if the current drawing has unsaved changes).
+    function requestLoadOp(op) {
+      function doLoad() {
+        thisplugin.loadOp(op);
+        $('#dialog-plugin_fanfields3_ops_dialog').dialog('close');
+      }
+
+      if (thisplugin.isDrawDirty()) {
+        thisplugin.confirmDialog('Fan Fields 3 - Manage Ops',
+          'The current drawing has unsaved changes that will be lost. Load "' + window.escapeHtmlSpecialChars(op.name) + '" anyway?',
+          doLoad);
+      } else {
+        doLoad();
+      }
+    }
+
+    $inner.find('.plugin_fanfields3_ops_load_link').off('click').on('click', function (ev) {
+      ev.preventDefault();
+      var opId = $(this).closest('tr').attr('data-op-id');
+      var op = thisplugin.getSavedOps().find(function (o) { return o.id === opId; });
+      if (!op) return;
+      requestLoadOp(op);
+    });
+
+    $inner.find('.plugin_fanfields3_ops_open_btn').off('click').on('click', function () {
+      var opId = $(this).closest('tr').attr('data-op-id');
+      var op = thisplugin.getSavedOps().find(function (o) { return o.id === opId; });
+      if (!op) return;
+      requestLoadOp(op);
+    });
+
+    $inner.find('.plugin_fanfields3_ops_rename_btn').off('click').on('click', function () {
+      var $row = $(this).closest('tr');
+      var opId = $row.attr('data-op-id');
+      var op = thisplugin.getSavedOps().find(function (o) { return o.id === opId; });
+      if (!op) return;
+
+      var $cell = $row.find('.plugin_fanfields3_ops_name_cell');
+      $cell.html(
+        '<input type="text" class="plugin_fanfields3_ops_rename_input" maxlength="60" value="' +
+        window.escapeHtmlSpecialChars(op.name) + '">' +
+        '<button type="button" class="plugin_fanfields3_ops_btn plugin_fanfields3_ops_rename_ok" title="Confirm">&#10003;</button>' +
+        '<button type="button" class="plugin_fanfields3_ops_btn plugin_fanfields3_ops_rename_cancel" title="Cancel">&#10006;</button>'
+      );
+      var $input = $cell.find('.plugin_fanfields3_ops_rename_input');
+      $input.trigger('focus').trigger('select');
+
+      function confirmRename() {
+        var newName = ($input.val() || '').trim();
+        if (!newName) return;
+        var result = thisplugin.renameOp(opId, newName);
+        if (result === 'duplicate') {
+          $input.css('border-color', '#C62828');
+          return;
+        }
+        thisplugin.refreshManageOpsDialog();
+      }
+
+      $cell.find('.plugin_fanfields3_ops_rename_ok').on('click', confirmRename);
+      $cell.find('.plugin_fanfields3_ops_rename_cancel').on('click', function () {
+        thisplugin.refreshManageOpsDialog();
+      });
+      $input.on('keydown', function (e) {
+        if (e.key === 'Enter') confirmRename();
+        if (e.key === 'Escape') thisplugin.refreshManageOpsDialog();
+      });
+    });
+
+    $inner.find('.plugin_fanfields3_ops_update_btn').off('click').on('click', function () {
+      var opId = $(this).closest('tr').attr('data-op-id');
+      var op = thisplugin.getSavedOps().find(function (o) { return o.id === opId; });
+      if (!op) return;
+
+      thisplugin.confirmDialog('Fan Fields 3 - Manage Ops',
+        'Overwrite "' + window.escapeHtmlSpecialChars(op.name) + '" with the current drawing? This cannot be undone.',
+        function () {
+          thisplugin.updateOp(opId);
+          thisplugin.refreshManageOpsDialog();
+        });
+    });
+
+    $inner.find('.plugin_fanfields3_ops_delete_btn').off('click').on('click', function () {
+      var opId = $(this).closest('tr').attr('data-op-id');
+      var op = thisplugin.getSavedOps().find(function (o) { return o.id === opId; });
+      if (!op) return;
+
+      thisplugin.confirmDialog('Fan Fields 3 - Manage Ops',
+        'Delete "' + window.escapeHtmlSpecialChars(op.name) + '"? This cannot be undone.',
+        function () {
+          thisplugin.deleteOp(opId);
+          thisplugin.refreshManageOpsDialog();
+        });
+    });
+  };
+
+  thisplugin.showManageOpsDialog = function () {
+    if (!window.plugin.drawTools) {
+      dialog({
+        html: '<p>Fan Fields 3 requires the IITC Drawtools plugin.</p>',
+        id: 'plugin_fanfields3_ops_missing_dependency',
+        title: 'Fan Fields 3 - Manage Ops'
+      });
+      return;
+    }
+
+    var width = 480;
+    thisplugin.MaxDialogWidth = thisplugin.getMaxDialogWidth();
+    if (thisplugin.MaxDialogWidth < width) width = thisplugin.MaxDialogWidth;
+
+    dialog({
+      html: '<div id="plugin_fanfields3_ops_dialog_inner">' + thisplugin.buildManageOpsHTML() + '</div>',
+      id: 'plugin_fanfields3_ops_dialog',
+      title: 'Fan Fields 3 - Manage Ops',
+      width: width,
+      closeOnEscape: true
+    });
+
+    thisplugin.wireManageOpsHandlers();
+  };
+
+
   thisplugin.respectIntelLinksModeENUM = {
     NONE: 0,
     ALL: 1,
@@ -3733,6 +4179,54 @@ function wrapper(plugin_info) {
       '}\n' +
       '#plugin_fanfields3_order_dialog button:not([disabled]) {\n' +
       '  cursor: pointer;\n' +
+      '}\n'
+    );
+
+    // Manage-Ops-Dialog
+    addCSS('\n' +
+      '.plugin_fanfields3_ops_save_row {\n' +
+      '  display: flex;\n' +
+      '  gap: 6px;\n' +
+      '}\n' +
+      '.plugin_fanfields3_ops_save_row input[type="text"] {\n' +
+      '  flex: 1 1 auto;\n' +
+      '  min-width: 0;\n' +
+      '}\n' +
+      '#plugin_fanfields3_ops_save_error {\n' +
+      '  min-height: 14px;\n' +
+      '  font-size: 11px;\n' +
+      '}\n' +
+      '.plugin_fanfields3_ops_count {\n' +
+      '  margin: 4px 0 8px 0;\n' +
+      '  font-size: 11px;\n' +
+      '  color: #ccc;\n' +
+      '}\n' +
+      '.plugin_fanfields3_ops_table th,\n' +
+      '.plugin_fanfields3_ops_table td {\n' +
+      '  text-align: center;\n' +
+      '}\n' +
+      '.plugin_fanfields3_ops_name_cell {\n' +
+      '  text-align: left !important;\n' +
+      '}\n' +
+      '.plugin_fanfields3_ops_load_link {\n' +
+      '  cursor: pointer;\n' +
+      '}\n' +
+      '.plugin_fanfields3_ops_btn {\n' +
+      '  box-sizing: border-box;\n' +
+      '  padding: 0 4px;\n' +
+      '  border-width: 1px;\n' +
+      '  font-size: 11px;\n' +
+      '  line-height: 1.6;\n' +
+      '  cursor: pointer;\n' +
+      '}\n' +
+      '.plugin_fanfields3_ops_rename_input {\n' +
+      '  width: 110px;\n' +
+      '  margin-right: 2px;\n' +
+      '}\n' +
+      '#plugin_fanfields3_ops_save_btn[disabled],\n' +
+      '#plugin_fanfields3_ops_newname[disabled] {\n' +
+      '  opacity: 0.4;\n' +
+      '  cursor: default;\n' +
       '}\n'
     );
 
@@ -6648,6 +7142,7 @@ function wrapper(plugin_info) {
 
     var entries = [
       { label: 'Options&hellip;', action: thisplugin.showOptionsDialog },
+      { label: 'Manage&nbsp;ops', action: thisplugin.showManageOpsDialog },
       { label: 'Manage&nbsp;order', action: thisplugin.showManageOrderDialog },
       { label: 'Stats', action: thisplugin.showStatistics },
       { label: 'Help', action: thisplugin.help }
@@ -6685,7 +7180,7 @@ function wrapper(plugin_info) {
   };
 
   // Settings persisted across sessions via "Save options as default" in the Options dialog.
-  thisplugin.OPTIONS_STORAGE_KEY = 'plugin_fanfields3_saved_defaults';
+  thisplugin.OPTIONS_STORAGE_KEY = 'plugin-fanfields3-saved-defaults';
 
   thisplugin.getSavedOptionsDefault = function () {
     try {
