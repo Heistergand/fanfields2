@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         4.0.0.20261001
+// @version         5.0.0.20261002
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, a Task List that follows your progress and can Reroute the steps left from where you stand, key counts read from a screen recording of your keys in Ingress (Keys plugin), and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-10-01-095028';
+  plugin_info.dateTimeVersion = '2026-10-02-165727';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,13 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '5.0.0',
+      changes: [
+        'NEW: Redesigned menu. A hamburger icon on the map opens a simple menu (Options, Manage order, Stats, Help), and a new Options dialog gathers all the settings (Direction, Fan mode, Available SBUL, Respect Intel, Blockers, Blockers max detour, Portal selection) in one place. Every change there is saved automatically and remembered the next time you open the plugin.',
+        'DEL: Removed little-used sidebar controls: Grey out done links, Optim (Link order cycling), Write to DrawTools, Write Arcs, Write Bookmarks, and Show link direction. The sidebar panel itself is now empty — everything moved into the map\'s own menu and the new Options dialog.',
+        'FIX: On a freshly drawn area with none of your own links nearby yet, the plan could stay unlocked indefinitely, even once the map had fully finished loading.',
+      ],
+    },{
       version: '4.0.0',
       changes: [
         'NEW: Sends anonymous usage stats (faction, rough region, time active) to help understand how the plugin is actually used, while keeping agents fully anonymous.',
