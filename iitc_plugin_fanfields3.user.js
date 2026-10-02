@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         4.0.0.20261001
+// @version         5.0.0.20261002
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, a Task List that follows your progress and can Reroute the steps left from where you stand, key counts read from a screen recording of your keys in Ingress (Keys plugin), and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-10-01-095028';
+  plugin_info.dateTimeVersion = '2026-10-02-165727';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,13 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '5.0.0',
+      changes: [
+        'NEW: Redesigned menu. A hamburger icon on the map opens a simple menu (Options, Manage order, Stats, Help), and a new Options dialog gathers all the settings (Direction, Fan mode, Available SBUL, Respect Intel, Blockers, Blockers max detour, Portal selection) in one place. Every change there is saved automatically and remembered the next time you open the plugin.',
+        'DEL: Removed little-used sidebar controls: Grey out done links, Optim (Link order cycling), Write to DrawTools, Write Arcs, Write Bookmarks, and Show link direction. The sidebar panel itself is now empty — everything moved into the map\'s own menu and the new Options dialog.',
+        'FIX: On a freshly drawn area with none of your own links nearby yet, the plan could stay unlocked indefinitely, even once the map had fully finished loading.',
+      ],
+    },{
       version: '4.0.0',
       changes: [
         'NEW: Sends anonymous usage stats (faction, rough region, time active) to help understand how the plugin is actually used, while keeping agents fully anonymous.',
@@ -744,8 +751,8 @@ function wrapper(plugin_info) {
   //           (cheapest insertion), while never landing after a portal that throws a link at
   //           it — see computeDistanceOrderReordering for the details.
   // ALGO ("Algorithm", no automatic override) still exists internally as the target of a full
-  // "Reset link orders" (Task List), but the menu button no longer cycles through it — it
-  // toggles only between KEYS and DISTANCE, which default to DISTANCE ("Less walking").
+  // "Reset link orders" (Task List). There is no UI to choose between KEYS and DISTANCE —
+  // the mode is fixed to DISTANCE ("Less walking").
   thisplugin.linkOrderModeENUM = { ALGO: 0, KEYS: 1, DISTANCE: 2 };
   thisplugin.linkOrderMode = thisplugin.linkOrderModeENUM.DISTANCE;
   // Set whenever something invalidates the active optimization (anchor/order/geometry change)
@@ -763,12 +770,6 @@ function wrapper(plugin_info) {
   // both directions, so it's deliberately reserved for an actual new polygon rather than every
   // recalculation.
   thisplugin._orientationSearchPending = false;
-
-  // While no own-faction link joins two portals of the plan, the search has nothing to reuse and
-  // is skipped, then retried on the next recalculations — only until this timestamp (set when the
-  // portal set changes), so it covers links still loading in, not links thrown later while playing.
-  thisplugin.ORIENTATION_SEARCH_RETRY_MS = 60000;
-  thisplugin._orientationSearchRetryUntil = 0;
 
   // Longest the search may keep trying candidates (it tries the most promising ones first, and
   // stops early once a candidate reuses every existing link).
@@ -849,91 +850,6 @@ function wrapper(plugin_info) {
     thisplugin.routeOrderGuids = null;
     thisplugin.routeOrderPlanKey = null;
     thisplugin.routeOrderInfo = null;
-  };
-
-  thisplugin.saveBookmarks = function () {
-
-    // loop thru portals and UN-Select them for bkmrks
-    var bkmrkData, list;
-    thisplugin.sortedFanpoints.forEach(function (point, index) {
-
-      bkmrkData = window.plugin.bookmarks.findByGuid(point.guid);
-      if (bkmrkData) {
-
-        list = window.plugin.bookmarks.bkmrksObj.portals;
-
-        delete list[bkmrkData.id_folder].bkmrk[bkmrkData.id_bookmark];
-
-        $('.bkmrk#' + bkmrkData.id_bookmark + '')
-          .remove();
-
-        window.plugin.bookmarks.saveStorage();
-        window.plugin.bookmarks.updateStarPortal();
-
-
-        window.runHooks('pluginBkmrksEdit', {
-          "target": "portal",
-          "action": "remove",
-          "folder": bkmrkData.id_folder,
-          "id": bkmrkData.id_bookmark,
-          "guid": point.guid
-        });
-
-        console.log('Fanfields3: removed BOOKMARKS portal (' + bkmrkData.id_bookmark + ' situated in ' + bkmrkData.id_folder + ' folder)');
-      }
-    });
-
-
-    let type = "folder";
-    let label = 'Fanfields3';
-    // Add new folder in the localStorage
-    let folder_ID = window.plugin.bookmarks.generateID();
-    window.plugin.bookmarks.bkmrksObj.portals[folder_ID] = {
-      'label': label,
-      'state': 1,
-      'bkmrk': {}
-    };
-
-    window.plugin.bookmarks.saveStorage();
-    window.plugin.bookmarks.refreshBkmrks();
-    window.runHooks('pluginBkmrksEdit', {
-      'target': type,
-      'action': 'add',
-      'id': folder_ID
-    });
-    console.log('Fanfields3: added BOOKMARKS ' + type + ' ' + folder_ID);
-
-    thisplugin.addPortalBookmark = function (guid, latlng, label, folder_ID) {
-      var bookmark_ID = window.plugin.bookmarks.generateID();
-
-      // Add bookmark in the localStorage
-      window.plugin.bookmarks.bkmrksObj.portals[folder_ID].bkmrk[bookmark_ID] = {
-        'guid': guid,
-        'latlng': latlng,
-        'label': label
-      };
-
-      window.plugin.bookmarks.saveStorage();
-      window.plugin.bookmarks.refreshBkmrks();
-      window.runHooks('pluginBkmrksEdit', {
-        'target': 'portal',
-        'action': 'add',
-        'id': bookmark_ID,
-        'guid': guid
-      });
-      console.log('Fanfields3: added BOOKMARKS portal ' + bookmark_ID);
-    }
-
-    // loop again: ordered(!) to add them as bookmarks — the walk order, relocations included
-    thisplugin.getDisplayOrder().forEach(function (point, index) {
-      if (point.guid) {
-        var p = window.portals[point.guid];
-        var ll = p.getLatLng();
-
-        //plugin.bookmarks.addPortalBookmark(point.guid, ll.lat+','+ll.lng, p.options.data.title);
-        thisplugin.addPortalBookmark(point.guid, ll.lat + ',' + ll.lng, p.options.data.title, folder_ID)
-      }
-    });
   };
 
   thisplugin.updateStartingPoint = function (i) {
@@ -1026,12 +942,11 @@ function wrapper(plugin_info) {
         'Using Drawtools, draw one or more polygons around the portals you want to work with. ' +
         'Polygons can overlap each other or be completely separated. All portals within the polygons ' +
         'count toward your planned fanfield. ' +
-        'Optional: toggle <i>🔖&nbsp;Bookmarks only</i> to restrict the selection to your bookmarked portals.</p>' +
+        'Optional: in the menu\'s <i>Options</i>, set <i>Portal&nbsp;selection</i> to <i>Bookmarks&nbsp;only</i> to restrict the selection to your bookmarked portals.</p>' +
 
         '<p><b>Show the plan</b><br>' +
         'From the layer selector, enable the Fanfields layers (Links / Fields / Numbers). ' +
-        'The fanfield is calculated and shown as red links/fields on the intel. ' +
-        'Link directions can be indicated with dashed stubs at the origin portal — toggle <i>Show&nbsp;link&nbsp;dir</i> as needed.</p>' +
+        'The fanfield is calculated and shown as red links/fields on the intel, with link directions indicated by dashed stubs at the origin portal.</p>' +
 
         '<p><b>Choose the anchor (start portal)</b><br>' +
         'By default, the script selects an anchor portal from the convex hull of all selected portals. ' +
@@ -1045,29 +960,21 @@ function wrapper(plugin_info) {
         'In outbounding mode you can set how many SBUL you plan to use (0–4) to calculate the outgoing link capacity.</p>' +
 
         '<p><b>Avoid blockers</b><br>' +
-        'If you need to plan around links you cannot or do not want to destroy, use <i>Respect&nbsp;Intel</i>. ' +
+        'If you need to plan around links you cannot or do not want to destroy, use <i>Respect&nbsp;Intel</i> (menu &rarr; Options). ' +
         'Choose which factions\' links are treated as blockers (NONE / ALL / ENL / RES / ENL &amp; MAC / RES &amp; MAC / MAC). ' +
         'The plan avoids crossing those currently visible intel links — nothing else changes, even when the selected mode includes your own faction.</p>' +
 
         '<p><b>Blockers</b><br>' +
-        'Every visible link that crosses a link of the plan still to be thrown, and whose faction <i>Respect&nbsp;Intel</i> does not avoid, is a blocker (with Respect&nbsp;Intel on NONE, that is every crossing link; your own faction\'s links count too when it is not selected). ' +
-        'With <i>Blockers</i> on (the default), blockers are drawn as red dotted lines and the Task List gets <i>Destroy</i> rows: portals to neutralize so that the blockers are gone before the link they block is thrown. ' +
-        'A portal that frees several links at once is preferred over several separate portals whenever it costs less walking, and each row is slotted into the walk where it adds the least detour, never later than the first link it unblocks. ' +
-        'An enemy portal the plan captures anyway is marked with a cross when its capture frees a link in time; when the walk reaches it too late, it gets a <i>Destroy</i> row earlier on, and is captured later on the walk as usual. ' +
-        '<i>Max&nbsp;detour</i> (100&nbsp;m, 200&nbsp;m, 500&nbsp;m, 1&nbsp;km or no limit) caps the extra walk of a single Destroy stop; blockers that cannot be freed within it are listed under the Task List. ' +
+        'Every visible link that crosses a link of the plan still to be thrown, and whose faction <i>Respect&nbsp;Intel</i> does not avoid, is a blocker. ' +
+        'With <i>Blockers</i> on (Options, the default), blockers are drawn as red dotted lines and the Task List gets <i>Destroy</i> rows: portals to neutralize so that the blockers are gone before the link they block is thrown. ' +
+        'An enemy portal the plan captures anyway is marked with a cross when its capture frees a link in time. ' +
+        '<i>Max&nbsp;detour</i> (Options: 100&nbsp;m, 200&nbsp;m, 500&nbsp;m, 1&nbsp;km or no limit) caps the extra walk of a single Destroy stop; blockers that cannot be freed within it are listed under the Task List. ' +
         'Turning <i>Blockers</i> off only removes these rows. A link of your own faction can only be broken with a Jarvis/ADA flip, or by changing <i>Respect&nbsp;Intel</i>.</p>' +
 
         '<p><b>Order & route planning</b><br>' +
-        'Switch between <i>Clockwise</i> and <i>Counterclockwise</i> order to find an easier route or squeeze out extra fields. ' +
-        'For fine control, open <i>Manage Portal Order</i> and drag &amp; drop portals to customise your visit order. ' +
+        'In Options, switch between <i>Clockwise</i> and <i>Counterclockwise</i> direction to find an easier route or squeeze out extra fields. ' +
+        'For fine control, open <i>Manage Portal Order</i> (menu) and drag &amp; drop portals to customise your visit order. ' +
         'Use <i>Path</i> to preview a straight-line route along the current portal sequence.</p>' +
-
-        '<p><b>Optim (link order)</b><br>' +
-        'The <i>Optim</i> button reorients some links (never the algorithm itself — which links exist, which fields form, stays the same): each click cycles between its two modes, shown in the button label. ' +
-        '<i>Fewer&nbsp;keys</i> tries to lower the highest key count on any single portal. ' +
-        '<i>Less&nbsp;walking</i> flips a 2-link portal\'s mesh link when it isn\'t really on the way to the next stop, and relocates that portal earlier in the visit order, right where it best fits between two portals already walked back-to-back — such relocated portals are highlighted green in the Task List as a reminder to capture them (and gather enough of their own keys) early. ' +
-        'Switching mode always restarts the calculation clean, from the untouched algorithm — either mode is only a starting point, and you can still flip individual links, or reorder portals, afterwards as usual. ' +
-        'To drop every automatic and manual override at once and go back to the plain algorithm, use the Task List\'s <i>Reset&nbsp;link&nbsp;orders</i> button.</p>' +
 
         '<p><b>Freeze recalculation</b><br>' +
         'The plan locks itself as soon as a new plan is completely calculated (once IITC has finished loading the map, and including the automatic anchor search), so it no longer moves while you pan, zoom or the map data refreshes. ' +
@@ -1082,8 +989,7 @@ function wrapper(plugin_info) {
         'With the Keys plugin, its <i>Keys video</i> button fills in your key counts from a screen recording of your keys in Ingress. ' +
         'The task list includes a navigation link for Google Maps and a print-friendly view. ' +
         'Its <i>Reroute</i> button reorders the steps still to do, starting from your current position (GPS, else IITC\'s own location, else the map center), so you walk as little as possible — while still capturing each portal, and getting its keys, before anyone links to it, and without losing a field. ' +
-        'The links and fields stay the same, it works while the plan is locked too, and the new order holds until the plan itself changes (or <i>Reset&nbsp;link&nbsp;orders</i>). ' +
-        'You can also export the plan to Drawtools/Bookmarks to share or continue working with it.</p>' +
+        'The links and fields stay the same, it works while the plan is locked too, and the new order holds until the plan itself changes (or <i>Reset&nbsp;link&nbsp;orders</i>).</p>' +
 
         '<hr noshade>' +
 
@@ -1185,43 +1091,6 @@ function wrapper(plugin_info) {
       $('#dialog-plugin_fanfields3_alert_statistics')
         .dialog('option', 'position', { my: 'bottom', at: 'bottom-15', of: window });
     }
-  }
-
-  thisplugin.exportDrawtools = function () {
-    var alatlng, blatlng, layer;
-    $.each(thisplugin.sortedFanpoints, function (index, portal) {
-      $.each(portal.outgoing, function (targetIndex, targetPortal) {
-
-        var meta = (portal.outgoingMeta && portal.outgoingMeta[targetPortal.guid]) ? portal.outgoingMeta[targetPortal.guid] : null;
-        if (meta && meta.invalidUnderField) return;
-
-        alatlng = map.unproject(portal.point, thisplugin.PROJECT_ZOOM);
-        blatlng = map.unproject(targetPortal.point, thisplugin.PROJECT_ZOOM);
-        layer = L.geodesicPolyline([alatlng, blatlng], window.plugin.drawTools.lineOptions);
-        window.plugin.drawTools.drawnItems.addLayer(layer);
-        window.plugin.drawTools.save();
-      });
-    });
-  }
-
-  thisplugin.exportArcs = function () {
-    if (window.PLAYER.team === 'RESISTANCE') {
-      // sorry
-      return;
-    };
-    var alatlng, blatlng, layer;
-    $.each(thisplugin.sortedFanpoints, function (index, portal) {
-      $.each(portal.outgoing, function (targetIndex, targetPortal) {
-
-        var meta = (portal.outgoingMeta && portal.outgoingMeta[targetPortal.guid]) ? portal.outgoingMeta[targetPortal.guid] : null;
-        if (meta && meta.invalidUnderField) return;
-        window.selectedPortal = portal.guid;
-        window.plugin.arcs.draw();
-        window.selectedPortal = targetPortal.guid;
-        window.plugin.arcs.draw();
-      });
-    });
-    window.plugin.arcs.list();
   }
 
   thisplugin.exportTasks = function () {
@@ -2921,111 +2790,26 @@ function wrapper(plugin_info) {
     return window.TEAM_NONE;
   };
 
-  thisplugin.getRespectIntelLabel = function () {
-    switch (thisplugin.respectIntelLinksMode) {
-      case thisplugin.respectIntelLinksModeENUM.ALL:
-        return 'ALL';
-
-      case thisplugin.respectIntelLinksModeENUM.ENL:
-        return 'ENL';
-
-      case thisplugin.respectIntelLinksModeENUM.RES:
-        return 'RES';
-
-      case thisplugin.respectIntelLinksModeENUM.MAC:
-        return 'MAC';
-
-      case thisplugin.respectIntelLinksModeENUM.ENL_AND_MAC:
-        return 'E&amp;M';
-
-      case thisplugin.respectIntelLinksModeENUM.RES_AND_MAC:
-        return 'R&amp;M';
-
-      case thisplugin.respectIntelLinksModeENUM.NONE:
-      default:
-        return 'NONE';
-    }
-  };
-
-  thisplugin.updateRespectIntelButton = function () {
-    $('#plugin_fanfields3_respectbtn')
-      .html('Respect&nbsp;Intel:&nbsp;' + thisplugin.getRespectIntelLabel());
-  };
-
-  // Backwards-compatible name: now cycles through the available modes.
-  thisplugin.toggleRespectCurrentLinks = function () {
-    thisplugin.respectIntelLinksMode++;
-    if (thisplugin.respectIntelLinksMode > thisplugin.respectIntelLinksModeENUM.MAC) {
-      thisplugin.respectIntelLinksMode = thisplugin.respectIntelLinksModeENUM.NONE;
-    }
-
-    thisplugin.updateRespectIntelButton();
-    thisplugin.delayedUpdateLayer(0.2, true);
-  };
   thisplugin.indicateLinkDirection = true;
-  thisplugin.toggleLinkDirIndicator = function () {
-    thisplugin.indicateLinkDirection = !thisplugin.indicateLinkDirection;
-    if (thisplugin.indicateLinkDirection) {
-      $('#plugin_fanfields3_direction_indicator_btn')
-        .html('Show&nbsp;link&nbsp;dir:&nbsp;ON');
-    } else {
-      $('#plugin_fanfields3_direction_indicator_btn')
-        .html('Show&nbsp;link&nbsp;dir:&nbsp;OFF');
-    }
-    thisplugin.delayedUpdateLayer(0.2, true);
-  };
 
   // Grey out / strike through links (and, once all of a portal's links exist, the portal
   // name too) that already exist in-game for the player's own faction — in the Task List,
   // and as a faded brownish-red on the map itself (thisplugin.updateLayer()'s own drawing
-  // loop) instead of bright red. Requested as a toggleable plugin option.
+  // loop) instead of bright red.
   thisplugin.greyOutExistingLinks = true;
-  thisplugin.toggleGreyOutExistingLinks = function () {
-    thisplugin.greyOutExistingLinks = !thisplugin.greyOutExistingLinks;
-    thisplugin.updateGreyOutExistingLinksButton();
-    thisplugin.refreshTaskListIfOpen();
-    thisplugin.updateLayer();
-  };
-  thisplugin.updateGreyOutExistingLinksButton = function () {
-    $('#plugin_fanfields3_greyout_existing_btn')
-      .html('Grey&nbsp;out&nbsp;done&nbsp;links:&nbsp;' + (thisplugin.greyOutExistingLinks ? 'ON' : 'OFF'));
-  };
 
   // Blockers: a link, from a faction that Respect Intel does not avoid, crossing a link of the
   // plan that is still to be thrown. The plan itself is left alone; the Task List instead gets
   // extra "Destroy"/"Capture" rows, placed where they cost the least walking, that free those
   // links in time.
   thisplugin.manageBlockers = true;
-  thisplugin.toggleManageBlockers = function () {
-    thisplugin.manageBlockers = !thisplugin.manageBlockers;
-    thisplugin.updateManageBlockersButton();
-    thisplugin.refreshTaskListIfOpen();
-    thisplugin.updateLayer();
-  };
-  thisplugin.updateManageBlockersButton = function () {
-    $('#plugin_fanfields3_blockers_btn')
-      .html('Blockers:&nbsp;' + (thisplugin.manageBlockers ? 'ON' : 'OFF'));
-  };
 
   // Longest extra walk (meters) one Destroy stop may add to the route; 0 = no limit.
   thisplugin.BLOCKER_DETOUR_LIMITS_M = [100, 200, 500, 1000, 0];
   thisplugin.blockerMaxDetourM = 500;
-  thisplugin.getBlockerDetourLabel = function () {
-    var limit = thisplugin.blockerMaxDetourM;
-    if (!limit) return 'No&nbsp;limit';
+  thisplugin.getBlockerDetourLabel = function (limit) {
+    if (!limit) return 'No limit';
     return (limit >= 1000) ? (limit / 1000) + 'km' : limit + 'm';
-  };
-  thisplugin.updateBlockerDetourButton = function () {
-    $('#plugin_fanfields3_blocker_detour_btn')
-      .html('Max&nbsp;detour:&nbsp;' + thisplugin.getBlockerDetourLabel());
-  };
-  thisplugin.cycleBlockerMaxDetour = function () {
-    var limits = thisplugin.BLOCKER_DETOUR_LIMITS_M;
-    var next = (limits.indexOf(thisplugin.blockerMaxDetourM) + 1) % limits.length;
-    thisplugin.blockerMaxDetourM = limits[next];
-    thisplugin.updateBlockerDetourButton();
-    thisplugin.refreshTaskListIfOpen();
-    thisplugin.updateLayer();
   };
 
   // The portal guid at one end of an IITC link ('oGuid' = origin, 'dGuid' = destination), or
@@ -3336,36 +3120,11 @@ function wrapper(plugin_info) {
   thisplugin.use_bookmarks_only = false;
   thisplugin.useBookmarksOnly = function () {
     thisplugin.use_bookmarks_only = !thisplugin.use_bookmarks_only;
-    if (thisplugin.use_bookmarks_only) {
-      $('#plugin_fanfields3_bookarks_only_btn')
-        .html(
-          '&#128278;&nbsp;Bookmarks only'
-        );
-    } else {
-      $('#plugin_fanfields3_bookarks_only_btn')
-        .html(
-          '&#128278;&nbsp;All Portals'
-        );
-    }
     thisplugin.delayedUpdateLayer(0.2, true);
   };
 
 
   thisplugin.is_clockwise = true;
-  thisplugin.updateClockwiseButton = function () {
-    var clockwiseSymbol = "",
-      clockwiseWord = "";
-    if (thisplugin.is_clockwise) {
-      clockwiseSymbol = "&#8635;"
-      clockwiseWord = "Clockwise";
-    } else {
-      clockwiseSymbol = "&#8634;"
-      clockwiseWord = "Counterclockwise";
-    }
-
-    $('#plugin_fanfields3_clckwsbtn')
-      .html(clockwiseWord + '&nbsp;' + clockwiseSymbol + '');
-  };
 
   thisplugin.toggleclockwise = function () {
     thisplugin.cancelOrientationSearch();
@@ -3378,7 +3137,6 @@ function wrapper(plugin_info) {
     thisplugin.displayOrderGuids = null;
     thisplugin.requestLinkOrderRecompute();
 
-    thisplugin.updateClockwiseButton();
     thisplugin.delayedUpdateLayer(0.2, true);
   };
 
@@ -3390,20 +3148,6 @@ function wrapper(plugin_info) {
 
   thisplugin.toggleStarDirection = function () {
     thisplugin.stardirection *= -1;
-    var html = "Outbounding";
-
-    if (thisplugin.stardirection === thisplugin.starDirENUM.CENTRALIZING) {
-      html = "Inbounding";
-      $('#plugin_fanfields3_availablesbul')
-        .hide();
-    } else {
-      $('#plugin_fanfields3_availablesbul')
-        .show();
-    }
-
-
-    $('#plugin_fanfields3_stardirbtn')
-      .html(html);
     thisplugin.delayedUpdateLayer(0.2, true);
   };
 
@@ -3415,6 +3159,7 @@ function wrapper(plugin_info) {
       $('#plugin_fanfields3_availablesbul_count')
         .html('' + (thisplugin.availableSBUL) + '');
       thisplugin.delayedUpdateLayer(0.2, true);
+      thisplugin.saveOptionsDefault();
     }
   }
   thisplugin.decreaseSBUL = function () {
@@ -3423,6 +3168,7 @@ function wrapper(plugin_info) {
       $('#plugin_fanfields3_availablesbul_count')
         .html('' + (thisplugin.availableSBUL) + '');
       thisplugin.delayedUpdateLayer(0.2, true);
+      thisplugin.saveOptionsDefault();
     }
   }
 
@@ -3439,17 +3185,6 @@ function wrapper(plugin_info) {
 
     if (L.Browser.mobile) {
       // alert('this is mobile')
-      addCSS('\n' +
-        '.plugin_fanfields3_btn {\n' +
-        '   margin: 2px;\n' +
-        '   padding: 5px;\n' +
-        '   border: 2px outset #20A8B1;\n' +
-        '   flex: auto;\n' +
-        '   display: flex;\n' +
-        '   justify-content: center;\n' +
-        '   align-items: center;\n' +
-        '}\n'
-      );
       addCSS('\n' +
         '.plugin_fanfields3_minibtn {\n' +
         '   margin: 2px;\n' +
@@ -3476,20 +3211,6 @@ function wrapper(plugin_info) {
 
 
       addCSS('\n' +
-        '.plugin_fanfields3_toolbox {\n' +
-        '   margin: 7px 1px;\n' +
-        '   padding: 15px 5px;\n' +
-        '   border: 1px solid #ffce00;\n' +
-        '   box-shadow: 3px 3px 5px black;\n' +
-        '   color: #ffce00;\n' +
-        '   display: flex;\n' +
-        '   flex-direction: column;\n' +
-        '   flex-basis: 50%;\n' +
-        '}\n'
-      );
-
-
-      addCSS('\n' +
         '.plugin_fanfields3_sidebar {\n' +
         '  display: flex;\n' +
         '  flex-direction: row;\n' +
@@ -3498,25 +3219,7 @@ function wrapper(plugin_info) {
         '}\n'
       );
 
-      addCSS('\n' +
-        '.plugin_fanfields3_titlebar {\n' +
-        '  background-color: rgba(8, 60, 78, 0.9);\n' +
-        '  margin-right: 7px;\n' +
-        '  text-align: center;\n' +
-        '}\n'
-      );
-
     } else {
-
-      addCSS('\n' +
-        '.plugin_fanfields3_btn {\n' +
-        '   margin-left:0;\n' +
-        '   margin-right:0;\n' +
-        '   flex: 0 0 50%;\n' +
-        '   overflow: hidden;\n' +
-        '   text-overflow: ellipsis;\n' +
-        '}'
-      );
 
       addCSS('\n' +
         '.plugin_fanfields3_minibtn {\n' +
@@ -3547,16 +3250,6 @@ function wrapper(plugin_info) {
 
 
       addCSS('\n' +
-        '.plugin_fanfields3_toolbox {\n' +
-        '   margin: 5px;\n' +
-        '   padding: 3px;\n' +
-        '   border: 1px solid #ffce00;\n' +
-        '   box-shadow: 3px 3px 5px black;\n' +
-        '   color: #ffce00;' +
-        '}\n'
-      );
-
-      addCSS('\n' +
         '.plugin_fanfields3_sidebar {\n' +
         '  display: flex;\n' +
         '  flex-direction: row;\n' +
@@ -3564,22 +3257,6 @@ function wrapper(plugin_info) {
         '  padding: 5px;' +
         '}\n'
       );
-      addCSS('\n' +
-        '.plugin_fanfields3_titlebar {\n' +
-        '  background-color: rgba(8, 60, 78, 0.9);\n' +
-        '  margin-bottom: 7px;\n' +
-        '  text-align: center;\n' +
-        '}\n'
-      );
-
-
-      addCSS('\n' +
-        '.plugin_fanfields3_toolbox > span {\n' +
-        '   float: left;\n' +
-        '}\n'
-      );
-
-
     };
 
     // plugin_fanfields3_availablesbul_label
@@ -3598,6 +3275,52 @@ function wrapper(plugin_info) {
     addCSS('\n' +
       '.plugin_fanfields3_warn {\n' +
       '  color: #ffce00;\n' +
+      '}\n');
+
+    // Popup menu opened from the map's hamburger icon.
+    addCSS('\n' +
+      '.plugin_fanfields3_mainmenu {\n' +
+      '  z-index: 10000;\n' +
+      '  min-width: 160px;\n' +
+      '  background-color: rgba(8, 60, 78, 0.95);\n' +
+      '  border: 1px solid #20A8B1;\n' +
+      '  box-shadow: 3px 3px 5px black;\n' +
+      '  padding: 4px 0;\n' +
+      '  display: flex;\n' +
+      '  flex-direction: column;\n' +
+      '}\n' +
+      '.plugin_fanfields3_mainmenu_item {\n' +
+      '  display: block;\n' +
+      '  padding: 6px 14px;\n' +
+      '  color: #ffce00;\n' +
+      '  white-space: nowrap;\n' +
+      '  cursor: pointer;\n' +
+      '}\n' +
+      '.plugin_fanfields3_mainmenu_item:hover {\n' +
+      '  background-color: rgba(32, 168, 177, 0.3);\n' +
+      '}\n');
+
+    // Options dialog: label + control rows, action buttons bar.
+    addCSS('\n' +
+      '.plugin_fanfields3_options_row {\n' +
+      '  display: flex;\n' +
+      '  justify-content: space-between;\n' +
+      '  align-items: center;\n' +
+      '  margin: 6px 0;\n' +
+      '}\n' +
+      '.plugin_fanfields3_options_row label {\n' +
+      '  margin-right: 10px;\n' +
+      '}\n' +
+      '.plugin_fanfields3_options_row select {\n' +
+      '  flex: 0 0 auto;\n' +
+      '}\n' +
+      '.plugin_fanfields3_options_row .plugin_fanfields3_availablesbul_label {\n' +
+      '  flex: 0 0 auto;\n' +
+      '  display: block;\n' +
+      '  margin-right: 10px;\n' +
+      '}\n' +
+      '.plugin_fanfields3_options_subrow {\n' +
+      '  padding-left: 16px;\n' +
       '}\n');
 
     // Task List: camera icon flagging a Volatile Scout Controlled portal (worth 3 scout
@@ -4239,9 +3962,12 @@ function wrapper(plugin_info) {
 
     var ownLinks = thisplugin.getOwnLinkDegrees(ctx.fanpoints);
     if (ownLinks.total === 0) {
-      // Nothing to reuse: keep the current orientation, and look again on the next recalculation
-      // if the links may still be loading in.
-      thisplugin._orientationSearchPending = Date.now() < thisplugin._orientationSearchRetryUntil;
+      // Nothing to reuse right now: give up on this attempt and let the plan lock if nothing else
+      // is holding it back, rather than waiting on an arbitrary timer. If the map reloads again
+      // before the plan actually locks, the mapDataRefreshStart hook in setup() re-arms
+      // _orientationSearchPending, so a fresh attempt runs once that reload completes, using
+      // whatever new links came in — see the pending check in updateLayer().
+      thisplugin._orientationSearchPending = false;
       thisplugin.lockIfPlanComplete();
       return;
     }
@@ -4300,7 +4026,6 @@ function wrapper(plugin_info) {
       if (bestGuid === ctx.baseGuid && bestClockwise === ctx.baseClockwise) return;
 
       thisplugin.is_clockwise = bestClockwise;
-      thisplugin.updateClockwiseButton();
 
       // Pin the pick (auto, not manual) so it sticks across recalculations even when it isn't a
       // hull vertex — see forcedAnchorGUID in updateLayer().
@@ -4568,17 +4293,16 @@ function wrapper(plugin_info) {
     thisplugin.updateLayer();
   };
 
-  // Drop all manual link-direction overrides at once (Task List "Reset link orders" button).
-  // Also drops back to the plain algorithm mode, since a leftover "Fewer keys"/"Less walking"
-  // label next to zero overrides would be misleading, and reverts any portal relocated by
-  // "Less walking" back to its natural spot in the walk, as well as any "Reroute" order.
+  // Drop all manual link-direction overrides at once (Task List "Reset link orders" button),
+  // reverts any portal relocated by the walking optimization back to its natural spot in the
+  // walk, drops any "Reroute" order, and restarts the walking optimization cleanly from the
+  // base algorithm.
   thisplugin.resetLinkFlips = function () {
     thisplugin.manualLinkFlips = {};
     thisplugin.clearRouteOrder();
     thisplugin.relocatedForLessWalkingGuids = {};
     thisplugin.displayOrderGuids = null; // never the user's own Manage Portal Order (manualOrderGuids)
-    thisplugin.linkOrderMode = thisplugin.linkOrderModeENUM.ALGO;
-    thisplugin.updateLinkOrderModeButton();
+    thisplugin._linkOrderRecomputePending = true;
     thisplugin.updateLayer();
   };
 
@@ -5025,51 +4749,6 @@ function wrapper(plugin_info) {
     if (thisplugin.linkOrderMode !== thisplugin.linkOrderModeENUM.ALGO) {
       thisplugin._linkOrderRecomputePending = true;
     }
-  };
-
-  thisplugin.getLinkOrderModeLabel = function () {
-    switch (thisplugin.linkOrderMode) {
-      case thisplugin.linkOrderModeENUM.KEYS:
-        return 'Fewer keys';
-      case thisplugin.linkOrderModeENUM.DISTANCE:
-        return 'Less walking';
-      case thisplugin.linkOrderModeENUM.ALGO:
-      default:
-        return 'Algorithm';
-    }
-  };
-
-  thisplugin.updateLinkOrderModeButton = function () {
-    $('#plugin_fanfields3_linkorder_btn')
-      .html('Optim:&nbsp;' + thisplugin.getLinkOrderModeLabel());
-  };
-
-  // Cycles the link order optimization mode (menu button) between KEYS ("Fewer keys") and
-  // DISTANCE ("Less walking") — ALGO ("Algorithm", no override) is no longer a cycle stop,
-  // since "Reset link orders" in the Task List already covers "go back to the base algorithm"
-  // and having it in the rotation was mostly confusing. If somehow not already DISTANCE or
-  // KEYS (e.g. right after a Task List reset), the next click lands on DISTANCE, the default.
-  // Never changes which links exist or which fields form — only how mesh links are oriented.
-  //
-  // Switching mode always starts a clean calculation from the base algorithm, rather than
-  // re-optimizing on top of whatever the previous mode left behind: manualLinkFlips still
-  // holding the old mode's flips would feed straight back into the core algorithm's own build
-  // pass (it consults isLinkFlipped() while constructing the plan, not only afterwards), so a
-  // leftover flip can steer that pass into a different plan than the clean one this mode should
-  // be optimizing from. Dropping the flips, "Less walking" relocations and walk/display order
-  // first guarantees the new mode always computes from the same untouched baseline.
-  thisplugin.cycleLinkOrderMode = function () {
-    thisplugin.linkOrderMode = (thisplugin.linkOrderMode === thisplugin.linkOrderModeENUM.DISTANCE)
-      ? thisplugin.linkOrderModeENUM.KEYS
-      : thisplugin.linkOrderModeENUM.DISTANCE;
-
-    thisplugin.manualLinkFlips = {};
-    thisplugin.relocatedForLessWalkingGuids = {};
-    thisplugin.displayOrderGuids = null;
-    thisplugin._linkOrderRecomputePending = true;
-
-    thisplugin.updateLinkOrderModeButton();
-    thisplugin.delayedUpdateLayer(0.2, true);
   };
 
   // Strict point-in-triangle test in projection space:
@@ -6037,7 +5716,6 @@ function wrapper(plugin_info) {
     // matching anchor/direction below, not just later, already-established plans.
     if (thisplugin.lastPlanSignature !== currentSignature) {
       thisplugin._orientationSearchPending = true;
-      thisplugin._orientationSearchRetryUntil = Date.now() + thisplugin.ORIENTATION_SEARCH_RETRY_MS;
       thisplugin._lockWhenPlanComplete = true;
     }
 
@@ -6525,18 +6203,17 @@ function wrapper(plugin_info) {
     // Issue #96: validate plan against under-field link distance constraints
     thisplugin.validateUnderFieldLinks();
 
-    // Link order optimization (menu button): recompute once when something invalidated it
-    // (anchor/order/geometry change) — never on every recalculation, so manual tweaks made
-    // on top via the Task List ↔ button are left alone otherwise.
+    // Link order optimization: recompute once when something invalidated it (anchor/order/
+    // geometry change) — never on every recalculation, so manual tweaks made on top via the
+    // Task List ↔ button are left alone otherwise.
     if (thisplugin._linkOrderRecomputePending && thisplugin.linkOrderMode !== thisplugin.linkOrderModeENUM.ALGO) {
       thisplugin._linkOrderRecomputePending = false;
 
-      // The Task List's "Grey out done links" option calls isLinkInGame() per link purely for
-      // display — irrelevant, and needlessly expensive, while the optimizer itself computes.
-      // Suspend it for the duration of the computation and restore it exactly as it was
-      // straight after — never via toggleGreyOutExistingLinks() (redundant here), and before
-      // the updateLayer() call below, so the final render/Task List refresh sees the real
-      // value. _linkOrderRecomputePending is already false, so that call can't loop back here.
+      // Grey-out calls isLinkInGame() per link purely for display — irrelevant, and needlessly
+      // expensive, while the optimizer itself computes. Suspend it for the duration of the
+      // computation and restore it exactly as it was straight after, before the updateLayer()
+      // call below, so the final render/Task List refresh sees the real value.
+      // _linkOrderRecomputePending is already false, so that call can't loop back here.
       var greyOutWasOn = thisplugin.greyOutExistingLinks;
       thisplugin.greyOutExistingLinks = false;
 
@@ -6867,6 +6544,9 @@ function wrapper(plugin_info) {
   var symbol_counterclockwise = '&#8634;';
   var symbol_clipboard = '&#128203;';
   var symbol_target = '&#127919;';
+  var symbol_menu = '&#9776;';
+  var symbol_left = '&#5130;';
+  var symbol_right = '&#5125;';
   // A key with a small camera in its lower right corner (Keys video).
   var symbol_keysVideo = '<span class="plugin_fanfields3_keysvideo_icon">&#128273;<span>&#128247;</span></span>';
 
@@ -6946,10 +6626,231 @@ function wrapper(plugin_info) {
             thisplugin.lock();
           });
 
+        $(container)
+          .append(
+            '<a id="fanfieldMenuButton" href="javascript: void(0);" class="fanfields-control" title="Fan Fields 3 - Menu">' +
+            symbol_menu + '</a>'
+          )
+          .on("click", "#fanfieldMenuButton", function () {
+            thisplugin.showMainMenu(this);
+          });
+
         return container;
       },
     });
     map.addControl(new thisplugin.ffButtons());
+  };
+
+  // Popup menu opened from the map's hamburger icon: one-shot actions that have no icon of
+  // their own in the topleft bar.
+  thisplugin.showMainMenu = function (anchorEl) {
+    $('#plugin_fanfields3_mainmenu').remove();
+
+    var entries = [
+      { label: 'Options&hellip;', action: thisplugin.showOptionsDialog },
+      { label: 'Manage&nbsp;order', action: thisplugin.showManageOrderDialog },
+      { label: 'Stats', action: thisplugin.showStatistics },
+      { label: 'Help', action: thisplugin.help }
+    ];
+
+    var $menu = $('<div id="plugin_fanfields3_mainmenu" class="plugin_fanfields3_mainmenu"></div>');
+    entries.forEach(function (entry) {
+      $('<a class="plugin_fanfields3_mainmenu_item"></a>')
+        .html(entry.label)
+        .on('click', function () {
+          $menu.remove();
+          entry.action();
+        })
+        .appendTo($menu);
+    });
+
+    var rect = anchorEl.getBoundingClientRect();
+    $menu.css({
+      position: 'fixed',
+      top: rect.bottom,
+      left: rect.left
+    });
+
+    $('body').append($menu);
+
+    // Deferred so the click that opened the menu isn't also the click that closes it.
+    setTimeout(function () {
+      $(document).one('click', function () {
+        $menu.remove();
+      });
+    }, 0);
+    $(document).one('keydown.plugin_fanfields3_mainmenu', function (e) {
+      if (e.key === 'Escape') $menu.remove();
+    });
+  };
+
+  // Settings persisted across sessions via "Save options as default" in the Options dialog.
+  thisplugin.OPTIONS_STORAGE_KEY = 'plugin_fanfields3_saved_defaults';
+
+  thisplugin.getSavedOptionsDefault = function () {
+    try {
+      var raw = localStorage.getItem(thisplugin.OPTIONS_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  thisplugin.applySavedOptionsDefault = function () {
+    var saved = thisplugin.getSavedOptionsDefault();
+    if (!saved) return;
+
+    if (typeof saved.isClockwise === 'boolean') thisplugin.is_clockwise = saved.isClockwise;
+    if (saved.stardirection === thisplugin.starDirENUM.CENTRALIZING || saved.stardirection === thisplugin.starDirENUM.RADIATING) {
+      thisplugin.stardirection = saved.stardirection;
+    }
+    if (typeof saved.availableSBUL === 'number') thisplugin.availableSBUL = saved.availableSBUL;
+    if (typeof saved.respectIntelLinksMode === 'number') thisplugin.respectIntelLinksMode = saved.respectIntelLinksMode;
+    if (typeof saved.useBookmarksOnly === 'boolean') thisplugin.use_bookmarks_only = saved.useBookmarksOnly;
+    if (typeof saved.manageBlockers === 'boolean') thisplugin.manageBlockers = saved.manageBlockers;
+    if (typeof saved.blockerMaxDetourM === 'number') thisplugin.blockerMaxDetourM = saved.blockerMaxDetourM;
+  };
+
+  thisplugin.saveOptionsDefault = function () {
+    localStorage.setItem(thisplugin.OPTIONS_STORAGE_KEY, JSON.stringify({
+      isClockwise: thisplugin.is_clockwise,
+      stardirection: thisplugin.stardirection,
+      availableSBUL: thisplugin.availableSBUL,
+      respectIntelLinksMode: thisplugin.respectIntelLinksMode,
+      useBookmarksOnly: thisplugin.use_bookmarks_only,
+      manageBlockers: thisplugin.manageBlockers,
+      blockerMaxDetourM: thisplugin.blockerMaxDetourM
+    }));
+  };
+
+  // Settings dialog: direction/fan mode/SBUL/Respect Intel/portal selection, each applied
+  // immediately on change and persisted straight to localStorage, so the dialog has nothing
+  // left to confirm or discard — it's just closed via its own title bar once done.
+  thisplugin.showOptionsDialog = function () {
+    var hasBookmarks = typeof window.plugin.bookmarks !== 'undefined';
+    var isRadiating = thisplugin.stardirection === thisplugin.starDirENUM.RADIATING;
+
+    var respectOptions = [
+      { value: thisplugin.respectIntelLinksModeENUM.NONE, label: 'None' },
+      { value: thisplugin.respectIntelLinksModeENUM.ALL, label: 'All factions' },
+      { value: thisplugin.respectIntelLinksModeENUM.ENL, label: 'Enlightened' },
+      { value: thisplugin.respectIntelLinksModeENUM.RES, label: 'Resistance' },
+      { value: thisplugin.respectIntelLinksModeENUM.MAC, label: 'Machina' },
+      { value: thisplugin.respectIntelLinksModeENUM.ENL_AND_MAC, label: 'Enlightened + Machina' },
+      { value: thisplugin.respectIntelLinksModeENUM.RES_AND_MAC, label: 'Resistance + Machina' }
+    ];
+
+    var html = '<div id="plugin_fanfields3_options_dialog">';
+
+    html += '<div class="plugin_fanfields3_options_row">' +
+      '<label for="plugin_fanfields3_opt_direction">Direction</label>' +
+      '<select id="plugin_fanfields3_opt_direction">' +
+      '<option value="cw"' + (thisplugin.is_clockwise ? ' selected' : '') + '>Clockwise</option>' +
+      '<option value="ccw"' + (!thisplugin.is_clockwise ? ' selected' : '') + '>Counterclockwise</option>' +
+      '</select></div>';
+
+    html += '<div class="plugin_fanfields3_options_row">' +
+      '<label for="plugin_fanfields3_opt_fanmode">Fan mode</label>' +
+      '<select id="plugin_fanfields3_opt_fanmode">' +
+      '<option value="in"' + (!isRadiating ? ' selected' : '') + '>Inbounding</option>' +
+      '<option value="out"' + (isRadiating ? ' selected' : '') + '>Outbounding</option>' +
+      '</select></div>';
+
+    html += '<div id="plugin_fanfields3_availablesbul" class="plugin_fanfields3_options_row plugin_fanfields3_options_subrow" style="display:' + (isRadiating ? 'flex' : 'none') + ';">' +
+      '<span class="plugin_fanfields3_availablesbul_label">Available&nbsp;SBUL</span>' +
+      '<span class="plugin_fanfields3_multibtn" style="flex: 50%">' +
+      '<a id="plugin_fanfields3_inscsbulbtn" class="plugin_fanfields3_minibtn" onclick="window.plugin.fanfields.decreaseSBUL();">' + symbol_left + '</a>' +
+      '<span id="plugin_fanfields3_availablesbul_count" class="plugin_fanfields3_minibtn">' + thisplugin.availableSBUL + '</span>' +
+      '<a id="plugin_fanfields3_decsbulbtn" class="plugin_fanfields3_minibtn" onclick="window.plugin.fanfields.increaseSBUL();">' + symbol_right + '</a>' +
+      '</span></div>';
+
+    html += '<div class="plugin_fanfields3_options_row">' +
+      '<label for="plugin_fanfields3_opt_respect">Respect Intel</label>' +
+      '<select id="plugin_fanfields3_opt_respect">';
+    respectOptions.forEach(function (opt) {
+      html += '<option value="' + opt.value + '"' + (thisplugin.respectIntelLinksMode === opt.value ? ' selected' : '') + '>' + opt.label + '</option>';
+    });
+    html += '</select></div>';
+
+    html += '<div class="plugin_fanfields3_options_row">' +
+      '<label for="plugin_fanfields3_opt_blockers" title="Add the portals to destroy to the Task List, so that links crossing the plan (from factions Respect Intel does not avoid) are gone before the links they block are thrown">Blockers</label>' +
+      '<select id="plugin_fanfields3_opt_blockers">' +
+      '<option value="on"' + (thisplugin.manageBlockers ? ' selected' : '') + '>On</option>' +
+      '<option value="off"' + (!thisplugin.manageBlockers ? ' selected' : '') + '>Off</option>' +
+      '</select></div>';
+
+    html += '<div id="plugin_fanfields3_opt_detour_row" class="plugin_fanfields3_options_row plugin_fanfields3_options_subrow" style="display:' + (thisplugin.manageBlockers ? 'flex' : 'none') + ';">' +
+      '<label for="plugin_fanfields3_opt_detour" title="Longest extra walk a single Blockers Destroy stop may add to the route; blockers that cannot be freed within it are listed under the Task List">Blockers&nbsp;max&nbsp;detour</label>' +
+      '<select id="plugin_fanfields3_opt_detour">';
+    thisplugin.BLOCKER_DETOUR_LIMITS_M.forEach(function (limit) {
+      html += '<option value="' + limit + '"' + (thisplugin.blockerMaxDetourM === limit ? ' selected' : '') + '>' +
+        thisplugin.getBlockerDetourLabel(limit) + '</option>';
+    });
+    html += '</select></div>';
+
+    if (hasBookmarks) {
+      html += '<div class="plugin_fanfields3_options_row">' +
+        '<label for="plugin_fanfields3_opt_portals">Portal selection</label>' +
+        '<select id="plugin_fanfields3_opt_portals">' +
+        '<option value="all"' + (!thisplugin.use_bookmarks_only ? ' selected' : '') + '>All portals</option>' +
+        '<option value="bookmarks"' + (thisplugin.use_bookmarks_only ? ' selected' : '') + '>Bookmarks only</option>' +
+        '</select></div>';
+    }
+
+    html += '</div>';
+
+    var width = 380;
+    thisplugin.MaxDialogWidth = thisplugin.getMaxDialogWidth();
+    if (thisplugin.MaxDialogWidth < width) width = thisplugin.MaxDialogWidth;
+
+    dialog({
+      html: html,
+      id: 'plugin_fanfields3_options',
+      title: 'Fan Fields 3 - Options',
+      width: width,
+      closeOnEscape: true
+    });
+
+    $('#plugin_fanfields3_opt_direction').on('change', function () {
+      var wantClockwise = ($(this).val() === 'cw');
+      if (wantClockwise !== thisplugin.is_clockwise) thisplugin.toggleclockwise();
+      thisplugin.saveOptionsDefault();
+    });
+
+    $('#plugin_fanfields3_opt_fanmode').on('change', function () {
+      var wantRadiating = ($(this).val() === 'out');
+      var currentlyRadiating = (thisplugin.stardirection === thisplugin.starDirENUM.RADIATING);
+      if (wantRadiating !== currentlyRadiating) thisplugin.toggleStarDirection();
+      $('#plugin_fanfields3_availablesbul').toggle(wantRadiating);
+      thisplugin.saveOptionsDefault();
+    });
+
+    $('#plugin_fanfields3_opt_respect').on('change', function () {
+      thisplugin.respectIntelLinksMode = parseInt($(this).val(), 10);
+      thisplugin.delayedUpdateLayer(0.2, true);
+      thisplugin.saveOptionsDefault();
+    });
+
+    $('#plugin_fanfields3_opt_blockers').on('change', function () {
+      thisplugin.manageBlockers = ($(this).val() === 'on');
+      $('#plugin_fanfields3_opt_detour_row').toggle(thisplugin.manageBlockers);
+      thisplugin.refreshTaskListIfOpen();
+      thisplugin.updateLayer();
+      thisplugin.saveOptionsDefault();
+    });
+
+    $('#plugin_fanfields3_opt_detour').on('change', function () {
+      thisplugin.blockerMaxDetourM = parseInt($(this).val(), 10);
+      thisplugin.refreshTaskListIfOpen();
+      thisplugin.updateLayer();
+      thisplugin.saveOptionsDefault();
+    });
+
+    $('#plugin_fanfields3_opt_portals').on('change', function () {
+      var wantBookmarksOnly = ($(this).val() === 'bookmarks');
+      if (wantBookmarksOnly !== thisplugin.use_bookmarks_only) thisplugin.useBookmarksOnly();
+      thisplugin.saveOptionsDefault();
+    });
   };
 
   thisplugin.getMaxDialogWidth = function () {
@@ -7080,141 +6981,6 @@ function wrapper(plugin_info) {
     //Extend LatLng here to ensure it was created before
     thisplugin.initLatLng();
 
-    var buttonBookmarks = '';
-    var buttonBookmarksOnly = '';
-    if (typeof window.plugin.bookmarks !== 'undefined') {
-      // Write Bookmarks
-      buttonBookmarks =
-        '<a class="plugin_fanfields3_btn" onclick="window.plugin.fanfields.saveBookmarks();" title="Create New Portal Potential Future">Write&nbsp;Bookmarks</a> ';
-
-      // Only Use Bookmarked Portals
-      buttonBookmarksOnly =
-        '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_bookarks_only_btn" onclick="window.plugin.fanfields.useBookmarksOnly();" title="Help Enlightened Strong Victory">&#128278;&nbsp;All Portals</a> ';
-    }
-    // Show as list
-    var buttonPortalList = '<a class="plugin_fanfields3_btn" onclick="window.plugin.fanfields.exportText();" title="OpenAll Link Create Star">' +
-      symbol_clipboard + '&nbsp;Task&nbsp;List</a> ';
-
-    // Manage order
-    var buttonManageOrder =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_manageorderbtn" onclick="window.plugin.fanfields.showManageOrderDialog();" title="Use Restraint Follow Easy Path">Manage&nbsp;order</a> ';
-
-
-
-    // clockwise &#8635; ↻
-    // counterclockwise &#8634; ↺
-    // &#5123; ᐃ
-    // &#5121; ᐁ
-    // &#5130; ᐊ
-    // &#5125; ᐅ
-
-    // var symbol_up = '&#5123;';
-    // var symbol_down = '&#5121;';
-    var symbol_left = '&#5130;';
-    var symbol_right = '&#5125;';
-
-    var symbol_inc = symbol_right;
-    var symbol_dec = symbol_left;
-
-    var buttonClockwise =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_clckwsbtn" onclick="window.plugin.fanfields.toggleclockwise();" title="Begin Journey Breathe XM ">Clockwise&nbsp;' +
-      symbol_clockwise + '</a> ';
-    var buttonLock =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_lockbtn" onclick="window.plugin.fanfields.lock();" title="Avoid XM Message Lie">&#128275;&nbsp;Unlocked</a> ';
-
-    var buttonStarDirection =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_stardirbtn" onclick="window.plugin.fanfields.toggleStarDirection();" title="Change Perspective Technology">Inbounding</a> ';
-    // Available SBUL
-    var buttonSBUL =
-      '<span id="plugin_fanfields3_availablesbul" class="plugin_fanfields3_multibtn" style="display: none;">' +
-      '    <span class="plugin_fanfields3_availablesbul_label">Available&nbsp;SBUL:</span>' +
-      '    <span class="plugin_fanfields3_multibtn" style="flex: 50%">' +
-      '        <a id="plugin_fanfields3_inscsbulbtn" class="plugin_fanfields3_minibtn" onclick="window.plugin.fanfields.decreaseSBUL();" >' + symbol_dec +
-      '</a>' +
-      '        <span id="plugin_fanfields3_availablesbul_count" class="plugin_fanfields3_minibtn">' + (thisplugin.availableSBUL) + '</span>' +
-      '        <a id="plugin_fanfields3_decsbulbtn" class="plugin_fanfields3_minibtn" onclick="window.plugin.fanfields.increaseSBUL();">' + symbol_inc +
-      '</a>' +
-      '    </span>' +
-      '</span>';
-
-    // Respect Intel
-    var buttonRespect =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_respectbtn" onclick="window.plugin.fanfields.toggleRespectCurrentLinks();" title="Question Conflict Data">Respect&nbsp;Intel:&nbsp;NONE</a> ';
-
-    // Blockers: destroy/capture rows in the Task List for links that block the plan
-    var buttonBlockers =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_blockers_btn" onclick="window.plugin.fanfields.toggleManageBlockers();" title="Add the portals to destroy to the Task List so that links crossing the plan (from factions Respect Intel does not avoid) are gone before the links they block are thrown">Blockers:&nbsp;ON</a> ';
-    var buttonBlockerDetour =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_blocker_detour_btn" onclick="window.plugin.fanfields.cycleBlockerMaxDetour();" title="Longest extra walk one Destroy stop may add to the route">Max&nbsp;detour:&nbsp;500m</a> ';
-
-    // Show link dir
-    var buttonLinkDirectionIndicator =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_direction_indicator_btn" onclick="window.plugin.fanfields.toggleLinkDirIndicator();" title="Technology Intelligence See All">Show&nbsp;link&nbsp;dir:&nbsp;ON</a> ';
-
-    // Grey out / strike through links (and finished portals) that already exist in-game,
-    // in the Task List and as a faded color on the map itself
-    var buttonGreyOutExistingLinks =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_greyout_existing_btn" onclick="window.plugin.fanfields.toggleGreyOutExistingLinks();" title="Grey out and strike through Task List links (and portals), and fade already-thrown links on the map, for links that already exist in-game for your faction">Grey&nbsp;out&nbsp;done&nbsp;links:&nbsp;ON</a> ';
-
-    // Link order optimization: leaves the algorithm itself untouched and only reorients mesh
-    // links, either for fewer keys on any single portal or for less backtracking while walking.
-    var buttonLinkOrder =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_linkorder_btn" onclick="window.plugin.fanfields.cycleLinkOrderMode();" title="Reorient mesh links (not the algorithm itself): fewer keys on any one portal, or less backtracking while walking">Optim:&nbsp;Less&nbsp;walking</a> ';
-
-    // Shift anchor
-    var buttonShiftAnchor =
-      '<a class="plugin_fanfields3_btn" onclick="window.plugin.fanfields.previousStartingPoint();" title="Less Chaos More Stability">Shift&nbsp;left&nbsp;' +
-      symbol_counterclockwise + '</a>' + // clockwise &#8635;
-      '<a class="plugin_fanfields3_btn" onclick="window.plugin.fanfields.nextStartingPoint();" title="Restraint Path Gain Harmony">Shift&nbsp;right&nbsp;' +
-      symbol_clockwise + '</a>';
-
-    // Pick anchor: click this, then click any portal on the map (even inside the hull) to
-    // make it the anchor. Toggle-styled — stays highlighted while armed, until a portal is
-    // clicked or the button is pressed again.
-    var buttonPickAnchor =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_pickanchor_btn" onclick="window.plugin.fanfields.toggleAnchorPicking();" title="Click a portal on the map to make it the anchor, even one inside the hull">' +
-      symbol_target + '&nbsp;Pick&nbsp;anchor</a> ';
-
-    var buttonStats =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_statsbtn" onclick="window.plugin.fanfields.showStatistics();" title="See Truth Now">Stats</a> ';
-
-    // Write Drawtools
-    var buttonDrawTools =
-      '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_exportDTbtn" onclick="window.plugin.fanfields.exportDrawtools();" title="Help Shapers Create Future">Write&nbsp;DrawTools</a> ';
-
-    // Write Arcs
-    var buttonArcs = ''
-    if (typeof window.plugin.arcs !== 'undefined' && window.PLAYER.team === 'ENLIGHTENED') {
-      buttonArcs =
-        '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_exportArcsBtn" onclick="window.plugin.fanfields.exportArcs();" title="Field Together Improve Human Mind">Write&nbsp;Arcs</a> ';
-    };
-
-    var buttonHelp = '<a class="plugin_fanfields3_btn" id="plugin_fanfields3_helpbtn" onclick="window.plugin.fanfields.help();" title="Help" >Help</a> ';
-
-    var fanfields_buttons = '<span class="plugin_fanfields3_multibtn plugin_fanfields3_titlebar">Fan Fields 3</span>';
-
-    fanfields_buttons +=
-      buttonShiftAnchor +
-      buttonPickAnchor +
-      buttonClockwise +
-      buttonStarDirection +
-      buttonSBUL +
-      buttonLock +
-      buttonRespect +
-      buttonBlockers +
-      buttonBlockerDetour +
-      buttonBookmarksOnly +
-      buttonLinkDirectionIndicator +
-      buttonGreyOutExistingLinks +
-      buttonLinkOrder +
-      buttonPortalList +
-      buttonManageOrder +
-      buttonDrawTools +
-      buttonBookmarks +
-      buttonArcs +
-      buttonStats +
-      buttonHelp;
-
     $('#sidebar')
       .append('<div id="fanfields3" class="plugin_fanfields3_sidebar"></div>');
 
@@ -7242,11 +7008,6 @@ function wrapper(plugin_info) {
       return;
     }
 
-
-
-    $('#fanfields3')
-      .append(fanfields_buttons);
-
     // Default Respect Intel to the player's own faction (ENL/RES) rather than NONE, so a
     // fresh session starts out avoiding crossing (and re-throwing) the agent's own
     // already-built links without having to click the button first. Done here in setup()
@@ -7259,11 +7020,8 @@ function wrapper(plugin_info) {
       thisplugin.respectIntelLinksMode = thisplugin.respectIntelLinksModeENUM.RES;
     }
 
-    thisplugin.updateRespectIntelButton();
-    thisplugin.updateManageBlockersButton();
-    thisplugin.updateBlockerDetourButton();
-    thisplugin.updateGreyOutExistingLinksButton();
-    thisplugin.updateLinkOrderModeButton();
+    thisplugin.applySavedOptionsDefault();
+
     thisplugin.updateLockButton();
 
     //         window.pluginCreateHook('pluginBkmrksEdit');
@@ -7281,6 +7039,13 @@ function wrapper(plugin_info) {
     });
     window.addHook('mapDataRefreshStart', function () {
       thisplugin._mapDataLoading = true;
+
+      // The plan hasn't locked yet: this reload may bring in links that change the best anchor,
+      // or give the orientation search something to reuse for the first time — make sure a fresh
+      // attempt runs once it completes, instead of locking on what was tried before the reload.
+      if (thisplugin._lockWhenPlanComplete) {
+        thisplugin._orientationSearchPending = true;
+      }
     });
     window.addHook('mapDataRefreshEnd', function () {
       thisplugin._mapDataLoading = false;
