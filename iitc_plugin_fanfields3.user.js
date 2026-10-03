@@ -2714,11 +2714,29 @@ function wrapper(plugin_info) {
   thisplugin.OPS_STORAGE_KEY = 'plugin-fanfields3-saved-ops';
   thisplugin.OPS_MAX_COUNT = 15;
 
-  // JSON snapshot of the drawing that matches whatever is currently considered "saved" (the op
-  // just loaded, saved or updated) — null until the player has loaded, saved or updated an op
-  // this session, in which case anything already on the map counts as unsaved. Used only to
-  // warn before an op load would silently discard drawing changes; never persisted itself.
+  // JSON snapshot of the drawing, options and anchor that matches whatever is currently
+  // considered "saved" (the op just loaded, saved or updated, or — see the pluginDrawTools
+  // hook in setup() — whatever was already on the map when IITC opened) — null until that
+  // baseline exists, in which case anything already on the map counts as unsaved. Shifting the
+  // anchor (even just Shift left/right) or changing an option counts as a change here too, not
+  // just editing the drawn shapes. Used only to warn before an op load would silently discard
+  // such changes; never persisted itself.
   thisplugin.opsBaselineJSON = null;
+
+  // Snapshot of everything isDrawDirty() compares: the drawn shapes, the options and the
+  // anchor. `overrides` lets a caller pin a field to a specific value instead of the current
+  // live one — needed right after loadOp()/clearCurrentDraw()/the initial restore, where the
+  // anchor this op/restore is PINNING (op.anchor.guid, or null) is known immediately, but
+  // thisplugin.startingpointGUID itself only catches up once the debounced updateLayer() run
+  // that pluginDrawTools hook schedules actually completes.
+  thisplugin.buildWorkSnapshotJSON = function (overrides) {
+    overrides = overrides || {};
+    return JSON.stringify({
+      data: overrides.data || thisplugin.serializeCurrentDraw(),
+      options: overrides.options || thisplugin.getCurrentOptionsSnapshot(),
+      anchor: ('anchor' in overrides) ? overrides.anchor : (thisplugin.startingpointGUID || null)
+    });
+  };
 
   thisplugin.getSavedOps = function () {
     try {
@@ -2806,10 +2824,11 @@ function wrapper(plugin_info) {
     return items;
   };
 
-  // Whether the current drawing differs from whichever op was last loaded/saved/updated this
-  // session (or, with none yet, whether anything at all is currently drawn).
+  // Whether the current drawing, options or anchor differ from whichever op was last loaded/
+  // saved/updated this session (or, with none yet, whether anything at all is currently
+  // drawn/configured).
   thisplugin.isDrawDirty = function () {
-    return JSON.stringify(thisplugin.serializeCurrentDraw()) !== thisplugin.opsBaselineJSON;
+    return thisplugin.buildWorkSnapshotJSON() !== thisplugin.opsBaselineJSON;
   };
 
   // Replaces the entire current drawing with the op's own drawing. Builds the new layers
@@ -2840,7 +2859,12 @@ function wrapper(plugin_info) {
 
     if (typeof dt.save === 'function') dt.save();
     window.runHooks('pluginDrawTools', { event: 'import' });
-    thisplugin.opsBaselineJSON = JSON.stringify(thisplugin.serializeCurrentDraw());
+
+    // The anchor override here is this op's own pin, not thisplugin.startingpointGUID — that
+    // only catches up once the debounced updateLayer() run the hook above just scheduled
+    // actually completes (see buildWorkSnapshotJSON). Options are already live: applied
+    // synchronously above.
+    thisplugin.opsBaselineJSON = thisplugin.buildWorkSnapshotJSON({ data: op.data || [], anchor: (op.anchor && op.anchor.guid) || null });
 
     if (dt.drawnItems.getLayers().length) {
       map.fitBounds(dt.drawnItems.getBounds(), { maxZoom: 15, padding: [20, 20] });
@@ -2855,7 +2879,9 @@ function wrapper(plugin_info) {
     dt.drawnItems.clearLayers();
     if (typeof dt.save === 'function') dt.save();
     window.runHooks('pluginDrawTools', { event: 'import' });
-    thisplugin.opsBaselineJSON = JSON.stringify(thisplugin.serializeCurrentDraw());
+    // anchor: null — an empty drawing has no plan, so none can be pinned; thisplugin.startingpointGUID
+    // itself only catches up once the debounced updateLayer() run the hook above just scheduled completes.
+    thisplugin.opsBaselineJSON = thisplugin.buildWorkSnapshotJSON({ data: [], anchor: null });
   };
 
   // Returns true on success, or a string identifying why it failed ('limit', 'duplicate').
@@ -2865,16 +2891,18 @@ function wrapper(plugin_info) {
     if (ops.some(function (o) { return o.name === name; })) return 'duplicate';
 
     var data = thisplugin.serializeCurrentDraw();
+    var options = thisplugin.getCurrentOptionsSnapshot();
+    var anchor = thisplugin.startingpointGUID || null;
     ops.push({
       id: thisplugin.generateOpId(),
       name: name,
       data: data,
-      options: thisplugin.getCurrentOptionsSnapshot(),
-      anchor: { guid: thisplugin.startingpointGUID || null },
+      options: options,
+      anchor: { guid: anchor },
       savedAt: Date.now()
     });
     thisplugin.setSavedOps(ops);
-    thisplugin.opsBaselineJSON = JSON.stringify(data);
+    thisplugin.opsBaselineJSON = thisplugin.buildWorkSnapshotJSON({ data: data, options: options, anchor: anchor });
     return true;
   };
 
@@ -2886,12 +2914,14 @@ function wrapper(plugin_info) {
     if (!op) return false;
 
     var data = thisplugin.serializeCurrentDraw();
+    var options = thisplugin.getCurrentOptionsSnapshot();
+    var anchor = thisplugin.startingpointGUID || null;
     op.data = data;
-    op.options = thisplugin.getCurrentOptionsSnapshot();
-    op.anchor = { guid: thisplugin.startingpointGUID || null };
+    op.options = options;
+    op.anchor = { guid: anchor };
     op.savedAt = Date.now();
     thisplugin.setSavedOps(ops);
-    thisplugin.opsBaselineJSON = JSON.stringify(data);
+    thisplugin.opsBaselineJSON = thisplugin.buildWorkSnapshotJSON({ data: data, options: options, anchor: anchor });
     return true;
   };
 
@@ -3162,6 +3192,9 @@ function wrapper(plugin_info) {
     });
 
     thisplugin.wireManageOpsHandlers();
+
+    // Focus the new-op name field right away, so typing a name doesn't need a click first.
+    $('#plugin_fanfields3_ops_newname').trigger('focus');
   };
 
 
@@ -7593,13 +7626,16 @@ function wrapper(plugin_info) {
 
     window.addHook('pluginDrawTools', function (e) {
       // The very first time this fires is DrawTools finishing its own restore of whatever was
-      // already drawn when IITC opened — not a real edit — so that drawing counts as the
-      // accepted baseline right away. Without this, opsBaselineJSON would stay null until the
-      // player next interacted with Manage Ops, and Manage Ops would wrongly warn about
-      // "unsaved changes" for a drawing that in fact hasn't changed since it was last saved.
+      // already drawn when IITC opened — not a real edit — so that drawing (plus the options
+      // and anchor already restored above) counts as the accepted baseline right away.
+      // Without this, opsBaselineJSON would stay null until the player next interacted with
+      // Manage Ops, and Manage Ops would wrongly warn about "unsaved changes" for a session
+      // that in fact hasn't changed since it was last saved. The anchor override is
+      // thisplugin.forcedAnchorGUID (the just-restored pin), not thisplugin.startingpointGUID —
+      // that only catches up once the debounced updateLayer() run below actually completes.
       if (!thisplugin._hasSeededOpsBaseline) {
         thisplugin._hasSeededOpsBaseline = true;
-        thisplugin.opsBaselineJSON = JSON.stringify(thisplugin.serializeCurrentDraw());
+        thisplugin.opsBaselineJSON = thisplugin.buildWorkSnapshotJSON({ anchor: thisplugin.forcedAnchorGUID || null });
       }
       thisplugin.delayedUpdateLayer(0.5, true);
     });
