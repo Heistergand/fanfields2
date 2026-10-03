@@ -903,6 +903,7 @@ function wrapper(plugin_info) {
 
       let title = window.escapeHtmlSpecialChars(rawTitle);
       let uriTitle = encodeURIComponent(rawTitle);
+      let jsGuid = window.escapeHtmlSpecialChars(String(portal.guid || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
 
       var keysNeeded = (portal.incomingValidCount !== undefined) ? portal.incomingValidCount : portal.incoming.length;
 
@@ -959,7 +960,7 @@ function wrapper(plugin_info) {
       // Visibility is controlled via CSS (@media print or print window styles)
       text += `  <a class="plugin_fanfields2_exportText_print" href="${gmapsHref}" target="_blank">${title}</a>`;
       text +=
-        `  <a class="plugin_fanfields2_exportText_ui" onclick="window.plugin.fanfields.flyToPortal({lat: ${lat}, lng: ${lng}}, '${portal.guid}'); return false;">${title}</a>`;
+        `  <a class="plugin_fanfields2_exportText_ui" onclick="window.plugin.fanfields.flyToPortal({lat: ${lat}, lng: ${lng}}, '${jsGuid}'); return false;">${title}</a>`;
 
 
       text += '</td>';
