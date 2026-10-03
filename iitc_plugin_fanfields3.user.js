@@ -2826,6 +2826,18 @@ function wrapper(plugin_info) {
       var layer = thisplugin.buildDrawLayerFromItem(item);
       if (layer) dt.drawnItems.addLayer(layer);
     });
+
+    thisplugin.applyOptionsSnapshot(op.options);
+
+    // Restored ahead of the hook below, so the recalculation it triggers pins this anchor the
+    // same way setAnchorByGuid does (see the forcedAnchorGUID block in updateLayer) — dropped
+    // back to null there if this op's anchor portal isn't part of its own drawing. Always
+    // restored as a manual pin (regardless of how it was originally chosen — Pick anchor, or
+    // just cycling with Shift left/right) so the automatic anchor/direction search never
+    // silently overrides it right after this op loads.
+    thisplugin.forcedAnchorGUID = (op.anchor && op.anchor.guid) || null;
+    thisplugin.forcedAnchorIsManual = !!(op.anchor && op.anchor.guid);
+
     if (typeof dt.save === 'function') dt.save();
     window.runHooks('pluginDrawTools', { event: 'import' });
     thisplugin.opsBaselineJSON = JSON.stringify(thisplugin.serializeCurrentDraw());
@@ -2853,7 +2865,14 @@ function wrapper(plugin_info) {
     if (ops.some(function (o) { return o.name === name; })) return 'duplicate';
 
     var data = thisplugin.serializeCurrentDraw();
-    ops.push({ id: thisplugin.generateOpId(), name: name, data: data, savedAt: Date.now() });
+    ops.push({
+      id: thisplugin.generateOpId(),
+      name: name,
+      data: data,
+      options: thisplugin.getCurrentOptionsSnapshot(),
+      anchor: { guid: thisplugin.startingpointGUID || null },
+      savedAt: Date.now()
+    });
     thisplugin.setSavedOps(ops);
     thisplugin.opsBaselineJSON = JSON.stringify(data);
     return true;
@@ -2868,6 +2887,8 @@ function wrapper(plugin_info) {
 
     var data = thisplugin.serializeCurrentDraw();
     op.data = data;
+    op.options = thisplugin.getCurrentOptionsSnapshot();
+    op.anchor = { guid: thisplugin.startingpointGUID || null };
     op.savedAt = Date.now();
     thisplugin.setSavedOps(ops);
     thisplugin.opsBaselineJSON = JSON.stringify(data);
@@ -6672,6 +6693,7 @@ function wrapper(plugin_info) {
       centerOutgoings = builtPlan.centerOutgoings;
       centerSbul = builtPlan.centerSbul;
       thisplugin.centerKeys = builtPlan.centerKeys;
+      thisplugin.saveCurrentAnchor();
     }
 
     $.each(donelinks, function (i, link) {
@@ -7191,8 +7213,21 @@ function wrapper(plugin_info) {
     }
   };
 
-  thisplugin.applySavedOptionsDefault = function () {
-    var saved = thisplugin.getSavedOptionsDefault();
+  // Plain snapshot of the option fields below, shared by "Save options as default" and Manage
+  // Ops (each saved op carries its own snapshot, applied back by applyOptionsSnapshot on load).
+  thisplugin.getCurrentOptionsSnapshot = function () {
+    return {
+      isClockwise: thisplugin.is_clockwise,
+      stardirection: thisplugin.stardirection,
+      availableSBUL: thisplugin.availableSBUL,
+      respectIntelLinksMode: thisplugin.respectIntelLinksMode,
+      useBookmarksOnly: thisplugin.use_bookmarks_only,
+      manageBlockers: thisplugin.manageBlockers,
+      blockerMaxDetourM: thisplugin.blockerMaxDetourM
+    };
+  };
+
+  thisplugin.applyOptionsSnapshot = function (saved) {
     if (!saved) return;
 
     if (typeof saved.isClockwise === 'boolean') thisplugin.is_clockwise = saved.isClockwise;
@@ -7206,16 +7241,31 @@ function wrapper(plugin_info) {
     if (typeof saved.blockerMaxDetourM === 'number') thisplugin.blockerMaxDetourM = saved.blockerMaxDetourM;
   };
 
+  // The current anchor, persisted continuously (every updateLayer() run — see where
+  // startingpointGUID is set) so the currently drawn plan — not just a named Manage Ops
+  // entry — keeps its anchor across an IITC reload, the same way DrawTools already keeps the
+  // drawing itself and saveOptionsDefault() already keeps the options.
+  thisplugin.CURRENT_ANCHOR_STORAGE_KEY = 'plugin-fanfields3-current-anchor';
+
+  thisplugin.saveCurrentAnchor = function () {
+    localStorage.setItem(thisplugin.CURRENT_ANCHOR_STORAGE_KEY, JSON.stringify({ guid: thisplugin.startingpointGUID || null }));
+  };
+
+  thisplugin.getSavedCurrentAnchor = function () {
+    try {
+      var raw = localStorage.getItem(thisplugin.CURRENT_ANCHOR_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  thisplugin.applySavedOptionsDefault = function () {
+    thisplugin.applyOptionsSnapshot(thisplugin.getSavedOptionsDefault());
+  };
+
   thisplugin.saveOptionsDefault = function () {
-    localStorage.setItem(thisplugin.OPTIONS_STORAGE_KEY, JSON.stringify({
-      isClockwise: thisplugin.is_clockwise,
-      stardirection: thisplugin.stardirection,
-      availableSBUL: thisplugin.availableSBUL,
-      respectIntelLinksMode: thisplugin.respectIntelLinksMode,
-      useBookmarksOnly: thisplugin.use_bookmarks_only,
-      manageBlockers: thisplugin.manageBlockers,
-      blockerMaxDetourM: thisplugin.blockerMaxDetourM
-    }));
+    localStorage.setItem(thisplugin.OPTIONS_STORAGE_KEY, JSON.stringify(thisplugin.getCurrentOptionsSnapshot()));
   };
 
   // Settings dialog: direction/fan mode/SBUL/Respect Intel/portal selection, each applied
@@ -7517,6 +7567,18 @@ function wrapper(plugin_info) {
 
     thisplugin.applySavedOptionsDefault();
 
+    // Restores the anchor of whatever is currently drawn (persisted on every plan
+    // recalculation — see thisplugin.saveCurrentAnchor), the same way DrawTools already
+    // restores the drawing itself and applySavedOptionsDefault() just restored the options.
+    // Applied as a manual pin (see loadOp for the same pattern) so the auto-orientation search
+    // that runs right after this drawing is first recalculated doesn't silently override it;
+    // dropped by updateLayer() on its own if this portal isn't part of the restored drawing.
+    var savedAnchor = thisplugin.getSavedCurrentAnchor();
+    if (savedAnchor && savedAnchor.guid) {
+      thisplugin.forcedAnchorGUID = savedAnchor.guid;
+      thisplugin.forcedAnchorIsManual = true;
+    }
+
     thisplugin.updateLockButton();
 
     //         window.pluginCreateHook('pluginBkmrksEdit');
@@ -7530,6 +7592,15 @@ function wrapper(plugin_info) {
     window.pluginCreateHook('pluginDrawTools');
 
     window.addHook('pluginDrawTools', function (e) {
+      // The very first time this fires is DrawTools finishing its own restore of whatever was
+      // already drawn when IITC opened — not a real edit — so that drawing counts as the
+      // accepted baseline right away. Without this, opsBaselineJSON would stay null until the
+      // player next interacted with Manage Ops, and Manage Ops would wrongly warn about
+      // "unsaved changes" for a drawing that in fact hasn't changed since it was last saved.
+      if (!thisplugin._hasSeededOpsBaseline) {
+        thisplugin._hasSeededOpsBaseline = true;
+        thisplugin.opsBaselineJSON = JSON.stringify(thisplugin.serializeCurrentDraw());
+      }
       thisplugin.delayedUpdateLayer(0.5, true);
     });
     window.addHook('mapDataRefreshStart', function () {
