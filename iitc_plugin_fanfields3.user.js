@@ -3,7 +3,7 @@
 // @id              fanfields@avataar120
 // @name            Fan Fields 3
 // @category        Layer
-// @version         5.1.0.20261002
+// @version         5.2.0.20261003
 // @description     Fork of Heistergand's Fan Fields 2 (thanks Heistergand for the original work!). Plans the largest tidy set of nested fields, and adds: walking optimization (less backtracking between portals, Destroy stops placed where they add the least walking), automatic best anchor/direction search that reuses your faction's existing links, Blockers handling in the Task List, plan locking, Pick anchor on the map, a Task List that follows your progress and can Reroute the steps left from where you stand, key counts read from a screen recording of your keys in Ingress (Keys plugin), and route export to Google Maps / Portal Route. Enable from the layer chooser.
 // @downloadURL     https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.user.js
 // @updateURL       https://github.com/Avataar120/fanfields3/raw/master/iitc_plugin_fanfields3.meta.js
@@ -25,7 +25,7 @@ function wrapper(plugin_info) {
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-10-02-202543';
+  plugin_info.dateTimeVersion = '2026-10-03-114147';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin  -- eslint*/
@@ -33,6 +33,14 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '5.2.0',
+      changes: [
+        'NEW: A saved op now also remembers the plugin options and the anchor it was saved with, and reloading it restores all three together — not just the drawing.',
+        'NEW: The plan\'s options and anchor are now kept up to date on their own, the same way the drawing already was, so they survive closing and reopening IITC even without using Manage Ops.',
+        'NEW: Shifting the anchor or changing an option now also counts as an unsaved change, so Manage Ops warns before it would be lost.',
+        'IMPROVE: Opening Manage Ops now puts the cursor straight into the new op\'s name field, so a name can be typed right away.',
+      ],
+    },{
       version: '5.1.0',
       changes: [
         'NEW: Manage Ops menu item lets you save your current drawing under a name, and reload, rename, update or delete it later. Loading a saved op replaces everything currently drawn and moves the map to it; a warning appears before any of these actions would discard unsaved changes. A Clear drawing button is also added there to wipe the current drawing.',
@@ -2714,11 +2722,29 @@ function wrapper(plugin_info) {
   thisplugin.OPS_STORAGE_KEY = 'plugin-fanfields3-saved-ops';
   thisplugin.OPS_MAX_COUNT = 15;
 
-  // JSON snapshot of the drawing that matches whatever is currently considered "saved" (the op
-  // just loaded, saved or updated) — null until the player has loaded, saved or updated an op
-  // this session, in which case anything already on the map counts as unsaved. Used only to
-  // warn before an op load would silently discard drawing changes; never persisted itself.
+  // JSON snapshot of the drawing, options and anchor that matches whatever is currently
+  // considered "saved" (the op just loaded, saved or updated, or — see the pluginDrawTools
+  // hook in setup() — whatever was already on the map when IITC opened) — null until that
+  // baseline exists, in which case anything already on the map counts as unsaved. Shifting the
+  // anchor (even just Shift left/right) or changing an option counts as a change here too, not
+  // just editing the drawn shapes. Used only to warn before an op load would silently discard
+  // such changes; never persisted itself.
   thisplugin.opsBaselineJSON = null;
+
+  // Snapshot of everything isDrawDirty() compares: the drawn shapes, the options and the
+  // anchor. `overrides` lets a caller pin a field to a specific value instead of the current
+  // live one — needed right after loadOp()/clearCurrentDraw()/the initial restore, where the
+  // anchor this op/restore is PINNING (op.anchor.guid, or null) is known immediately, but
+  // thisplugin.startingpointGUID itself only catches up once the debounced updateLayer() run
+  // that pluginDrawTools hook schedules actually completes.
+  thisplugin.buildWorkSnapshotJSON = function (overrides) {
+    overrides = overrides || {};
+    return JSON.stringify({
+      data: overrides.data || thisplugin.serializeCurrentDraw(),
+      options: overrides.options || thisplugin.getCurrentOptionsSnapshot(),
+      anchor: ('anchor' in overrides) ? overrides.anchor : (thisplugin.startingpointGUID || null)
+    });
+  };
 
   thisplugin.getSavedOps = function () {
     try {
@@ -2806,10 +2832,11 @@ function wrapper(plugin_info) {
     return items;
   };
 
-  // Whether the current drawing differs from whichever op was last loaded/saved/updated this
-  // session (or, with none yet, whether anything at all is currently drawn).
+  // Whether the current drawing, options or anchor differ from whichever op was last loaded/
+  // saved/updated this session (or, with none yet, whether anything at all is currently
+  // drawn/configured).
   thisplugin.isDrawDirty = function () {
-    return JSON.stringify(thisplugin.serializeCurrentDraw()) !== thisplugin.opsBaselineJSON;
+    return thisplugin.buildWorkSnapshotJSON() !== thisplugin.opsBaselineJSON;
   };
 
   // Replaces the entire current drawing with the op's own drawing. Builds the new layers
@@ -2826,9 +2853,26 @@ function wrapper(plugin_info) {
       var layer = thisplugin.buildDrawLayerFromItem(item);
       if (layer) dt.drawnItems.addLayer(layer);
     });
+
+    thisplugin.applyOptionsSnapshot(op.options);
+
+    // Restored ahead of the hook below, so the recalculation it triggers pins this anchor the
+    // same way setAnchorByGuid does (see the forcedAnchorGUID block in updateLayer) — dropped
+    // back to null there if this op's anchor portal isn't part of its own drawing. Always
+    // restored as a manual pin (regardless of how it was originally chosen — Pick anchor, or
+    // just cycling with Shift left/right) so the automatic anchor/direction search never
+    // silently overrides it right after this op loads.
+    thisplugin.forcedAnchorGUID = (op.anchor && op.anchor.guid) || null;
+    thisplugin.forcedAnchorIsManual = !!(op.anchor && op.anchor.guid);
+
     if (typeof dt.save === 'function') dt.save();
     window.runHooks('pluginDrawTools', { event: 'import' });
-    thisplugin.opsBaselineJSON = JSON.stringify(thisplugin.serializeCurrentDraw());
+
+    // The anchor override here is this op's own pin, not thisplugin.startingpointGUID — that
+    // only catches up once the debounced updateLayer() run the hook above just scheduled
+    // actually completes (see buildWorkSnapshotJSON). Options are already live: applied
+    // synchronously above.
+    thisplugin.opsBaselineJSON = thisplugin.buildWorkSnapshotJSON({ data: op.data || [], anchor: (op.anchor && op.anchor.guid) || null });
 
     if (dt.drawnItems.getLayers().length) {
       map.fitBounds(dt.drawnItems.getBounds(), { maxZoom: 15, padding: [20, 20] });
@@ -2843,7 +2887,9 @@ function wrapper(plugin_info) {
     dt.drawnItems.clearLayers();
     if (typeof dt.save === 'function') dt.save();
     window.runHooks('pluginDrawTools', { event: 'import' });
-    thisplugin.opsBaselineJSON = JSON.stringify(thisplugin.serializeCurrentDraw());
+    // anchor: null — an empty drawing has no plan, so none can be pinned; thisplugin.startingpointGUID
+    // itself only catches up once the debounced updateLayer() run the hook above just scheduled completes.
+    thisplugin.opsBaselineJSON = thisplugin.buildWorkSnapshotJSON({ data: [], anchor: null });
   };
 
   // Returns true on success, or a string identifying why it failed ('limit', 'duplicate').
@@ -2853,9 +2899,18 @@ function wrapper(plugin_info) {
     if (ops.some(function (o) { return o.name === name; })) return 'duplicate';
 
     var data = thisplugin.serializeCurrentDraw();
-    ops.push({ id: thisplugin.generateOpId(), name: name, data: data, savedAt: Date.now() });
+    var options = thisplugin.getCurrentOptionsSnapshot();
+    var anchor = thisplugin.startingpointGUID || null;
+    ops.push({
+      id: thisplugin.generateOpId(),
+      name: name,
+      data: data,
+      options: options,
+      anchor: { guid: anchor },
+      savedAt: Date.now()
+    });
     thisplugin.setSavedOps(ops);
-    thisplugin.opsBaselineJSON = JSON.stringify(data);
+    thisplugin.opsBaselineJSON = thisplugin.buildWorkSnapshotJSON({ data: data, options: options, anchor: anchor });
     return true;
   };
 
@@ -2867,10 +2922,14 @@ function wrapper(plugin_info) {
     if (!op) return false;
 
     var data = thisplugin.serializeCurrentDraw();
+    var options = thisplugin.getCurrentOptionsSnapshot();
+    var anchor = thisplugin.startingpointGUID || null;
     op.data = data;
+    op.options = options;
+    op.anchor = { guid: anchor };
     op.savedAt = Date.now();
     thisplugin.setSavedOps(ops);
-    thisplugin.opsBaselineJSON = JSON.stringify(data);
+    thisplugin.opsBaselineJSON = thisplugin.buildWorkSnapshotJSON({ data: data, options: options, anchor: anchor });
     return true;
   };
 
@@ -3141,6 +3200,9 @@ function wrapper(plugin_info) {
     });
 
     thisplugin.wireManageOpsHandlers();
+
+    // Focus the new-op name field right away, so typing a name doesn't need a click first.
+    $('#plugin_fanfields3_ops_newname').trigger('focus');
   };
 
 
@@ -6672,6 +6734,7 @@ function wrapper(plugin_info) {
       centerOutgoings = builtPlan.centerOutgoings;
       centerSbul = builtPlan.centerSbul;
       thisplugin.centerKeys = builtPlan.centerKeys;
+      thisplugin.saveCurrentAnchor();
     }
 
     $.each(donelinks, function (i, link) {
@@ -7191,8 +7254,21 @@ function wrapper(plugin_info) {
     }
   };
 
-  thisplugin.applySavedOptionsDefault = function () {
-    var saved = thisplugin.getSavedOptionsDefault();
+  // Plain snapshot of the option fields below, shared by "Save options as default" and Manage
+  // Ops (each saved op carries its own snapshot, applied back by applyOptionsSnapshot on load).
+  thisplugin.getCurrentOptionsSnapshot = function () {
+    return {
+      isClockwise: thisplugin.is_clockwise,
+      stardirection: thisplugin.stardirection,
+      availableSBUL: thisplugin.availableSBUL,
+      respectIntelLinksMode: thisplugin.respectIntelLinksMode,
+      useBookmarksOnly: thisplugin.use_bookmarks_only,
+      manageBlockers: thisplugin.manageBlockers,
+      blockerMaxDetourM: thisplugin.blockerMaxDetourM
+    };
+  };
+
+  thisplugin.applyOptionsSnapshot = function (saved) {
     if (!saved) return;
 
     if (typeof saved.isClockwise === 'boolean') thisplugin.is_clockwise = saved.isClockwise;
@@ -7206,16 +7282,31 @@ function wrapper(plugin_info) {
     if (typeof saved.blockerMaxDetourM === 'number') thisplugin.blockerMaxDetourM = saved.blockerMaxDetourM;
   };
 
+  // The current anchor, persisted continuously (every updateLayer() run — see where
+  // startingpointGUID is set) so the currently drawn plan — not just a named Manage Ops
+  // entry — keeps its anchor across an IITC reload, the same way DrawTools already keeps the
+  // drawing itself and saveOptionsDefault() already keeps the options.
+  thisplugin.CURRENT_ANCHOR_STORAGE_KEY = 'plugin-fanfields3-current-anchor';
+
+  thisplugin.saveCurrentAnchor = function () {
+    localStorage.setItem(thisplugin.CURRENT_ANCHOR_STORAGE_KEY, JSON.stringify({ guid: thisplugin.startingpointGUID || null }));
+  };
+
+  thisplugin.getSavedCurrentAnchor = function () {
+    try {
+      var raw = localStorage.getItem(thisplugin.CURRENT_ANCHOR_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  thisplugin.applySavedOptionsDefault = function () {
+    thisplugin.applyOptionsSnapshot(thisplugin.getSavedOptionsDefault());
+  };
+
   thisplugin.saveOptionsDefault = function () {
-    localStorage.setItem(thisplugin.OPTIONS_STORAGE_KEY, JSON.stringify({
-      isClockwise: thisplugin.is_clockwise,
-      stardirection: thisplugin.stardirection,
-      availableSBUL: thisplugin.availableSBUL,
-      respectIntelLinksMode: thisplugin.respectIntelLinksMode,
-      useBookmarksOnly: thisplugin.use_bookmarks_only,
-      manageBlockers: thisplugin.manageBlockers,
-      blockerMaxDetourM: thisplugin.blockerMaxDetourM
-    }));
+    localStorage.setItem(thisplugin.OPTIONS_STORAGE_KEY, JSON.stringify(thisplugin.getCurrentOptionsSnapshot()));
   };
 
   // Settings dialog: direction/fan mode/SBUL/Respect Intel/portal selection, each applied
@@ -7517,6 +7608,18 @@ function wrapper(plugin_info) {
 
     thisplugin.applySavedOptionsDefault();
 
+    // Restores the anchor of whatever is currently drawn (persisted on every plan
+    // recalculation — see thisplugin.saveCurrentAnchor), the same way DrawTools already
+    // restores the drawing itself and applySavedOptionsDefault() just restored the options.
+    // Applied as a manual pin (see loadOp for the same pattern) so the auto-orientation search
+    // that runs right after this drawing is first recalculated doesn't silently override it;
+    // dropped by updateLayer() on its own if this portal isn't part of the restored drawing.
+    var savedAnchor = thisplugin.getSavedCurrentAnchor();
+    if (savedAnchor && savedAnchor.guid) {
+      thisplugin.forcedAnchorGUID = savedAnchor.guid;
+      thisplugin.forcedAnchorIsManual = true;
+    }
+
     thisplugin.updateLockButton();
 
     //         window.pluginCreateHook('pluginBkmrksEdit');
@@ -7530,6 +7633,18 @@ function wrapper(plugin_info) {
     window.pluginCreateHook('pluginDrawTools');
 
     window.addHook('pluginDrawTools', function (e) {
+      // The very first time this fires is DrawTools finishing its own restore of whatever was
+      // already drawn when IITC opened — not a real edit — so that drawing (plus the options
+      // and anchor already restored above) counts as the accepted baseline right away.
+      // Without this, opsBaselineJSON would stay null until the player next interacted with
+      // Manage Ops, and Manage Ops would wrongly warn about "unsaved changes" for a session
+      // that in fact hasn't changed since it was last saved. The anchor override is
+      // thisplugin.forcedAnchorGUID (the just-restored pin), not thisplugin.startingpointGUID —
+      // that only catches up once the debounced updateLayer() run below actually completes.
+      if (!thisplugin._hasSeededOpsBaseline) {
+        thisplugin._hasSeededOpsBaseline = true;
+        thisplugin.opsBaselineJSON = thisplugin.buildWorkSnapshotJSON({ anchor: thisplugin.forcedAnchorGUID || null });
+      }
       thisplugin.delayedUpdateLayer(0.5, true);
     });
     window.addHook('mapDataRefreshStart', function () {
