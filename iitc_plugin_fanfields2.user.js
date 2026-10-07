@@ -3,7 +3,7 @@
 // @id              fanfields@heistergand
 // @name            Fan Fields 2
 // @category        Layer
-// @version         2.8.2.20260506
+// @version         2.8.3.20261007
 // @description     Calculate how to link the portals to create the largest tidy set of nested fields. Enable from the layer chooser.
 // @downloadURL     https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.user.js
 // @updateURL       https://github.com/Heistergand/fanfields2/raw/master/iitc_plugin_fanfields2.meta.js
@@ -22,10 +22,47 @@
 // ==/UserScript==
 
 function wrapper(plugin_info) {
+  // Keep this outside the shared plugin.fanfields namespace: either script
+  // can overwrite that namespace, and a conflict can even break plugin setup.
+  var conflictObserver;
+  var conflictDetected = false;
+  function checkFanfields3Conflict() {
+    if (conflictDetected) return;
+    var forkLoaded = document.getElementById('iitc_plugin_fanfields3') ||
+      (window.bootPlugins || []).some(function (bootPlugin) {
+        return bootPlugin.info && bootPlugin.info.script &&
+          bootPlugin.info.script.name === 'Fan Fields 3';
+      });
+    if (!forkLoaded) return;
+    conflictDetected = true;
+    if (conflictObserver) conflictObserver.disconnect();
+    // Let the current script finish before opening the warning.
+    window.setTimeout(function () {
+      var message = 'Fan Fields 2 and Fan Fields 3 are both enabled. ' +
+        'These scripts interfere with each other and cannot be used together. ' +
+        'Please choose one: disable or uninstall the other script in your userscript manager ' +
+        'or IITC plugin settings, then reload IITC.';
+      if (typeof window.dialog === 'function' && window.iitcLoaded) {
+        window.dialog({
+          html: '<p>' + message + '</p>',
+          id: 'plugin_fanfields2_alert_conflict',
+          title: 'Fan Fields 2 / Fan Fields 3 - Plugin conflict',
+          width: Math.min(420, window.innerWidth || 420)
+        });
+      } else {
+        window.alert(message);
+      }
+    }, 0);
+  }
+  // Also detect a fork injected later, including after IITC has booted.
+  conflictObserver = new MutationObserver(checkFanfields3Conflict);
+  conflictObserver.observe(document.documentElement, { childList: true, subtree: true });
+  checkFanfields3Conflict();
+
   // ensure plugin framework is there, even if iitc is not yet loaded
   if (typeof window.plugin !== 'function') window.plugin = function () {};
   plugin_info.buildName = 'main';
-  plugin_info.dateTimeVersion = '2026-05-06-233150';
+  plugin_info.dateTimeVersion = '2026-10-07-000000';
   plugin_info.pluginId = 'fanfields';
 
   /* global L, $, dialog, map, portals, links, plugin, formatDistance  -- eslint*/
@@ -33,6 +70,11 @@ function wrapper(plugin_info) {
 
   var arcname = (window.PLAYER && window.PLAYER.team === 'ENLIGHTENED') ? 'Arc' : '***';
   var changelog = [{
+      version: '2.8.3',
+      changes: [
+        'NEW: Warn when Fan Fields 3 is also enabled; choose one plugin to avoid conflicts.',
+      ],
+    },{
       version: '2.8.2',
       changes: [
         'FIX: Respect Intel integrates already existing own-faction links into planned fields.',
